@@ -1,0 +1,13 @@
+Package: RMAPI
+Type: Package
+Title: Mapping Averaged Pairwise Information in R
+Version: 1.0
+Date: 2018-01-15
+Author: Robert Verity
+Maintainer: Robert Verity <r.verity@imperial.ac.uk>
+Description: An Rcpp implementation of the MAPI software, which can be used to infer barriers/corridors of gene flow (as one example application).
+License: GPL (>= 2)
+Imports: Rcpp (>= 0.12.13)
+LinkingTo: Rcpp
+SystemRequirements: C++11
+RoxygenNote: 6.0.1
