@@ -17,5 +17,15 @@ NULL
 #' dummy1()
 
 dummy1 <- function() {
-	print("dummy1")
+	
+	# convert R objects into a list of arguments
+	args <- list(foo=99, bar=c(1,3,6))
+
+	# run efficient c++ code
+	output_raw <- dummy1_cpp(args)
+	
+	# process raw output
+	ret <- output_raw$bar
+	
+	print(output_raw)
 }
