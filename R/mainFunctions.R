@@ -31,17 +31,19 @@ a_multiplier_i=-0.45						#Controls relationship between a (ellipse long radius)
 
 args <- list(xnode=xnode_i,ynode=ynode_i,vnode=vnode_i,a_multiplier=a_multiplier_i) 
 
-# Carry out calculations in C++ to generate map data
+# Carry out calculations in C++ to generate map data-------------------------------
+
 output_raw <- dummy1_cpp(args)
 
-# process raw output
+# process raw output---------------------------------------------------------------
+
 ret <- output_raw
 
 vmap=matrix(ret[["matrix_values"]],ret[["dim_matrix"]])
 
-#print(ret)
-#print(vmap)
-filled.contour(ret[["xpoints"]], ret[["ypoints"]], vmap, color = terrain.colors, plot.axes = { points(args[["xnode"]],args[["ynode"]]);axis(1, at = ret[["xtick"]], label = ret[["xtick"]]); axis(2, at = ret[["ytick"]], label = ret[["ytick"]]) })
+xlabels <- round(ret[["xtick"]],2)
+ylabels <- round(ret[["ytick"]],2)
+filled.contour(ret[["xpoints"]], ret[["ypoints"]], vmap, color = terrain.colors, plot.axes = { points(args[["xnode"]],args[["ynode"]]);axis(1, at = xlabels, label = xlabels); axis(2, at = ylabels, label = ylabels) })
 
 }
 

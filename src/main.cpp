@@ -10,6 +10,8 @@
 #include <vector>
 using namespace std;
 
+double pi = 3.1415926536;
+
 double positive(double value);
 double ellipse_check(double x, double y, double a_ellipse, double xf1_ellipse, double yf1_ellipse, double xf2_ellipse, double yf2_ellipse, double v_ellipse);
 
@@ -17,7 +19,7 @@ double ellipse_check(double x, double y, double a_ellipse, double xf1_ellipse, d
 Rcpp::List dummy1_cpp(Rcpp::List args) {
 
 	int node, node1, node2, Nnodes, ellipse, Nellipses, nx, ny, nxy, dim_matrix;
-	double a_multiplier, x, y, dx, xmin, xmax, ymin, ymax, da, c, n;
+	double a_multiplier, x, y, dx, xmin, xmax, ymin, ymax, c, n, ellipse_sum;
 	vector<double> xnode;
 	vector<double> ynode;
 	vector<double> vnode;
@@ -67,14 +69,17 @@ Rcpp::List dummy1_cpp(Rcpp::List args) {
 	}
 	
 	Nellipses = ((Nnodes - 1)*Nnodes) / 2;
-	vector<double> a_ellipse(Nellipses, 0.0);
-	vector<double> xf1_ellipse(Nellipses, 0.0);
-	vector<double> yf1_ellipse(Nellipses, 0.0);
-	vector<double> xf2_ellipse(Nellipses, 0.0);
-	vector<double> yf2_ellipse(Nellipses, 0.0);
-	vector<double> v_ellipse(Nellipses, 0.0);
+	vector<double> a_ellipse(Nellipses, 0.0);			//Long radius of each ellipse
+	vector<double> xf1_ellipse(Nellipses, 0.0);			//x-coordinate of focus 1 of each ellipse
+	vector<double> yf1_ellipse(Nellipses, 0.0);			//y-coordinate of focus 1 of each ellipse
+	vector<double> xf2_ellipse(Nellipses, 0.0);			//x-coordinate of focus 2 of each ellipse
+	vector<double> yf2_ellipse(Nellipses, 0.0);			//y-coordinate of focus 2 of each ellipse
+	vector<double> v_ellipse(Nellipses, 0.0);			//Metric value of each ellipse
+	vector<double> area_ellipse(Nellipses, 0.0);		//Area of each ellipse
+	vector<double> vw_ellipse(Nellipses, 0.0);			//Weighted metric value of each ellipse
 
 	ellipse = 0;
+	ellipse_sum = 0.0;
 	for (node1 = 0; node1 < Nnodes; node1++)
 	{
 		for (node2 = node1 + 1; node2 < Nnodes; node2++)
@@ -85,10 +90,16 @@ Rcpp::List dummy1_cpp(Rcpp::List args) {
 			xf2_ellipse[ellipse] = xnode[node2];
 			yf2_ellipse[ellipse] = ynode[node2];
 			c = pow(pow(xnode[node1] - xnode[node2], 2.0) + pow(ynode[node1] - ynode[node2], 2.0), 0.5);
-			da = c*a_multiplier;
-			a_ellipse[ellipse] = c + da;
+			a_ellipse[ellipse] = c*(1 + a_multiplier);
+			area_ellipse[ellipse] = pi*a_ellipse[ellipse]*c;
+			ellipse_sum += area_ellipse[ellipse];
 			ellipse++;
 		}
+	}
+
+	for (ellipse = 0; ellipse < Nellipses; ellipse++)
+	{
+		vw_ellipse[ellipse] = (v_ellipse[ellipse] * ellipse_sum) / area_ellipse[ellipse];
 	}
 
 	vector<double> matrix_values(dim_matrix*dim_matrix, 0.0);
@@ -101,7 +112,7 @@ Rcpp::List dummy1_cpp(Rcpp::List args) {
 			x = xmin + (nx*dx);
 			for (ellipse = 0; ellipse < Nellipses; ellipse++)
 			{
-				matrix_values[nxy] += ellipse_check(x, y, a_ellipse[ellipse], xf1_ellipse[ellipse], yf1_ellipse[ellipse], xf2_ellipse[ellipse], yf2_ellipse[ellipse], v_ellipse[ellipse]);
+				matrix_values[nxy] += ellipse_check(x, y, a_ellipse[ellipse], xf1_ellipse[ellipse], yf1_ellipse[ellipse], xf2_ellipse[ellipse], yf2_ellipse[ellipse], vw_ellipse[ellipse]);
 			}
 			nxy++;
 		}
@@ -156,10 +167,10 @@ double positive(double value)
 
 //-----------------------------------------------------
 
-double ellipse_check(double x, double y, double a_ellipse, double xf1_ellipse, double yf1_ellipse, double xf2_ellipse, double yf2_ellipse, double v_ellipse)
+double ellipse_check(double x, double y, double a_ellipse, double xf1_ellipse, double yf1_ellipse, double xf2_ellipse, double yf2_ellipse, double vw_ellipse)
 {
 	double output = 0.0;
 	double dist = 0.5*(pow(pow(x - xf1_ellipse, 2.0) + pow(y - yf1_ellipse, 2.0), 0.5) + pow(pow(x - xf2_ellipse, 2.0) + pow(y - yf2_ellipse, 2.0), 0.5));
-	if (dist <= a_ellipse) { output = v_ellipse; }
+	if (dist <= a_ellipse) { output = vw_ellipse; }
 	return output;
 }
