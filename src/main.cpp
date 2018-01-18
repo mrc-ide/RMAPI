@@ -10,13 +10,19 @@
 #include <vector>
 using namespace std;
 
+//Global variables-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 double pi = 3.1415926536;
 
-double positive(double value);
-double ellipse_check(double x, double y, double a_ellipse, double xf1_ellipse, double yf1_ellipse, double xf2_ellipse, double yf2_ellipse, double v_ellipse);
+//Additional functions-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+double positive(double value);																												//Find absolute value of a number
+int ellipse_check(double x, double y, double a_ellipse, double xf1_ellipse, double yf1_ellipse, double xf2_ellipse, double yf2_ellipse);	//Check whether point lies within ellipse
+
+//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 // [[Rcpp::export]]
-Rcpp::List dummy1_cpp(Rcpp::List args) {
+Rcpp::List dummy1_cpp(Rcpp::List args)
+{
 
 	int node, node1, node2, Nnodes, ellipse, Nellipses, nx, ny, nxy, dim_matrix;
 	double a_multiplier, x, y, dx, xmin, xmax, ymin, ymax, c, n, ellipse_sum;
@@ -24,51 +30,52 @@ Rcpp::List dummy1_cpp(Rcpp::List args) {
 	vector<double> ynode;
 	vector<double> vnode;
 
-	// convert Rcpp arguments to native c++ arguments
+	// convert Rcpp arguments to native c++ arguments------------------------------------------------------------------------------------------------------------------------------------------
+
 	xnode = Rcpp::as<vector<double>>(args["xnode"]);		//Positions of data nodes on x-axis
 	ynode = Rcpp::as<vector<double>>(args["ynode"]);		//Positions of data nodes on y-axis
 	vnode = Rcpp::as<vector<double>>(args["vnode"]);		//Values at data nodes (of whatever type - calculation of ellipse values may have to change depending on type of values used)
 	a_multiplier = Rcpp::as<double>(args["a_multiplier"]);	//Controls relationship between a (ellipse long radius) and c (ellipse short radius equal to distance between foci): a = c*(1 + a_multiplier)
+	//xnode = { 1.0,2.0,3.0,4.0,5.0,6.0,1.0,2.0,3.0,4.0,5.0,6.0,1.0,2.0,3.0,4.0,5.0,6.0,1.0,2.0,3.0,4.0,5.0,6.0,1.0,2.0,3.0,4.0,5.0,6.0,1.0,2.0,3.0,4.0,5.0,6.0 };
+	//ynode = { 1.0,1.0,1.0,1.0,1.0,1.0,2.0,2.0,2.0,2.0,2.0,2.0,3.0,3.0,3.0,3.0,3.0,3.0,4.0,4.0,4.0,4.0,4.0,4.0,5.0,5.0,5.0,5.0,5.0,5.0,6.0,6.0,6.0,6.0,6.0,6.0 };
+	//vnode = { 6.0,5.0,4.0,3.0,2.0,1.0,6.0,5.0,4.0,3.0,2.0,1.0,6.0,5.0,4.0,3.0,2.0,1.0,6.0,5.0,4.0,3.0,2.0,1.0,6.0,5.0,4.0,3.0,2.0,1.0,6.0,5.0,4.0,3.0,2.0,1.0 };
+	//a_multiplier = -0.45;
 	Nnodes = xnode.size();									//Number of nodes
+	
+	//Perform computations on imported data---------------------------------------------------------------------------------------------------------------------------------------------------
 
-	//------------------------------------------------
+	dim_matrix = 101;	//Dimensions of matrix of map points
 
-	// do some really hard maths
-
-	xmin = 1.0e99;
+	//Calculate separation between points and x, y limits
+	xmin = 1.0e99;		
 	xmax = -1.0e99;
 	ymin = 1.0e99;
 	ymax = -1.0e99;
-	dim_matrix = 31;
-
 	for (node = 0; node < Nnodes; node++)
 	{
 		if (xnode[node] < xmin) { xmin = xnode[node]; }
+		else { if (xnode[node] > xmax) { xmax = xnode[node]; } }
 		if (ynode[node] < ymin) { ymin = ynode[node]; }
-		if (xnode[node] > xmax) { xmax = xnode[node]; }
-		if (ynode[node] > ymax) { ymax = ynode[node]; }
-		//Rprintf("xnode[%i]=%.2f\tynode[%i]=%.2f\tvnode[%i]=%.2f\n", node,xnode[node], node,ynode[node], node,vnode[node]);
+		else { if (ynode[node] > ymax) { ymax = ynode[node]; } }
 	}
-
 
 	if (xmax - xmin > ymax - ymin)
 	{
 		dx = (xmax - xmin) / (dim_matrix - 10);
-		xmin -= 5.0*dx;
 		xmax += 5.0*dx;
-		ymin -= 5.0*dx;
 		ymax = ymin + ((dim_matrix - 1)*dx);
 	}
 	else
 	{
 		dx = (ymax - ymin) / (dim_matrix - 10);
-		ymin -= 5.0*dx;
 		ymax += 5.0*dx;
-		xmin -= 5.0*dx;
 		xmax = xmin + ((dim_matrix - 1)*dx);
 	}
-	
-	Nellipses = ((Nnodes - 1)*Nnodes) / 2;
+	xmin -= 5.0*dx;
+	ymin -= 5.0*dx;
+
+	//Set up ellipses
+	Nellipses = ((Nnodes - 1)*Nnodes) / 2;				//Number of ellipses
 	vector<double> a_ellipse(Nellipses, 0.0);			//Long radius of each ellipse
 	vector<double> xf1_ellipse(Nellipses, 0.0);			//x-coordinate of focus 1 of each ellipse
 	vector<double> yf1_ellipse(Nellipses, 0.0);			//y-coordinate of focus 1 of each ellipse
@@ -102,6 +109,7 @@ Rcpp::List dummy1_cpp(Rcpp::List args) {
 		vw_ellipse[ellipse] = (v_ellipse[ellipse] * ellipse_sum) / area_ellipse[ellipse];
 	}
 
+	//Create map by summation of ellipses intersecting each point
 	vector<double> matrix_values(dim_matrix*dim_matrix, 0.0);
 	nxy = 0;
 	for (ny = 0; ny < dim_matrix; ny++)
@@ -112,12 +120,13 @@ Rcpp::List dummy1_cpp(Rcpp::List args) {
 			x = xmin + (nx*dx);
 			for (ellipse = 0; ellipse < Nellipses; ellipse++)
 			{
-				matrix_values[nxy] += ellipse_check(x, y, a_ellipse[ellipse], xf1_ellipse[ellipse], yf1_ellipse[ellipse], xf2_ellipse[ellipse], yf2_ellipse[ellipse], vw_ellipse[ellipse]);
+				if (ellipse_check(x, y, a_ellipse[ellipse], xf1_ellipse[ellipse], yf1_ellipse[ellipse], xf2_ellipse[ellipse], yf2_ellipse[ellipse]) == 1) { matrix_values[nxy] += vw_ellipse[ellipse]; }
 			}
 			nxy++;
 		}
 	}
 
+	//Set up final data to be output to R
 	vector<double> xpoints(dim_matrix, 0.0);
 	vector<double> ypoints(dim_matrix, 0.0);
 	for (nx = 0; nx < dim_matrix; nx++)
@@ -125,18 +134,19 @@ Rcpp::List dummy1_cpp(Rcpp::List args) {
 		xpoints[nx] = xmin + (nx*dx);
 		ypoints[nx] = ymin + (nx*dx);
 	}
-	n = (dim_matrix - 1) / 5.0;
+	n = (dim_matrix - 2) / 5.0;
 	vector<double> xtick(6, 0.0);
 	vector<double> ytick(6, 0.0);
-	for (nx = 0; nx < 6; nx++)
+	xtick[0] = xmin + (0.5*dx);
+	ytick[0] = ymin + (0.5*dx);
+	for (nx = 1; nx < 6; nx++)
 	{
-		xtick[nx] = xmin + (nx*n*dx);
-		ytick[nx] = ymin + (nx*n*dx);
+		xtick[nx] = xtick[nx - 1] + (n*dx);
+		ytick[nx] = ytick[nx - 1] + (n*dx);
 	}
 
-	//------------------------------------------------
+	// return output as an Rcpp list-----------------------------------------------------------------------------------------------------------------------------------------------------------
 
-	// return output as an Rcpp list
 	Rcpp::List ret;
 	ret.push_back(Rcpp::wrap(dim_matrix));
 	ret.push_back(Rcpp::wrap(xpoints));
@@ -157,7 +167,8 @@ Rcpp::List dummy1_cpp(Rcpp::List args) {
     return ret ;
 }
 
-//-----------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 double positive(double value)
 {
@@ -165,12 +176,12 @@ double positive(double value)
 	return output;
 }
 
-//-----------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-double ellipse_check(double x, double y, double a_ellipse, double xf1_ellipse, double yf1_ellipse, double xf2_ellipse, double yf2_ellipse, double vw_ellipse)
+int ellipse_check(double x, double y, double a_ellipse, double xf1_ellipse, double yf1_ellipse, double xf2_ellipse, double yf2_ellipse)
 {
-	double output = 0.0;
-	double dist = 0.5*(pow(pow(x - xf1_ellipse, 2.0) + pow(y - yf1_ellipse, 2.0), 0.5) + pow(pow(x - xf2_ellipse, 2.0) + pow(y - yf2_ellipse, 2.0), 0.5));
-	if (dist <= a_ellipse) { output = vw_ellipse; }
+	int output = 0;
+	if (0.5*(pow(pow(x - xf1_ellipse, 2.0) + pow(y - yf1_ellipse, 2.0), 0.5) + pow(pow(x - xf2_ellipse, 2.0) + pow(y - yf2_ellipse, 2.0), 0.5)) <= a_ellipse) { output = 1; }
 	return output;
 }
