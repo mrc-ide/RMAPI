@@ -22,12 +22,12 @@ Rcpp::List dummy1_cpp(Rcpp::List args) {
 	vector<double> ynode;
 	vector<double> vnode;
 
-	// convert Rcpp args to native c++ args
-	xnode = Rcpp::as<vector<double>>(args["xnode"]);
-	ynode = Rcpp::as<vector<double>>(args["ynode"]);
-	vnode = Rcpp::as<vector<double>>(args["vnode"]);
-	a_multiplier = Rcpp::as<double>(args["a_multiplier"]);
-	Nnodes = xnode.size();
+	// convert Rcpp arguments to native c++ arguments
+	xnode = Rcpp::as<vector<double>>(args["xnode"]);		//Positions of data nodes on x-axis
+	ynode = Rcpp::as<vector<double>>(args["ynode"]);		//Positions of data nodes on y-axis
+	vnode = Rcpp::as<vector<double>>(args["vnode"]);		//Values at data nodes (of whatever type - calculation of ellipse values may have to change depending on type of values used)
+	a_multiplier = Rcpp::as<double>(args["a_multiplier"]);	//Controls relationship between a (ellipse long radius) and c (ellipse short radius equal to distance between foci): a = c*(1 + a_multiplier)
+	Nnodes = xnode.size();									//Number of nodes
 
 	//------------------------------------------------
 
