@@ -24,8 +24,8 @@ int ellipse_check(double x, double y, double a_ellipse, double xf1_ellipse, doub
 Rcpp::List dummy1_cpp(Rcpp::List args)
 {
 
-	int node, node1, node2, Nnodes, ellipse, Nellipses, nx, ny, nxy, dim_matrix;
-	double a_multiplier, x, y, dx, xmin, xmax, ymin, ymax, c, n, ellipse_sum;
+	int node, node1, node2, Nnodes, ellipse, Nellipses, nx, ny, nxy, dim_matrix, area_matrix, perm, Nperms, rnd;
+	double a_multiplier, x, y, dx, xmin, xmax, ymin, ymax, c, n, ellipse_sum, tmp, Cprob;
 	vector<double> xnode;
 	vector<double> ynode;
 	vector<double> vnode;
@@ -110,7 +110,9 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 	}
 
 	//Create map by summation of ellipses intersecting each point
-	vector<double> matrix_values(dim_matrix*dim_matrix, 0.0);
+	area_matrix = dim_matrix*dim_matrix;
+	vector<double> matrix_values(area_matrix, 0.0);						//Map data points
+	vector<int> intersections(area_matrix*Nellipses, 0);				//Y/N data for which ellipses intersect each point
 	nxy = 0;
 	for (ny = 0; ny < dim_matrix; ny++)
 	{
@@ -120,13 +122,100 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 			x = xmin + (nx*dx);
 			for (ellipse = 0; ellipse < Nellipses; ellipse++)
 			{
-				if (ellipse_check(x, y, a_ellipse[ellipse], xf1_ellipse[ellipse], yf1_ellipse[ellipse], xf2_ellipse[ellipse], yf2_ellipse[ellipse]) == 1) { matrix_values[nxy] += vw_ellipse[ellipse]; }
+				if (ellipse_check(x, y, a_ellipse[ellipse], xf1_ellipse[ellipse], yf1_ellipse[ellipse], xf2_ellipse[ellipse], yf2_ellipse[ellipse]) == 1) 
+				{ 
+					intersections[(ellipse*area_matrix) + nxy] = 1;
+					matrix_values[nxy] += vw_ellipse[ellipse]; 
+				}
 			}
 			nxy++;
 		}
 	}
 
-	//Set up final data to be output to R
+	//Permute data to check statistical significance-------------------------------------------------------------------------------------------------------------------------------------------
+
+	Nperms = 100;
+	vector<double> vnode2(Nnodes, 0.0);									//Re-ordered node values
+	vector<double> vw_ellipse2(Nellipses, 0.0);							//Weighted metric value of each ellipse after permutations
+	vector<double> matrix_values_p(area_matrix*Nperms, 0.0);			//Map data for permutations
+
+	vnode2 = vnode;
+	for (perm = 0; perm < Nperms; perm++)
+	{
+		for (node = 0; node < Nnodes; node++)
+		{
+			rnd = R::runif(node, Nnodes); // draw random index from node to end of vector. Note that although runif returns a double, by forcing to int we essentially round this value down to nearest int.
+			tmp = vnode2[rnd];   // temporarily store current value of vector at this position
+			vnode2[rnd] = vnode2[node]; // swap for value at position i
+			vnode2[node] = tmp;  // complete the swap
+		}
+
+		//Calculate new ellipse values
+		ellipse = 0;
+		for (node1 = 0; node1 < Nnodes; node1++)
+		{
+			for (node2 = node1 + 1; node2 < Nnodes; node2++)
+			{
+				vw_ellipse2[ellipse] = (positive(vnode2[node1] - vnode2[node2]) * ellipse_sum) / area_ellipse[ellipse];
+				ellipse++;
+			}
+		}
+
+		//Calculate new map data
+		nxy = 0;
+		for (ny = 0; ny < dim_matrix; ny++)
+		{
+			for (nx = 0; nx < dim_matrix; nx++)
+			{
+				matrix_values_p[(perm*area_matrix) + nxy] = 0.0;
+				for (ellipse = 0; ellipse < Nellipses; ellipse++)
+				{
+					if (intersections[(ellipse*area_matrix) + nxy] == 1)
+					{
+						matrix_values_p[(perm*area_matrix) + nxy] += vw_ellipse2[ellipse];
+					}
+				}
+				nxy++;
+			}
+		}
+	}
+
+	//Calculate cumulative probability distribution for each map point and determine whether observed value is statistically significant
+	vector<double> permvalues(Nperms, 0.0);	
+	nxy = 0;
+	for (ny = 0; ny < dim_matrix; ny++)
+	{
+		for (nx = 0; nx < dim_matrix; nx++)
+		{
+			for (perm = 0; perm < Nperms; perm++)
+			{
+				permvalues[perm] = matrix_values_p[(perm*area_matrix) + nxy];
+			}
+			/*if (nxy == 5000)
+			{
+				Rprintf("\nPerm\tCprob\tValue1");
+				for (perm = 0; perm < Nperms; perm++)
+				{
+					Rprintf("\n%i\t%.3f\t%.1f", perm, (perm + 1.0) / Nperms, permvalues[perm]);
+				}
+			}*/
+			sort(permvalues.begin(), permvalues.begin() + Nperms);
+			Cprob = 1.0;
+			for (perm = 0; perm < Nperms; perm++)
+			{
+				if(permvalues[perm] >= matrix_values[nxy])
+				{ 
+					Cprob = (perm + 1.0) / Nperms; 
+					goto done;
+				}
+			}
+			done:	
+			if (Cprob < 0.95) { matrix_values[nxy] = 0.0; }
+			nxy++;
+		}
+	}
+	
+	//Set up final data to be output to R-----------------------------------------------------------------------------------------------------------------------------------------------------
 	vector<double> xpoints(dim_matrix, 0.0);
 	vector<double> ypoints(dim_matrix, 0.0);
 	for (nx = 0; nx < dim_matrix; nx++)
