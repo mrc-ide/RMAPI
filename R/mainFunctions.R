@@ -1,50 +1,77 @@
+
 #------------------------------------------------
-# The following commands ensure that package dependencies are listed in the NAMESPACE file.
-
-#' @useDynLib RMAPI
-#' @importFrom Rcpp evalCpp
-NULL
-
-#--------------------------------------------------------------------------------
-#' Dummy function
+#' Load data into RMAPI project
 #'
-#' This is a dummy function
+#' TODO - some help text here.
 #'
-#' @param x Some parameter
+#' @param proj the current RMAPI project
+#' @param data a data frame, formatted into the correct RMAPI format (see Details)
+#' @param checkDeleteOutput whether to perform a check to see if project already contains data, in which case all old data and output will be lost
+#'
+#' @export
+
+loadData <- function(proj, data, checkDeleteOutput=TRUE) {
+    
+    # check whether there is data loaded already
+    if (!is.null(proj$data)) {
+        
+        # return existing project if user not happy to continue
+        if (checkDeleteOutput) {
+            if (!user_yesNo("All existing output for this project will be lost. Continue? (Y/N): ")) {
+                cat("returning original project\n")
+                return(proj)
+            }
+        }
+        
+        # delete old output
+        cat("overwriting data\n")
+        proj[["output"]] <- NULL
+    }
+    
+    # perform checks on data
+    stopifnot( is.data.frame(data) )
+    stopifnot( ncol(data)>=4 )
+    stopifnot( nrow(data)==ncol(data)-3 )
+    
+    # update project with new data
+    proj[["data"]] <- data
+    
+    # return invisibly
+    invisible(proj)
+}
+
+#------------------------------------------------
+#' Perform RMAPI simulation
+#'
+#' TODO - some help text here.
+#'
+#' @param proj the current RMAPI project
 #'
 #' @export
 #' @examples
-#' dummy1()
+#' runSims()
 
-dummy1 <- function() {
-
-# Node and other parameters as R objects -----------------------------------------
-
-xnode_i=c(1.1,2.1,3.9,2.8,3.6,4.5,0.7,1.8,2.1,3.3)	#Positions of data nodes on x-axis
-ynode_i=c(1.2,3.2,4.3,1.1,2.2,3.3,4.5,4.6,3.2,2.6)	#Positions of data nodes on y-axis
-vnode_i=c(4.1,2.1,1.4,0.9,1.1,2.2,3.6,4.1,2.1,1.1)	#Values at data nodes (of whatever type - calculation of ellipse 
-									#values may have to change depending on type of values used)
-									#NOTE: Above three vectors should have same size. Size of xnode used as number of nodes.
-a_multiplier_i=-0.45						#Controls relationship between a (ellipse long radius) and c (ellipse short radius equal to distance between foci): a = c*(1 + a_multiplier)
-
-# Set up arguments for input into C++ ---------------------------------------------
-
-args <- list(xnode=xnode_i,ynode=ynode_i,vnode=vnode_i,a_multiplier=a_multiplier_i) 
-
-# Carry out calculations in C++ to generate map data-------------------------------
-
-output_raw <- dummy1_cpp(args)
-
-# process raw output---------------------------------------------------------------
-
-ret <- output_raw
-
-vmap=matrix(ret[["matrix_values"]],ret[["dim_matrix"]])
-
-xlabels <- round(ret[["xtick"]],2)
-ylabels <- round(ret[["ytick"]],2)
-filled.contour(ret[["xpoints"]], ret[["ypoints"]], vmap, color = terrain.colors, plot.axes = { points(args[["xnode"]],args[["ynode"]]);axis(1, at = xlabels, label = xlabels); axis(2, at = ylabels, label = ylabels) })
-
+runSims <- function(proj) {
+	
+	# Node and other parameters as R objects -----------------------------------------
+	
+	a_multiplier_i=-0.45						#Controls relationship between a (ellipse long radius) and c (ellipse short radius equal to distance between foci): a = c*(1 + a_multiplier)
+	
+	# Set up arguments for input into C++ ---------------------------------------------
+	
+	pairwiseStats <- as.matrix(proj$data[,4:ncol(proj$data)])
+	args <- list(xnode=proj$data$long, ynode=proj$data$lat, vnode=mat_to_Rcpp(pairwiseStats), a_multiplier=a_multiplier_i) 
+	
+	# Carry out simulations in C++ to generate map data-------------------------------
+	
+	output_raw <- dummy1_cpp(args)	# TODO - rename C++ function to "runSims_cpp"
+	
+	# process raw output---------------------------------------------------------------	
+	
+	proj[["output"]] <- output_raw
+	
+    # return invisibly
+    invisible(proj)
 }
 
 

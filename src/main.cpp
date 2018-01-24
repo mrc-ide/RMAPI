@@ -8,6 +8,9 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+
+#include "misc.h"
+
 using namespace std;
 
 //Global variables-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -23,25 +26,26 @@ int ellipse_check(double x, double y, double a_ellipse, double xf1_ellipse, doub
 // [[Rcpp::export]]
 Rcpp::List dummy1_cpp(Rcpp::List args)
 {
-
+    
+    
+    
 	int node, node1, node2, Nnodes, ellipse, Nellipses, nx, ny, nxy, dim_matrix, area_matrix, perm, Nperms, rnd;
 	double a_multiplier, x, y, dx, xmin, xmax, ymin, ymax, c, n, ellipse_sum, tmp, Cprob;
 	vector<double> xnode;
 	vector<double> ynode;
-	vector<double> vnode;
-
+	vector< vector<double> > vnode;
+    
 	// convert Rcpp arguments to native c++ arguments------------------------------------------------------------------------------------------------------------------------------------------
 
-	xnode = Rcpp::as<vector<double>>(args["xnode"]);		//Positions of data nodes on x-axis
-	ynode = Rcpp::as<vector<double>>(args["ynode"]);		//Positions of data nodes on y-axis
-	vnode = Rcpp::as<vector<double>>(args["vnode"]);		//Values at data nodes (of whatever type - calculation of ellipse values may have to change depending on type of values used)
+	xnode = Rcpp_to_vector_double(args["xnode"]);		//Positions of data nodes on x-axis
+	ynode = Rcpp_to_vector_double(args["ynode"]);		//Positions of data nodes on y-axis
+	vnode = Rcpp_to_mat_double(args["vnode"]);		//Values at data nodes (of whatever type - calculation of ellipse values may have to change depending on type of values used)
 	a_multiplier = Rcpp::as<double>(args["a_multiplier"]);	//Controls relationship between a (ellipse long radius) and c (ellipse short radius equal to distance between foci): a = c*(1 + a_multiplier)
-	//xnode = { 1.0,2.0,3.0,4.0,5.0,6.0,1.0,2.0,3.0,4.0,5.0,6.0,1.0,2.0,3.0,4.0,5.0,6.0,1.0,2.0,3.0,4.0,5.0,6.0,1.0,2.0,3.0,4.0,5.0,6.0,1.0,2.0,3.0,4.0,5.0,6.0 };
-	//ynode = { 1.0,1.0,1.0,1.0,1.0,1.0,2.0,2.0,2.0,2.0,2.0,2.0,3.0,3.0,3.0,3.0,3.0,3.0,4.0,4.0,4.0,4.0,4.0,4.0,5.0,5.0,5.0,5.0,5.0,5.0,6.0,6.0,6.0,6.0,6.0,6.0 };
-	//vnode = { 6.0,5.0,4.0,3.0,2.0,1.0,6.0,5.0,4.0,3.0,2.0,1.0,6.0,5.0,4.0,3.0,2.0,1.0,6.0,5.0,4.0,3.0,2.0,1.0,6.0,5.0,4.0,3.0,2.0,1.0,6.0,5.0,4.0,3.0,2.0,1.0 };
-	//a_multiplier = -0.45;
 	Nnodes = xnode.size();									//Number of nodes
 	
+    //printMatrix(vnode);
+    //return Rcpp::List::create(Rcpp::Named("foo")=9);
+    
 	//Perform computations on imported data---------------------------------------------------------------------------------------------------------------------------------------------------
 
 	dim_matrix = 101;	//Dimensions of matrix of map points
@@ -91,7 +95,7 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 	{
 		for (node2 = node1 + 1; node2 < Nnodes; node2++)
 		{
-			v_ellipse[ellipse] = positive(vnode[node1] - vnode[node2]);
+			v_ellipse[ellipse] = vnode[node1][node2];
 			xf1_ellipse[ellipse] = xnode[node1];
 			yf1_ellipse[ellipse] = ynode[node1];
 			xf2_ellipse[ellipse] = xnode[node2];
@@ -134,6 +138,10 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 
 	//Permute data to check statistical significance-------------------------------------------------------------------------------------------------------------------------------------------
 
+// temporarily mask out permutation section of code while we change format to accept matrix of pairwise statistics
+#define MASK1
+#ifndef MASK1
+    
 	Nperms = 100;
 	vector<double> vnode2(Nnodes, 0.0);									//Re-ordered node values
 	vector<double> vw_ellipse2(Nellipses, 0.0);							//Weighted metric value of each ellipse after permutations
@@ -235,21 +243,22 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 	}
 
 	// return output as an Rcpp list-----------------------------------------------------------------------------------------------------------------------------------------------------------
-
+#endif
+    
 	Rcpp::List ret;
 	ret.push_back(Rcpp::wrap(dim_matrix));
-	ret.push_back(Rcpp::wrap(xpoints));
-	ret.push_back(Rcpp::wrap(ypoints));
-	ret.push_back(Rcpp::wrap(xtick));
-	ret.push_back(Rcpp::wrap(ytick));
+	//ret.push_back(Rcpp::wrap(xpoints));
+	//ret.push_back(Rcpp::wrap(ypoints));
+	//ret.push_back(Rcpp::wrap(xtick));
+	//ret.push_back(Rcpp::wrap(ytick));
 	ret.push_back(Rcpp::wrap(matrix_values));
 
 	Rcpp::StringVector ret_names;
 	ret_names.push_back("dim_matrix");
-	ret_names.push_back("xpoints");
-	ret_names.push_back("ypoints");
-	ret_names.push_back("xtick");
-	ret_names.push_back("ytick");
+	//ret_names.push_back("xpoints");
+	//ret_names.push_back("ypoints");
+	//ret_names.push_back("xtick");
+	//ret_names.push_back("ytick");
 	ret_names.push_back("matrix_values");
 
 	ret.names() = ret_names;
