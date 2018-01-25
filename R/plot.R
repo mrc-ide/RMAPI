@@ -17,14 +17,14 @@ RMAPI_plot1 <- function(proj) {
 	ylabels <- round(proj$output[["ytick"]],2)
 	
 	# filled contour
-	filled.contour(proj$output[["xpoints"]], proj$output[["ypoints"]], vmap, color = terrain.colors, plot.axes = FALSE)
-	
+	#filled.contour(proj$output[["xpoints"]], proj$output[["ypoints"]], vmap, color = terrain.colors, plot.axes = FALSE)
+	filled.contour(proj$output[["xpoints"]], proj$output[["ypoints"]], vmap, color = terrain.colors, plot.axes = { points(proj$output[["xnode"]], proj$output[["ynode"]]);axis(1, at = xlabels, label = xlabels); axis(2, at = ylabels, label = ylabels) })	
 	# add node points
 	#points(proj$output[["xnode"]], proj$output[["ynode"]])
 	
-	# add aces
-	axis(1, at = xlabels, label = xlabels)
-	axis(2, at = ylabels, label = ylabels)
+	# add axes
+	#axis(1, at = xlabels, label = xlabels)
+	#axis(2, at = ylabels, label = ylabels)
 	
 }
 
