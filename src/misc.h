@@ -2,6 +2,7 @@
 #pragma once
 
 #include <Rcpp.h>
+#include <chrono>
 
 //------------------------------------------------
 // define very large/small numbers for catching overflow/underflow problems
@@ -193,4 +194,19 @@ std::vector< std::vector< std::vector<double> > > Rcpp_to_array_double(Rcpp::Lis
 // converts input from Rcpp::List format to vector<vector<vector<int>>> format.
 std::vector< std::vector< std::vector<int> > > Rcpp_to_array_int(Rcpp::List x);
 
+//------------------------------------------------
+// return timer
+void chronoTimer(std::chrono::high_resolution_clock::time_point &t0);
+
+//------------------------------------------------
+// return absolute value
+double positive(double value);
+
+//------------------------------------------------
+// check if value is within bounding circle
+bool circle_check(double x, double y, double xc, double yc, double a2);
+
+//------------------------------------------------
+// check if value is within ellipse
+bool ellipse_check(double x, double y, double a, double xf1, double yf1, double xf2, double yf2);
 

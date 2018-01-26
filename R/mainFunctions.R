@@ -51,16 +51,21 @@ loadData <- function(proj, data, checkDeleteOutput=TRUE) {
 #' @examples
 #' runSims()
 
-runSims <- function(proj) {
+runSims <- function(proj, Nperms=1e2) {
 	
 	# Node and other parameters as R objects -----------------------------------------
 	
 	a_multiplier_i=-0.45						#Controls relationship between a (ellipse long radius) and c (ellipse short radius equal to distance between foci): a = c*(1 + a_multiplier)
 	
+	# set default x and y limits
+	if (is.null(proj$parameters$xlimits)) {
+		# TODO - set default limits
+	}
+	
 	# Set up arguments for input into C++ ---------------------------------------------
 	
 	pairwiseStats <- as.matrix(proj$data[,4:ncol(proj$data)])
-	args <- list(xnode=proj$data$long, ynode=proj$data$lat, vnode=mat_to_Rcpp(pairwiseStats), a_multiplier=a_multiplier_i) 
+	args <- list(xnode=proj$data$long, ynode=proj$data$lat, vnode=mat_to_Rcpp(pairwiseStats), a_multiplier=a_multiplier_i, Nperms=Nperms) 
 	
 	# Carry out simulations in C++ to generate map data-------------------------------
 	

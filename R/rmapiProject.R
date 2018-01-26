@@ -7,7 +7,9 @@ rmapiProject <- function() {
     # initialise project with default values
     ret <- list(
         data = NULL,
-        parameters = list(alpha=1, beta=2),
+        parameters = list(alpha=1,
+        						beta=2,
+        						xlimits=NULL),
         output = list()
         )
     
@@ -76,7 +78,7 @@ printFull <- function(proj) {
 `$<-.rmapiProject` <- function(proj, i, value) {
     
     # check that i is a valid parameter name
-    if ( !(i %in% c("alpha", "beta")) ) {
+    if ( !(i %in% c("alpha", "beta", "xlimits")) ) {
     		stop(paste(i,"is not a valid parameter name"))
     }
     

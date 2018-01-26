@@ -1,5 +1,6 @@
 
 #include <Rcpp.h>
+#include <chrono>
 #include <cstdlib>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +11,7 @@
 #include <vector>
 
 #include "misc.h"
+#include "probability.h"
 
 using namespace std;
 
@@ -18,7 +20,6 @@ double pi = 3.1415926536;
 
 //Additional functions-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 double positive(double value);																												//Find absolute value of a number
-int ellipse_check(double x, double y, double a, double xf1, double yf1, double xf2, double yf2);	//Check whether point lies within ellipse
 
 //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -26,22 +27,27 @@ int ellipse_check(double x, double y, double a, double xf1, double yf1, double x
 // [[Rcpp::export]]
 Rcpp::List dummy1_cpp(Rcpp::List args)
 {
-	int node, node1, node2, Nnodes, ellipse, Nellipses, nx, ny, nxy, ni, dim_matrix, area_matrix, perm, Nperms, rnd1, rnd2;
-	double a_multiplier, x, y, dx, xmin, xmax, ymin, ymax, c, n, ellipse_sum, tmp, Cprob, vmax;
+    
+    // start timer
+    chrono::high_resolution_clock::time_point t0 = chrono::high_resolution_clock::now();
+    
+    // initialise variables
+	int node, node1, node2, Nnodes, ellipse, Nellipses, nx, ny, nxy, ni, dim_matrix, area_matrix, perm, Nperms;
+	double a_multiplier, x, y, dx, xmin, xmax, ymin, ymax, c, n, ellipse_sum, Cprob, vmax;
 	vector<double> xnode;
 	vector<double> ynode;
 	vector< vector<double> > vnode;
     
 	// convert Rcpp arguments to native c++ arguments------------------------------------------------------------------------------------------------------------------------------------------
 
-	Rprintf("\nLoading data.\n");
+	print("Loading data\n");
 	xnode = Rcpp_to_vector_double(args["xnode"]);			//Positions of data nodes on x-axis
 	ynode = Rcpp_to_vector_double(args["ynode"]);			//Positions of data nodes on y-axis
 	vnode = Rcpp_to_mat_double(args["vnode"]);				//Pairwise metric data
 	a_multiplier = Rcpp::as<double>(args["a_multiplier"]);	//Controls relationship between a (ellipse long radius) and c (ellipse short radius equal to distance between foci): a = c*(1 + a_multiplier)
 	Nnodes = xnode.size();									//Number of nodes
+    Nperms = Rcpp_to_int(args["Nperms"]);                   //Number of permutations to run
 	
-    //printMatrix(vnode);
     //return Rcpp::List::create(Rcpp::Named("foo")=9);
     
 	//Perform computations on imported data---------------------------------------------------------------------------------------------------------------------------------------------------
@@ -49,8 +55,11 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 	dim_matrix = 101;	//Dimensions of matrix of map points
 
 	//Calculate separation between points and x, y limits
-	
-	Rprintf("\nEstablishing map boundaries.\n");
+    
+    // end timer
+    chronoTimer(t0);
+    
+	print("Establishing map boundaries\n");
 
 	xmin = 1.0e99;		
 	xmax = -1.0e99;
@@ -78,15 +87,21 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 	xmin -= 5.0*dx;
 	ymin -= 5.0*dx;
 
-	Rprintf("\nSetting up ellipses.\n");
+    // end timer
+    chronoTimer(t0);
+    
+	print("Setting up ellipses\n");
 
 	//Set up ellipses
 	Nellipses = ((Nnodes - 1)*Nnodes) / 2;				//Number of ellipses
 	vector<double> a_ellipse(Nellipses, 0.0);			//Long radius of each ellipse
+    vector<double> a2_ellipse(Nellipses, 0.0);          //Square of long radius of each ellipse
 	vector<double> xf1_ellipse(Nellipses, 0.0);			//x-coordinate of focus 1 of each ellipse
 	vector<double> yf1_ellipse(Nellipses, 0.0);			//y-coordinate of focus 1 of each ellipse
 	vector<double> xf2_ellipse(Nellipses, 0.0);			//x-coordinate of focus 2 of each ellipse
 	vector<double> yf2_ellipse(Nellipses, 0.0);			//y-coordinate of focus 2 of each ellipse
+    vector<double> xc_ellipse(Nellipses, 0.0);          //x-coordinate of centre of each ellipse
+    vector<double> yc_ellipse(Nellipses, 0.0);          //y-coordinate of centre of each ellipse
 	vector<double> v_ellipse(Nellipses, 0.0);			//Metric value of each ellipse
 	vector<double> area_ellipse(Nellipses, 0.0);		//Area of each ellipse
 	vector<double> vw_ellipse(Nellipses, 0.0);			//Weighted metric value of each ellipse
@@ -102,10 +117,13 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 			yf1_ellipse[ellipse] = ynode[node1];
 			xf2_ellipse[ellipse] = xnode[node2];
 			yf2_ellipse[ellipse] = ynode[node2];
+            xc_ellipse[ellipse] = 0.5*(xnode[node1]+xnode[node2]);
+            yc_ellipse[ellipse] = 0.5*(ynode[node1]+ynode[node2]);
 			c = pow(((xnode[node1] - xnode[node2])*(xnode[node1] - xnode[node2])) + ((ynode[node1] - ynode[node2])*(ynode[node1] - ynode[node2])), 0.5);
 			a_ellipse[ellipse] = c*(1 + a_multiplier);
+            a2_ellipse[ellipse] = a_ellipse[ellipse]*a_ellipse[ellipse];
 			area_ellipse[ellipse] = pi*a_ellipse[ellipse]*c;
-			ellipse_sum += area_ellipse[ellipse];
+			ellipse_sum += area_ellipse[ellipse];   // TODO - fix this, needs to be different for each pixel
 			ellipse++;
 		}
 	}
@@ -117,14 +135,17 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 
 	//Create map by summation of ellipses intersecting each point
 
-	Rprintf("\nSetting up map.\n");
+    // end timer
+    chronoTimer(t0);
+    
+	print("Setting up map\n");
 
 	area_matrix = dim_matrix*dim_matrix;
 	vector<double> matrix_values(area_matrix, 0.0);								//Map data points
 	vector<int> nintersections(area_matrix, 0);									//Number of ellipses intersecting each point
 	vector<vector<int>> intersections(area_matrix, vector<int>(Nellipses,0));	//List of ellipses intersecting each point
 	nxy = 0;
-	y=ymin;
+	y = ymin;
 	for (ny = 0; ny < dim_matrix; ny++)
 	{
 		x = xmin;
@@ -132,11 +153,14 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 		{
 			for (ellipse = 0; ellipse < Nellipses; ellipse++)
 			{
-				if (ellipse_check(x, y, a_ellipse[ellipse], xf1_ellipse[ellipse], yf1_ellipse[ellipse], xf2_ellipse[ellipse], yf2_ellipse[ellipse]) == 1) 
+				if (circle_check(x, y, xc_ellipse[ellipse], yc_ellipse[ellipse], a2_ellipse[ellipse]))
 				{
-					intersections[nxy][nintersections[nxy]] = ellipse;
-					nintersections[nxy]++;
-					matrix_values[nxy] += vw_ellipse[ellipse]; 
+                    if (ellipse_check(x, y, a_ellipse[ellipse], xf1_ellipse[ellipse], yf1_ellipse[ellipse], xf2_ellipse[ellipse], yf2_ellipse[ellipse]))
+                    {
+                        intersections[nxy][nintersections[nxy]] = ellipse;
+                        nintersections[nxy]++;
+                        matrix_values[nxy] += vw_ellipse[ellipse];
+                    }
 				}
 			}
 			nxy++;
@@ -146,44 +170,26 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 	}
 
 	//Permute data to check statistical significance-------------------------------------------------------------------------------------------------------------------------------------------
-	    
-	Nperms = 1000;
-	vector< vector<double> > vnode2;															//Re-ordered node values
-	vector<double> vw_ellipse2(Nellipses, 0.0);													//Weighted metric value of each ellipse after permutations
-	//vector<double> matrix_values_p(area_matrix*Nperms, 0.0);									//Map data for permutations
+    
+	//vector< vector<double> > vnode2;															//Re-ordered node values
+	//vector<double> vw_ellipse2(Nellipses, 0.0);													//Weighted metric value of each ellipse after permutations
+    vector<int> perm_index = seq_int(1,Nellipses);                                              //Index of which ellipse value to take
 	vector<vector<double>> matrix_values_p(area_matrix, vector<double>(Nperms, 0.0));				//Map data for permutations
 
-	Rprintf("\nStarting permutation.\n");
+    // end timer
+    chronoTimer(t0);
+    
+	print("Starting permutation\n");
 
-	vnode2 = vnode;
+	//vnode2 = vnode;
 	for (perm = 0; perm < Nperms; perm++)
 	{
-		//Rprintf("p=%i\n", perm);
-		//Rprintf("\nnode1\tnode2\tV1\trnd1\trnd2\tV2");
-		for (node1 = 0; node1 < Nnodes; node1++)
-		{
-			for (node2 = node1 + 1; node2 < Nnodes; node2++)
-			{				
-				rnd1 = R::runif(0, Nnodes); // draw random index from node to end of vector. Note that although runif returns a double, by forcing to int we essentially round this value down to nearest int.
-				rnd2 = R::runif(rnd1 + 1, Nnodes);
-				tmp = vnode2[rnd1][rnd2];   // temporarily store current value of vector at this position 
-				vnode2[rnd1][rnd2] = vnode2[node1][node2]; // swap for value at position i
-				vnode2[node1][node2] = tmp;  // complete the swap
-				//Rprintf("\n%i\t%i\t%.2e\t%i\t%i\t%.2e", node1, node2, vnode[node1][node2], rnd1, rnd2, vnode2[node1][node2]);
-			}
-		}
-
-		//Calculate new ellipse values
-		ellipse = 0;
-		for (node1 = 0; node1 < Nnodes; node1++)
-		{
-			for (node2 = node1 + 1; node2 < Nnodes; node2++)
-			{
-				vw_ellipse2[ellipse] = (vnode2[node1][node2] * ellipse_sum) / area_ellipse[ellipse];
-				ellipse++;
-			}
-		}
-
+        // report progress periodically
+		Rprintf("p=%i\n", perm);
+		
+        // reshuffle perm_index
+        reshuffle(perm_index);
+        
 		//Calculate new map data
 		nxy = 0;
 		for (ny = 0; ny < dim_matrix; ny++)
@@ -195,7 +201,8 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 				{
 					for (ni = 0; ni < nintersections[nxy]; ni++)
 					{
-						matrix_values_p[nxy][perm] += vw_ellipse2[intersections[nxy][ni]];
+                        int this_ellipse = intersections[nxy][ni];
+                        matrix_values_p[nxy][perm] += vw_ellipse[perm_index[this_ellipse]];
 					}
 				}
 				nxy++;
@@ -203,7 +210,10 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 		}
 	}
 
-	Rprintf("\nNew values generated. Calculating cumulative probability distribution at each point.\n");
+    // end timer
+    chronoTimer(t0);
+    
+	print("New values generated. Calculating cumulative probability distribution at each point\n");
 
 	//Calculate cumulative probability distribution for each map point and determine whether observed value is statistically significant
 	vector<double> permvalues(Nperms, 0.0);	
@@ -240,7 +250,10 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 		}
 	}
 	
-	Rprintf("\nPermutation complete.\n");
+    // end timer
+    chronoTimer(t0);
+    
+	print("Permutation complete\n");
 
 	//Set up final data to be output to R-----------------------------------------------------------------------------------------------------------------------------------------------------
 	vector<double> xpoints(dim_matrix, 0.0);
@@ -272,7 +285,10 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 	}*/
 
 	// return output as an Rcpp list-----------------------------------------------------------------------------------------------------------------------------------------------------------
-	    
+    
+    // end timer
+    chronoTimer(t0);
+    
 	Rcpp::List ret;
 	ret.push_back(Rcpp::wrap(dim_matrix));
 	ret.push_back(Rcpp::wrap(xnode));
@@ -297,21 +313,4 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
     return ret ;
 }
 
-//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-double positive(double value)
-{
-	double output = max(value, -value);
-	return output;
-}
-
-//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-int ellipse_check(double x, double y, double a, double xf1, double yf1, double xf2, double yf2)
-{
-	int output = 0;
-	if (0.5*(pow(((x - xf1)*(x - xf1)) + ((y - yf1)*(y - yf1)), 0.5) + pow(((x - xf2)*(x - xf2)) + ((y - yf2)*(y - yf2)), 0.5)) <= a) { output = 1; }
-	return output;
-}

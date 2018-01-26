@@ -228,3 +228,49 @@ vector< vector< vector<double> > > Rcpp_to_array_double(Rcpp::List x) {
     }
     return ret;
 }
+
+//------------------------------------------------
+// return timer
+void chronoTimer(chrono::high_resolution_clock::time_point &t0) {
+    
+    // print elapsed time
+    chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
+    chrono::duration<double> time_span = chrono::duration_cast< chrono::duration<double> >(t1-t0);
+    print(time_span.count(), "seconds");
+    
+    // update timer to current time
+    t0 = t1;
+}
+
+//------------------------------------------------
+// return absolute value
+double positive(double value)
+{
+    if (value>0) {
+        return value;
+    } else {
+        return -value;
+    }
+}
+
+//------------------------------------------------
+// check if value is within bounding circle
+bool circle_check(double x, double y, double xc, double yc, double a2)
+{
+    // check if inside bounding circle
+    if ( ((x - xc)*(x - xc) + (y - yc)*(y - yc)) > a2 ) {
+        return false;
+    }
+    return true;
+}
+
+//------------------------------------------------
+// check if value is within ellipse
+bool ellipse_check(double x, double y, double a, double xf1, double yf1, double xf2, double yf2)
+{
+    // check if outside strict ellipse limits
+    if ( 0.5*(pow(((x - xf1)*(x - xf1)) + ((y - yf1)*(y - yf1)), 0.5) + pow(((x - xf2)*(x - xf2)) + ((y - yf2)*(y - yf2)), 0.5)) > a) {
+        return false;
+    }
+    return true;
+}

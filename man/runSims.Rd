@@ -4,7 +4,7 @@
 \alias{runSims}
 \title{Perform RMAPI simulation}
 \usage{
-runSims(proj)
+runSims(proj, Nperms = 100)
 }
 \arguments{
 \item{proj}{the current RMAPI project}
