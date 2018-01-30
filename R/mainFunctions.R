@@ -56,6 +56,8 @@ runSims <- function(proj, Nperms=1e2) {
 	# Node and other parameters as R objects -----------------------------------------
 	
 	a_multiplier_i=-0.45						#Controls relationship between a (ellipse long radius) and c (ellipse short radius equal to distance between foci): a = c*(1 + a_multiplier)
+	N_perms=10
+
 	
 	# set default x and y limits
 	if (is.null(proj$parameters$xlimits)) {
