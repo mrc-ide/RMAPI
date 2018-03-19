@@ -51,13 +51,10 @@ loadData <- function(proj, data, checkDeleteOutput=TRUE) {
 #' @examples
 #' runSims()
 
-runSims <- function(proj, Nperms=1e2) {
-	
-	# Node and other parameters as R objects -----------------------------------------
-	
-	a_multiplier_i=-0.45						#Controls relationship between a (ellipse long radius) and c (ellipse short radius equal to distance between foci): a = c*(1 + a_multiplier)
-	N_perms=10
+#Nperms = number of permutations to run when checking statistical significance. Set to 0 to skip this step.
+#a_multiplier controls relationship between a (ellipse long radius) and c (ellipse short radius equal to distance between foci): a = c*(1 + a_multiplier)
 
+runSims <- function(proj, Nperms=1e2, a_multiplier_i=-0.45) {
 	
 	# set default x and y limits
 	if (is.null(proj$parameters$xlimits)) {

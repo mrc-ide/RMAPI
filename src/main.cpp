@@ -13,44 +13,55 @@ Rcpp::List dummy2_cpp(Rcpp::List args);
 
 // [[Rcpp::export]]
 Rcpp::List dummy1_cpp(Rcpp::List args)
-{    
-    // start timer
-    chrono::high_resolution_clock::time_point t0 = chrono::high_resolution_clock::now();
-    
-    // initialise variables
-	int node1, node2, Nnodes, ell, Nells, nx, ny, ni, coord, dim_matrix, area_matrix, Nperms, int_total;
-	double a_multiplier, x, y, psep, long_min, long_max, lat_min, lat_max, c, matrix_value, n, ell_sum, vmax;
+{
+	// start timer
+	chrono::high_resolution_clock::time_point t0 = chrono::high_resolution_clock::now();
+
+	// initialise variables
+	int node1, node2, Nnodes, ell, Nells, nx, ny, ni, coord, dim_matrix, area_matrix, Nperms, int_total, flag_dummy;
+	double a_multiplier, x, y, psep, long_min, long_max, lat_min, lat_max, c2, matrix_value, n, ell_sum, vmax, d1, d2, dist_min, dist_min2;
 	vector<double> long_node;
 	vector<double> lat_node;
 	vector< vector<double> > vnode;
-    
+
 	// convert Rcpp arguments to native c++ arguments------------------------------------------------------------------------------------------------------------------------------------------
 
-	print("Loading data.\n");	
-	//Dummy data for tests - two sets of vertically arranged nodes with small metric values within sets and large metric values between sets
-	/*long_node = { 1.0,1.0,1.0,1.0,1.0,5.0,5.0,5.0,5.0,5.0 };
-	lat_node = { 1.0,2.0,3.0,4.0,5.0,1.0,2.0,3.0,4.0,5.0 };
-	vnode = { { 0.1,0.1,0.1,0.1,0.1,2.0,2.0,2.0,2.0,2.0 },{ 0.1,0.1,0.1,0.1,0.1,2.0,2.0,2.0,2.0,2.0 },{ 0.1,0.1,0.1,0.1,0.1,2.0,2.0,2.0,2.0,2.0 },{ 0.1,0.1,0.1,0.1,0.1,2.0,2.0,2.0,2.0,2.0 },{ 0.1,0.1,0.1,0.1,0.1,2.0,2.0,2.0,2.0,2.0 },
-	{ 2.0,2.0,2.0,2.0,2.0,0.1,0.1,0.1,0.1,0.1 },{ 2.0,2.0,2.0,2.0,2.0,0.1,0.1,0.1,0.1,0.1 },{ 2.0,2.0,2.0,2.0,2.0,0.1,0.1,0.1,0.1,0.1 },{ 2.0,2.0,2.0,2.0,2.0,0.1,0.1,0.1,0.1,0.1 },{ 2.0,2.0,2.0,2.0,2.0,0.1,0.1,0.1,0.1,0.1 } };*/
-	//Proper data imported from R
-	long_node = Rcpp_to_vector_double(args["xnode"]);			//Positions of data nodes on longitude (x-) axis
-	lat_node = Rcpp_to_vector_double(args["ynode"]);			//Positions of data nodes on latitude (y-) axis
-	vnode = Rcpp_to_mat_double(args["vnode"]);					//Pairwise metric data
-	a_multiplier = Rcpp::as<double>(args["a_multiplier"]);		//Controls relationship between a (ellipse long radius) and c (ellipse short radius equal to distance between foci): a = c*(1 + a_multiplier)
-	Nnodes = long_node.size();									//Number of nodes
-    Nperms = Rcpp_to_int(args["Nperms"]);						//Number of permutations to run (If 0, no permutation)
+	print("Loading data.\n");
+	flag_dummy = 1;
+	if (flag_dummy == 1)
+	{
+		//Dummy data for tests - grid
+		//long_node = { 0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.5,3.5,3.5,3.5,3.5,3.5,3.5,3.5,3.5,3.5,3.5,3.5,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.5,4.5,4.5,4.5,4.5,4.5,4.5,4.5,4.5,4.5,4.5,4.5,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.5,5.5,5.5,5.5,5.5,5.5,5.5,5.5,5.5,5.5,5.5,5.5,6.0,6.0,6.0,6.0,6.0,6.0,6.0,6.0,6.0,6.0,6.0,6.0 };
+		//lat_node =  { 0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0 };
+		//Dummy data for tests - incomplete grid
+		long_node = { 0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.5,5.5,5.5,5.5,5.5,5.5,6.0,6.0,6.0,6.0 };
+		lat_node =  { 0.5,1.5,2.0,2.5,3.0,3.5,5.5,6.0,0.5,1.0,1.5,2.0,2.5,3.0,4.5,5.0,5.5,6.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,0.5,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,0.5,1.0,1.5,2.0,3.5,4.0,4.5,5.0,5.5,6.0,0.5,1.0,1.5,4.5,5.0,5.5,6.0,0.5,1.0,4.0,4.5,5.0,5.5,6.0,1.0,1.5,2.0 };
+		a_multiplier = -0.499;
+	}
+	else
+	{
+		//Data imported from R
+		long_node = Rcpp_to_vector_double(args["xnode"]);			//Positions of data nodes on longitude (x-) axis
+		lat_node = Rcpp_to_vector_double(args["ynode"]);			//Positions of data nodes on latitude (y-) axis
+		vnode = Rcpp_to_mat_double(args["vnode"]);					//Pairwise metric data
+		a_multiplier = Rcpp::as<double>(args["a_multiplier"]);		//Controls relationship between a (ellipse long radius) and c (ellipse short radius equal to distance between foci): a = c*(1 + a_multiplier)
+		//a_multiplier = -0.499;
+	}
+
+	Nnodes = long_node.size();							//Number of nodes
+	Nperms = Rcpp_to_int(args["Nperms"]);				//Number of permutations to run (If 0, no permutation)
+	dim_matrix = 101;									//Dimensions of matrix of map points
+	dist_min = 0.5;										//Minimum distance to nearest node for point to be considered	
+	dist_min2 = sq(dist_min);
 	//Nperms = 0;
-	    
+	Rprintf("a_multiplier=%.3f\tNperms=%i\n", a_multiplier, Nperms);
+
 	//Perform computations on imported data---------------------------------------------------------------------------------------------------------------------------------------------------
 
-	dim_matrix = 51;	//Dimensions of matrix of map points
-
-	//Calculate separation between points and x, y limits
-    
-    chronoTimer(t0);    
+	chronoTimer(t0);
 	print("Establishing map boundaries.\n");
 
-	long_min = 1.0e99;		
+	long_min = 1.0e99;
 	long_max = -1.0e99;
 	lat_min = 1.0e99;
 	lat_max = -1.0e99;
@@ -63,33 +74,34 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 	}
 	if (long_max - long_min > lat_max - lat_min)
 	{
-		psep = (long_max - long_min) / (dim_matrix - 10);
-		long_max += 5.0 * psep;
-		lat_max = lat_min + ( (dim_matrix - 1) * psep);
+		psep = (long_max - long_min) / (dim_matrix - 3);
+		long_max += 1.0 * psep;
+		lat_max = lat_min + ((dim_matrix - 1) * psep);
 	}
 	else
 	{
-		psep = (lat_max - lat_min) / (dim_matrix - 10);
-		lat_max += 5.0 * psep;
-		long_max = long_min + ( (dim_matrix - 1) * psep);
+		psep = (lat_max - lat_min) / (dim_matrix - 3);
+		lat_max += 1.0 * psep;
+		long_max = long_min + ((dim_matrix - 1) * psep);
 	}
-	long_min -= 5.0 * psep;
-	lat_min -= 5.0 * psep;
+	long_min -= 1.0 * psep;
+	lat_min -= 1.0 * psep;
 
-    chronoTimer(t0);    
+	chronoTimer(t0);
 	print("Setting up ellipses.\n");
 
 	//Set up ellipses
-	Nells = ( (Nnodes - 1) * Nnodes) / 2;		//Number of ellipses
+	Nells = ((Nnodes - 1) * Nnodes) / 2;		//Number of ellipses
 	vector<double> a_ell(Nells, 0.0);			//Long radius of each ellipse
-    vector<double> a2_ell(Nells, 0.0);          //Square of long radius of each ellipse
+	vector<double> a2_ell(Nells, 0.0);          //Square of long radius of each ellipse
 	vector<double> xf1_ell(Nells, 0.0);			//x-coordinate of focus 1 of each ellipse
 	vector<double> yf1_ell(Nells, 0.0);			//y-coordinate of focus 1 of each ellipse
 	vector<double> xf2_ell(Nells, 0.0);			//x-coordinate of focus 2 of each ellipse
 	vector<double> yf2_ell(Nells, 0.0);			//y-coordinate of focus 2 of each ellipse
-    vector<double> xc_ell(Nells, 0.0);          //x-coordinate of centre of each ellipse
-    vector<double> yc_ell(Nells, 0.0);          //y-coordinate of centre of each ellipse
+	vector<double> xc_ell(Nells, 0.0);          //x-coordinate of centre of each ellipse
+	vector<double> yc_ell(Nells, 0.0);          //y-coordinate of centre of each ellipse
 	vector<double> area_inv_ell(Nells, 0.0);	//Inverse of area of each ellipse
+	vector<double> v_ell(Nells, 0.0);			//Pairwise metric value of each ellipse
 	vector<double> vw_ell(Nells, 0.0);			//Weighted metric value of each ellipse
 
 	ell = 0;
@@ -97,30 +109,45 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 	{
 		for (node2 = node1 + 1; node2 < Nnodes; node2++)
 		{
-			c = pow( ( (long_node[node1] - long_node[node2]) * (long_node[node1] - long_node[node2]) ) + ( (lat_node[node1] - lat_node[node2]) * (lat_node[node1] - lat_node[node2]) ), 0.5);
+			c2 = pow(sq(long_node[node1] - long_node[node2]) + sq(lat_node[node1] - lat_node[node2]), 0.5); //Distance between foci = 2*short axis of ellipse
 			xf1_ell[ell] = long_node[node1];
 			yf1_ell[ell] = lat_node[node1];
 			xf2_ell[ell] = long_node[node2];
 			yf2_ell[ell] = lat_node[node2];
 			xc_ell[ell] = 0.5 * (long_node[node1] + long_node[node2]);
 			yc_ell[ell] = 0.5 * (lat_node[node1] + lat_node[node2]);
-			a_ell[ell] = c * (1.0 + a_multiplier);
-            a2_ell[ell] = a_ell[ell] * a_ell[ell];
-			area_inv_ell[ell] = 1.0 / (pi * a_ell[ell] * c);
-			vw_ell[ell] = vnode[node1][node2] * area_inv_ell[ell];
+			a_ell[ell] = c2 * (1.0 + a_multiplier);
+			a2_ell[ell] = sq(a_ell[ell]);
+			if (flag_dummy == 1)
+			{
+				v_ell[ell] = c2*0.5;
+				if (xf1_ell[ell]<3.5 && xf2_ell[ell]>3.5) { v_ell[ell] += 5.0; }
+				//if (yf1_ell[ell]<3.5 && yf2_ell[ell]>3.5) { v_ell[ell] += 5.0; }
+				if (xf2_ell[ell]<3.5 && xf1_ell[ell]>3.5) { v_ell[ell] += 5.0; }
+				//if (yf2_ell[ell]<3.5 && yf1_ell[ell]>3.5) { v_ell[ell] += 5.0; }
+			}
+			else
+			{
+				v_ell[ell] = vnode[node1][node2];
+				/*v_ell[ell] = c2*0.5;
+				if (xf1_ell[ell]<21.5 && xf2_ell[ell]>21.5) { v_ell[ell] += 5.0; }
+				if (xf2_ell[ell]<21.5 && xf1_ell[ell]>21.5) { v_ell[ell] += 5.0; }*/
+			}
+			area_inv_ell[ell] = 2.0 / (pi * a_ell[ell] * c2);
+			vw_ell[ell] = v_ell[ell] * area_inv_ell[ell];
 			ell++;
 		}
 	}
-	
+
 	//Create map by summation of ellipses intersecting each point
 
-    chronoTimer(t0);    
+	chronoTimer(t0);
 	print("Setting up map.\n");
 
-	area_matrix = dim_matrix * dim_matrix;
+	area_matrix = sq(dim_matrix);
 	vector<double> matrix_values(area_matrix, 0.0);								//Map data points
 	vector<int> nintersections(area_matrix, 0);									//Number of ellipses intersecting each point
-	vector<vector<int>> intersections(area_matrix, vector<int>(Nells, 0) );		//List of ellipses intersecting each point
+	vector<vector<int>> intersections(area_matrix, vector<int>(Nells, 0));		//List of ellipses intersecting each point
 	coord = 0;
 	int_total = 0;
 	y = lat_min;
@@ -131,21 +158,31 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 		{
 			ell_sum = 0.0;
 			matrix_value = 0.0;
+			for (node1 = 0; node1 < Nnodes; node1++)
+			{
+				if (sq(x - long_node[node1]) + sq(y - lat_node[node1]) < dist_min2) { goto start; }
+			}
+			goto skip;
+			start:
 			for (ell = 0; ell < Nells; ell++)
 			{
-				if (circle_check(x, y, xc_ell[ell], yc_ell[ell], a2_ell[ell]) )
+				if (circle_check(x, y, xc_ell[ell], yc_ell[ell], a2_ell[ell]))
 				{
-                    if (ellipse_check(x, y, a_ell[ell], xf1_ell[ell], yf1_ell[ell], xf2_ell[ell], yf2_ell[ell]) )
-                    {
-                        intersections[coord][ nintersections[coord] ] = ell;
-                        nintersections[coord]++;
+					if (ellipse_check(x, y, a_ell[ell], xf1_ell[ell], yf1_ell[ell], xf2_ell[ell], yf2_ell[ell]))
+					{
+						intersections[coord][nintersections[coord]] = ell;
+						nintersections[coord]++;
 						int_total++;
-                        matrix_value += vw_ell[ell];
+						d1 = pow(sq(x - xf1_ell[ell]) + sq(y - yf1_ell[ell]), 0.5);
+						d2 = pow(sq(x - xf2_ell[ell]) + sq(y - yf2_ell[ell]), 0.5);
+						//matrix_value += vw_ell[ell];
+						matrix_value += (vw_ell[ell] * min(d1, d2)) / (d1 + d2);
 						ell_sum += area_inv_ell[ell];
-                    }
+					}
 				}
 			}
-			if (ell_sum > 0.0) { matrix_values[coord] = matrix_value / ell_sum; }
+			skip:
+			matrix_values[coord] = ell_sum > 0.0 ? matrix_value / ell_sum : -1.0 / 0.0;
 			coord++;
 			x += psep;
 		}
@@ -160,10 +197,11 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 	Rcpp::List to_perm;
 	Rcpp::List from_perm;
 	Rcpp::StringVector to_perm_names;
-	if (Nperms == 0) 
-	{ 
+	int ip_total = 0;
+	if (Nperms == 0)
+	{
 		matrix_values2 = matrix_values;
-		goto skip; 
+		goto finish;
 	}
 
 	int_total = 0;
@@ -171,6 +209,7 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 	{
 		if (nintersections[coord] > 0)
 		{
+			ip_total++;
 			for (ni = 0; ni < nintersections[coord]; ni++)
 			{
 				intersections2[int_total] = intersections[coord][ni];
@@ -178,11 +217,12 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 			}
 		}
 	}
+	Rprintf("\nNumber of points with ellipse intersections = %i / %i\n", ip_total, area_matrix);
 
 	to_perm.push_back(Rcpp::wrap(Nperms));
 	to_perm.push_back(Rcpp::wrap(Nells));
 	to_perm.push_back(Rcpp::wrap(dim_matrix));
-	to_perm.push_back(Rcpp::wrap(vw_ell));
+	to_perm.push_back(Rcpp::wrap(v_ell));
 	to_perm.push_back(Rcpp::wrap(area_inv_ell));
 	to_perm.push_back(Rcpp::wrap(nintersections));
 	to_perm.push_back(Rcpp::wrap(intersections2));
@@ -191,25 +231,25 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 	to_perm_names.push_back("Nperms");
 	to_perm_names.push_back("Nells");
 	to_perm_names.push_back("dim_matrix");
-	to_perm_names.push_back("vw_ell");
+	to_perm_names.push_back("v_ell");
 	to_perm_names.push_back("area_inv_ell");
 	to_perm_names.push_back("nintersections");
 	to_perm_names.push_back("intersections2");
 	to_perm_names.push_back("matrix_values");
 	to_perm.names() = to_perm_names;
-	
+
 	from_perm = dummy2_cpp(to_perm);
 	matrix_values2 = Rcpp_to_vector_double(from_perm["matrix_values2"]);
-	
+
 	//Set up final data to be output to R-----------------------------------------------------------------------------------------------------------------------------------------------------
-	skip:
+finish:
 
 	print("Setting up output data.\n");
 
 	vector<double> xpoints(dim_matrix, 0.0);
 	vector<double> ypoints(dim_matrix, 0.0);
 	for (nx = 0; nx < dim_matrix; nx++)
-	{ 
+	{
 		xpoints[nx] = long_min + (nx*psep);
 		ypoints[nx] = lat_min + (nx*psep);
 	}
@@ -226,24 +266,24 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 	vmax = -1.0e99;
 	for (coord = 0; coord < area_matrix; coord++)
 	{
-		if (matrix_values[coord] > vmax) { vmax = matrix_values[coord]; }
+		if (matrix_values2[coord] > vmax) { vmax = matrix_values2[coord]; }
 	}
 	for (coord = 0; coord < area_matrix; coord++)
 	{
-		matrix_values[coord] = matrix_values[coord] / vmax;
+		matrix_values2[coord] = matrix_values2[coord] / vmax;
 	}
 
 	// return output as an Rcpp list-----------------------------------------------------------------------------------------------------------------------------------------------------------
-	    
+
 	Rcpp::List ret;
-	ret.push_back( Rcpp::wrap(dim_matrix) );
-	ret.push_back( Rcpp::wrap(long_node) );
-	ret.push_back( Rcpp::wrap(lat_node) );
-	ret.push_back( Rcpp::wrap(xpoints) );
-	ret.push_back( Rcpp::wrap(ypoints) );
-	ret.push_back( Rcpp::wrap(xtick) );
-	ret.push_back( Rcpp::wrap(ytick) );
-	ret.push_back( Rcpp::wrap(matrix_values2) );
+	ret.push_back(Rcpp::wrap(dim_matrix));
+	ret.push_back(Rcpp::wrap(long_node));
+	ret.push_back(Rcpp::wrap(lat_node));
+	ret.push_back(Rcpp::wrap(xpoints));
+	ret.push_back(Rcpp::wrap(ypoints));
+	ret.push_back(Rcpp::wrap(xtick));
+	ret.push_back(Rcpp::wrap(ytick));
+	ret.push_back(Rcpp::wrap(matrix_values2));
 
 	Rcpp::StringVector ret_names;
 	ret_names.push_back("dim_matrix");
@@ -258,7 +298,7 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 
 	print("Output data set up.\n");
 
-    return ret ;
+	return ret;
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -276,7 +316,7 @@ Rcpp::List dummy2_cpp(Rcpp::List args)
 	Nells = Rcpp::as<int>(args["Nells"]);															//Number of ellipses
 	dim_matrix = Rcpp::as<int>(args["dim_matrix"]);													//Dimensions of map
 	area_matrix = dim_matrix * dim_matrix;
-	vector<double> vw_ell = Rcpp_to_vector_double(args["vw_ell"]);									//Weighted pairwise metric values
+	vector<double> v_ell = Rcpp_to_vector_double(args["v_ell"]);									//Pairwise metric values
 	vector<double> area_inv_ell = Rcpp_to_vector_double(args["area_inv_ell"]);						//Inverse ellipse areas
 	vector<int> nintersections = Rcpp_to_vector_int(args["nintersections"]);						//Number of ellipses intersecting each point
 	vector<int> intersections2 = Rcpp_to_vector_int(args["intersections2"]);						//List of ellipses intersecting each point
@@ -287,14 +327,14 @@ Rcpp::List dummy2_cpp(Rcpp::List args)
 	vector<double> permvalues(Nperms, 0.0);
 	vector<double> matrix_values2(area_matrix, 0.0);												//Output map data
 	matrix_values2 = matrix_values;
-	
+
 	chronoTimer(t0);
 	print("Starting permutation.\n");
-	
+
 	for (perm = 0; perm < Nperms; perm++)
 	{
 		// report progress periodically
-		//Rprintf("p=%i\n", perm);
+		Rprintf("p=%i\n", perm);
 
 		// reshuffle perm_index
 		reshuffle(perm_index);
@@ -311,11 +351,11 @@ Rcpp::List dummy2_cpp(Rcpp::List args)
 				{
 					this_ell = intersections2[int_total];
 					int_total++;
-					matrix_value += vw_ell[perm_index[this_ell]];
+					matrix_value += v_ell[perm_index[this_ell]] * area_inv_ell[this_ell];
 					ell_sum += area_inv_ell[this_ell];
 				}
 				matrix_values_p[coord][perm] = matrix_value / ell_sum;
-			}			
+			}
 		}
 	}
 
@@ -323,7 +363,7 @@ Rcpp::List dummy2_cpp(Rcpp::List args)
 	print("Permutation values generated. Calculating cumulative probability distribution at each point\n");
 
 	//Calculate cumulative probability distribution for each map point and determine whether observed value is statistically significant
-	
+
 	for (coord = 0; coord < area_matrix; coord++)
 	{
 		for (perm = 0; perm < Nperms; perm++)
@@ -341,7 +381,7 @@ Rcpp::List dummy2_cpp(Rcpp::List args)
 			}
 		}
 	done:
-		if (Cprob < 0.99 && Cprob > 0.01) { matrix_values2[coord] = 0.0; }
+		if (Cprob < 0.95 && Cprob > 0.05) { matrix_values2[coord] = -1.0 / 0.0; }
 	}
 
 	chronoTimer(t0);
@@ -353,7 +393,7 @@ Rcpp::List dummy2_cpp(Rcpp::List args)
 	Rcpp::StringVector from_perm_names;
 	from_perm_names.push_back("matrix_values2");
 	from_perm.names() = from_perm_names;
-	
+
 	chronoTimer(t0);
 	print("Statistical significance check data output complete\n");
 

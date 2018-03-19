@@ -210,3 +210,7 @@ bool circle_check(double x, double y, double xc, double yc, double a2);
 // check if value is within ellipse
 bool ellipse_check(double x, double y, double a, double xf1, double yf1, double xf2, double yf2);
 
+
+//------------------------------------------------
+// Square function
+double sq(double x);

@@ -258,7 +258,7 @@ double positive(double value)
 bool circle_check(double x, double y, double xc, double yc, double a2)
 {
     // check if inside bounding circle
-    if ( ((x - xc)*(x - xc) + (y - yc)*(y - yc)) > a2 ) {
+    if ( sq(x - xc) + sq(y - yc) > a2 ) {
         return false;
     }
     return true;
@@ -269,8 +269,15 @@ bool circle_check(double x, double y, double xc, double yc, double a2)
 bool ellipse_check(double x, double y, double a, double xf1, double yf1, double xf2, double yf2)
 {
     // check if outside strict ellipse limits
-    if ( 0.5*(pow(((x - xf1)*(x - xf1)) + ((y - yf1)*(y - yf1)), 0.5) + pow(((x - xf2)*(x - xf2)) + ((y - yf2)*(y - yf2)), 0.5)) > a) {
+    if ( 0.5*(pow(sq(x - xf1) + sq(y - yf1), 0.5) + pow(sq(x - xf2) + sq(y - yf2), 0.5)) > a) {
         return false;
     }
     return true;
+}
+
+//------------------------------------------------
+// Square function
+double sq(double x)
+{
+	return x*x;
 }
