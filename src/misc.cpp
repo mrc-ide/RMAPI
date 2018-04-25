@@ -259,3 +259,7 @@ bool ellipse_check(double x, double y, double a, double xf1, double yf1, double 
 // sq
 // DEFINED IN HEADER
 
+//------------------------------------------------
+// Euclidian distance between points in 2 dimensions (templated for different data types)
+// dist_euclid_2d
+// DEFINED IN HEADER

@@ -15,38 +15,39 @@ NULL
 #'
 #' @param proj the current RMAPI project
 #' @param data a data frame, formatted into the correct RMAPI format (see Details)
-#' @param checkDeleteOutput whether to perform a check to see if project already contains data, in which case all old data and output will be lost
+#' @param check_delete_output whether to perform a check to see if project already contains data, in which case all old data and output will be lost
 #'
 #' @export
 
-loadData <- function(proj, data, checkDeleteOutput=TRUE) {
+load_data <- function(proj, data, check_delete_output = TRUE) {
+  
+  # check inputs
+  assert_that( is.rmapi_project(proj) )
+  assert_that( is.data.frame(data) )
+  assert_that( ncol(data)>=4 )
+  assert_that( nrow(data)==ncol(data)-3 )
+  
+  # check whether there is data loaded already
+  if (!is.null(proj$data)) {
     
-    # check whether there is data loaded already
-    if (!is.null(proj$data)) {
-        
-        # return existing project if user not happy to continue
-        if (checkDeleteOutput) {
-            if (!user_yesNo("All existing output for this project will be lost. Continue? (Y/N): ")) {
-                cat("returning original project\n")
-                return(proj)
-            }
-        }
-        
-        # delete old output
-        cat("overwriting data\n")
-        proj[["output"]] <- NULL
+    # return existing project if user not happy to continue
+    if (check_delete_output) {
+      if (!user_yes_no("All existing output for this project will be lost. Continue? (Y/N): ")) {
+        message("returning original project\n")
+        return(proj)
+      }
     }
     
-    # perform checks on data
-    stopifnot( is.data.frame(data) )
-    stopifnot( ncol(data)>=4 )
-    stopifnot( nrow(data)==ncol(data)-3 )
-    
-    # update project with new data
-    proj[["data"]] <- data
-    
-    # return invisibly
-    invisible(proj)
+    # delete old output
+    message("overwriting data\n")
+    proj[["output"]] <- NULL
+  }
+  
+  # update project with new data
+  proj[["data"]] <- data
+  
+  # return invisibly
+  invisible(proj)
 }
 
 #------------------------------------------------
@@ -60,9 +61,9 @@ loadData <- function(proj, data, checkDeleteOutput=TRUE) {
 #'
 #' @export
 #' @examples
-#' runSims()
+#' run_sims()
 
-runSims <- function(proj, Nperms = 1e2, a_multiplier = -0.45) {
+run_sims <- function(proj, Nperms = 1e2, a_multiplier = -0.45, dim_matrix = 101) {
   
   # TODO - set default x and y limits
   
@@ -70,15 +71,19 @@ runSims <- function(proj, Nperms = 1e2, a_multiplier = -0.45) {
   # Set up arguments for input into C++
   
   pairwise_stats <- as.matrix(proj$data[,4:ncol(proj$data)])
-  args <- list(xnode = proj$data$long, ynode = proj$data$lat, vnode = mat_to_rcpp(pairwise_stats), a_multiplier = a_multiplier, Nperms = Nperms) 
+  args <- list(xnode = proj$data$long,
+               ynode = proj$data$lat,
+               vnode = mat_to_rcpp(pairwise_stats),
+               a_multiplier = a_multiplier,
+               dim_matrix = dim_matrix,
+               Nperms = Nperms) 
   
   # ---------------------------------------------
   # Carry out simulations in C++ to generate map data
-  output_raw <- run_sims_cpp(args)	# TODO - rename C++ function to "run_sims_cpp"
+  output_raw <- run_sims_cpp(args)
   
   # ---------------------------------------------
   # process raw output
-  
   proj[["output"]] <- output_raw
   
   # return invisibly

@@ -20,13 +20,13 @@ rmapi_project <- function() {
 }
 
 #------------------------------------------------
-# overload print() function to print summary only
+# overload print() function to print only certain elements
 # (not exported)
 
 print.rmapi_project <- function(proj, ...) {
   
-  # print summary only
-  summary(proj)
+  # print certain elements
+  print_full(proj)
   
   # return invisibly
   invisible(proj)

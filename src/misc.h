@@ -213,3 +213,11 @@ template<class TYPE>
 TYPE sq(const TYPE x) {
   return x*x;
 }
+
+//------------------------------------------------
+// Euclidian distance between points in 2 dimensions (templated for different data types)
+template<class TYPE>
+double dist_euclid_2d(const TYPE x1, const TYPE y1, const TYPE x2, const TYPE y2) {
+  double ret = sqrt(sq(x1 - x2) + sq(y1 - y2));
+  return ret;
+}
