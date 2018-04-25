@@ -5,20 +5,20 @@
 
 using namespace Rcpp;
 
-// dummy1_cpp
-Rcpp::List dummy1_cpp(Rcpp::List args);
-RcppExport SEXP _RMAPI_dummy1_cpp(SEXP argsSEXP) {
+// run_sims_cpp
+Rcpp::List run_sims_cpp(Rcpp::List args);
+RcppExport SEXP _RMAPI_run_sims_cpp(SEXP argsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Rcpp::List >::type args(argsSEXP);
-    rcpp_result_gen = Rcpp::wrap(dummy1_cpp(args));
+    rcpp_result_gen = Rcpp::wrap(run_sims_cpp(args));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_RMAPI_dummy1_cpp", (DL_FUNC) &_RMAPI_dummy1_cpp, 1},
+    {"_RMAPI_run_sims_cpp", (DL_FUNC) &_RMAPI_run_sims_cpp, 1},
     {NULL, NULL, 0}
 };
 

@@ -12,7 +12,7 @@ double pi = 3.1415926536;
 Rcpp::List dummy2_cpp(Rcpp::List args);
 
 // [[Rcpp::export]]
-Rcpp::List dummy1_cpp(Rcpp::List args)
+Rcpp::List run_sims_cpp(Rcpp::List args)
 {
 	// start timer
 	chrono::high_resolution_clock::time_point t0 = chrono::high_resolution_clock::now();
@@ -41,15 +41,15 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 	else
 	{
 		//Data imported from R
-		long_node = Rcpp_to_vector_double(args["xnode"]);			//Positions of data nodes on longitude (x-) axis
-		lat_node = Rcpp_to_vector_double(args["ynode"]);			//Positions of data nodes on latitude (y-) axis
-		vnode = Rcpp_to_mat_double(args["vnode"]);					//Pairwise metric data
+		long_node = rcpp_to_vector_double(args["xnode"]);			//Positions of data nodes on longitude (x-) axis
+		lat_node = rcpp_to_vector_double(args["ynode"]);			//Positions of data nodes on latitude (y-) axis
+		vnode = rcpp_to_mat_double(args["vnode"]);					//Pairwise metric data
 		a_multiplier = Rcpp::as<double>(args["a_multiplier"]);		//Controls relationship between a (ellipse long radius) and c (ellipse short radius equal to distance between foci): a = c*(1 + a_multiplier)
 		//a_multiplier = -0.499;
 	}
 
 	Nnodes = long_node.size();							//Number of nodes
-	Nperms = Rcpp_to_int(args["Nperms"]);				//Number of permutations to run (If 0, no permutation)
+	Nperms = rcpp_to_int(args["Nperms"]);				//Number of permutations to run (If 0, no permutation)
 	dim_matrix = 101;									//Dimensions of matrix of map points
 	dist_min = 0.5;										//Minimum distance to nearest node for point to be considered	
 	dist_min2 = sq(dist_min);
@@ -58,7 +58,7 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 
 	//Perform computations on imported data---------------------------------------------------------------------------------------------------------------------------------------------------
 
-	chronoTimer(t0);
+	chrono_timer(t0);
 	print("Establishing map boundaries.\n");
 
 	long_min = 1.0e99;
@@ -87,7 +87,7 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 	long_min -= 1.0 * psep;
 	lat_min -= 1.0 * psep;
 
-	chronoTimer(t0);
+	chrono_timer(t0);
 	print("Setting up ellipses.\n");
 
 	//Set up ellipses
@@ -141,7 +141,7 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 
 	//Create map by summation of ellipses intersecting each point
 
-	chronoTimer(t0);
+	chrono_timer(t0);
 	print("Setting up map.\n");
 
 	area_matrix = sq(dim_matrix);
@@ -191,7 +191,7 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 
 	//Permute data to check statistical significance-------------------------------------------------------------------------------------------------------------------------------------------
 
-	chronoTimer(t0);
+	chrono_timer(t0);
 	vector<double> matrix_values2(area_matrix, 0.0);								//Data points after any alterations
 	vector<int> intersections2(int_total, 0);										//Condensed list of which ellipses intersect with each map point
 	Rcpp::List to_perm;
@@ -239,7 +239,7 @@ Rcpp::List dummy1_cpp(Rcpp::List args)
 	to_perm.names() = to_perm_names;
 
 	from_perm = dummy2_cpp(to_perm);
-	matrix_values2 = Rcpp_to_vector_double(from_perm["matrix_values2"]);
+	matrix_values2 = rcpp_to_vector_double(from_perm["matrix_values2"]);
 
 	//Set up final data to be output to R-----------------------------------------------------------------------------------------------------------------------------------------------------
 finish:
@@ -316,11 +316,11 @@ Rcpp::List dummy2_cpp(Rcpp::List args)
 	Nells = Rcpp::as<int>(args["Nells"]);															//Number of ellipses
 	dim_matrix = Rcpp::as<int>(args["dim_matrix"]);													//Dimensions of map
 	area_matrix = dim_matrix * dim_matrix;
-	vector<double> v_ell = Rcpp_to_vector_double(args["v_ell"]);									//Pairwise metric values
-	vector<double> area_inv_ell = Rcpp_to_vector_double(args["area_inv_ell"]);						//Inverse ellipse areas
-	vector<int> nintersections = Rcpp_to_vector_int(args["nintersections"]);						//Number of ellipses intersecting each point
-	vector<int> intersections2 = Rcpp_to_vector_int(args["intersections2"]);						//List of ellipses intersecting each point
-	vector<double> matrix_values = Rcpp_to_vector_double(args["matrix_values"]);					//Original map data
+	vector<double> v_ell = rcpp_to_vector_double(args["v_ell"]);									//Pairwise metric values
+	vector<double> area_inv_ell = rcpp_to_vector_double(args["area_inv_ell"]);						//Inverse ellipse areas
+	vector<int> nintersections = rcpp_to_vector_int(args["nintersections"]);						//Number of ellipses intersecting each point
+	vector<int> intersections2 = rcpp_to_vector_int(args["intersections2"]);						//List of ellipses intersecting each point
+	vector<double> matrix_values = rcpp_to_vector_double(args["matrix_values"]);					//Original map data
 
 	vector<int> perm_index = seq_int(1, Nells);														//Index of which ellipse value to take
 	vector<vector<double>> matrix_values_p(area_matrix, vector<double>(Nperms, 0.0));				//Map data for permutations
@@ -328,7 +328,7 @@ Rcpp::List dummy2_cpp(Rcpp::List args)
 	vector<double> matrix_values2(area_matrix, 0.0);												//Output map data
 	matrix_values2 = matrix_values;
 
-	chronoTimer(t0);
+	chrono_timer(t0);
 	print("Starting permutation.\n");
 
 	for (perm = 0; perm < Nperms; perm++)
@@ -359,7 +359,7 @@ Rcpp::List dummy2_cpp(Rcpp::List args)
 		}
 	}
 
-	chronoTimer(t0);
+	chrono_timer(t0);
 	print("Permutation values generated. Calculating cumulative probability distribution at each point\n");
 
 	//Calculate cumulative probability distribution for each map point and determine whether observed value is statistically significant
@@ -384,7 +384,7 @@ Rcpp::List dummy2_cpp(Rcpp::List args)
 		if (Cprob < 0.95 && Cprob > 0.05) { matrix_values2[coord] = -1.0 / 0.0; }
 	}
 
-	chronoTimer(t0);
+	chrono_timer(t0);
 	print("Statistical significance check complete. Outputting data back to main function.\n");
 
 	Rcpp::List from_perm;
@@ -394,7 +394,7 @@ Rcpp::List dummy2_cpp(Rcpp::List args)
 	from_perm_names.push_back("matrix_values2");
 	from_perm.names() = from_perm_names;
 
-	chronoTimer(t0);
+	chrono_timer(t0);
 	print("Statistical significance check data output complete\n");
 
 	return from_perm;

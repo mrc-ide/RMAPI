@@ -4,10 +4,14 @@
 \alias{runSims}
 \title{Perform RMAPI simulation}
 \usage{
-runSims(proj, Nperms = 100)
+runSims(proj, Nperms = 100, a_multiplier = -0.45)
 }
 \arguments{
 \item{proj}{the current RMAPI project}
+
+\item{Nperms}{number of permutations to run when checking statistical significance. Set to 0 to skip this step}
+
+\item{a_multiplier}{controls relationship between a (ellipse long radius) and c (ellipse short radius equal to distance between foci): a = c*(1 + a_multiplier)}
 }
 \description{
 TODO - some help text here.

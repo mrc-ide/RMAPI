@@ -1,5 +1,14 @@
 
 #------------------------------------------------
+# The following commands ensure that package dependencies are listed in the
+# NAMESPACE file.
+
+#' @useDynLib RMAPI
+#' @import assertthat
+#' @importFrom Rcpp evalCpp
+NULL
+
+#------------------------------------------------
 #' Load data into RMAPI project
 #'
 #' TODO - some help text here.
@@ -46,41 +55,33 @@ loadData <- function(proj, data, checkDeleteOutput=TRUE) {
 #' TODO - some help text here.
 #'
 #' @param proj the current RMAPI project
+#' @param Nperms number of permutations to run when checking statistical significance. Set to 0 to skip this step
+#' @param a_multiplier controls relationship between a (ellipse long radius) and c (ellipse short radius equal to distance between foci): a = c*(1 + a_multiplier)
 #'
 #' @export
 #' @examples
 #' runSims()
 
-#Nperms = number of permutations to run when checking statistical significance. Set to 0 to skip this step.
-#a_multiplier controls relationship between a (ellipse long radius) and c (ellipse short radius equal to distance between foci): a = c*(1 + a_multiplier)
-
-runSims <- function(proj, Nperms=1e2, a_multiplier_i=-0.45) {
-	
-	# set default x and y limits
-	if (is.null(proj$parameters$xlimits)) {
-		# TODO - set default limits
-	}
-	
-	# Set up arguments for input into C++ ---------------------------------------------
-	
-	pairwiseStats <- as.matrix(proj$data[,4:ncol(proj$data)])
-	args <- list(xnode=proj$data$long, ynode=proj$data$lat, vnode=mat_to_Rcpp(pairwiseStats), a_multiplier=a_multiplier_i, Nperms=Nperms) 
-	
-	# Carry out simulations in C++ to generate map data-------------------------------
-	
-	output_raw <- dummy1_cpp(args)	# TODO - rename C++ function to "runSims_cpp"
-	
-	# process raw output---------------------------------------------------------------	
-	
-	proj[["output"]] <- output_raw
-	
-    # return invisibly
-    invisible(proj)
+runSims <- function(proj, Nperms = 1e2, a_multiplier = -0.45) {
+  
+  # TODO - set default x and y limits
+  
+  # ---------------------------------------------
+  # Set up arguments for input into C++
+  
+  pairwise_stats <- as.matrix(proj$data[,4:ncol(proj$data)])
+  args <- list(xnode = proj$data$long, ynode = proj$data$lat, vnode = mat_to_rcpp(pairwise_stats), a_multiplier = a_multiplier, Nperms = Nperms) 
+  
+  # ---------------------------------------------
+  # Carry out simulations in C++ to generate map data
+  output_raw <- run_sims_cpp(args)	# TODO - rename C++ function to "run_sims_cpp"
+  
+  # ---------------------------------------------
+  # process raw output
+  
+  proj[["output"]] <- output_raw
+  
+  # return invisibly
+  invisible(proj)
 }
-
-
-
-
-
-
 

@@ -17,7 +17,7 @@ Spatial points correspond to real DRC DHS cluster locations, giving some spatial
 \examples{
 # create project and load in data
 data(fakeData_DRC)
-proj <- rmapiProject()
+proj <- rmapi_project()
 proj <- loadData(proj, fakeData_DRC)
 
 # define parameters
