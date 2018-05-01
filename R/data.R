@@ -11,9 +11,9 @@
 #'
 #' @examples
 #' # create project and load in data
-#' data(fakeData_DRC)
+#' data(dummy1)
 #' proj <- rmapi_project()
-#' proj <- loadData(proj, fakeData_DRC)
+#' proj <- loadData(proj, (dummy1))
 #'
 #' # define parameters
 #' proj$alpha <- 2
@@ -24,5 +24,5 @@
 #' # plot output
 #' RMAPI_plot1(proj)
 #'
-#' @usage data(fakeData_DRC)
+#' @usage data(dummy1)
 "fakeData_DRC"

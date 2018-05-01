@@ -63,7 +63,7 @@ load_data <- function(proj, data, check_delete_output = TRUE) {
 #' @examples
 #' run_sims()
 
-run_sims <- function(proj, Nperms = 1e2, a_multiplier = -0.45, dim_matrix = 101) {
+run_sims <- function(proj, Nperms = 0, a_multiplier = 0.01, dim_matrix = 101) {
   
   # TODO - set default x and y limits
   

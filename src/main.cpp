@@ -19,7 +19,7 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 
 	// initialise variables
 	int Nnodes, ell, Nells, nx, ny, ni, coord, dim_matrix, area_matrix, Nperms, int_total;
-	double a_multiplier, x, y, psep, long_min, long_max, lat_min, lat_max, matrix_value, n, ell_sum, vmax, d1, d2, dist_min, dist_min2;
+	double a_multiplier, x, y, psep, long_min, long_max, lat_min, lat_max, matrix_value, n, ell_sum, vmax, d1, d2, dist_min, dist_min2, linear_eccentricity, semi_major_axis, semi_minor_axis;
 	vector<double> long_node;
 	vector<double> lat_node;
 	vector< vector<double> > vnode;
@@ -28,15 +28,15 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 
 	// load data and parameters
 	print("Loading data.\n");
-  long_node = rcpp_to_vector_double(args["xnode"]);     //Positions of data nodes on longitude (x-) axis
-  lat_node = rcpp_to_vector_double(args["ynode"]);      //Positions of data nodes on latitude (y-) axis
-  vnode = rcpp_to_mat_double(args["vnode"]);            //Pairwise metric data
-  a_multiplier = rcpp_to_double(args["a_multiplier"]);  //Controls relationship between a (ellipse long radius) and c (ellipse short radius equal to distance between foci): a = c*(1 + a_multiplier)
+	long_node = rcpp_to_vector_double(args["xnode"]);		//Positions of data nodes on longitude (x-) axis
+	lat_node = rcpp_to_vector_double(args["ynode"]);		//Positions of data nodes on latitude (y-) axis
+	vnode = rcpp_to_mat_double(args["vnode"]);				//Pairwise metric data
+	a_multiplier = rcpp_to_double(args["a_multiplier"]);	//Controls relationship between a (ellipse semi-major axis) and c (linear eccentricity): a = c*(1 + a_multiplier)
 
-	Nnodes = long_node.size();                    //Number of nodes
-	Nperms = rcpp_to_int(args["Nperms"]);         //Number of permutations to run (If 0, no permutation)
-	dim_matrix = rcpp_to_int(args["dim_matrix"]); //Dimensions of matrix of map points
-	dist_min = 0.5;                               //Minimum distance to nearest node for point to be considered	
+	Nnodes = long_node.size();								//Number of nodes
+	Nperms = rcpp_to_int(args["Nperms"]);					//Number of permutations to run (If 0, no permutation)
+	dim_matrix = rcpp_to_int(args["dim_matrix"]);			//Dimensions of matrix of map points
+	dist_min = 0.5;											//Minimum distance to nearest node for point to be considered	
 	dist_min2 = sq(dist_min);
 	
 	print("a_multiplier =", a_multiplier, "\tNperms =", Nperms);
@@ -72,7 +72,7 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 	//Set up ellipses
 	Nells = ((Nnodes - 1) * Nnodes) / 2;      //Number of ellipses
 	vector<double> a_ell(Nells, 0.0);         //Long radius of each ellipse
-	vector<double> a2_ell(Nells, 0.0);        //Square of long radius of each ellipse
+	vector<double> asq_ell(Nells, 0.0);        //Square of long radius of each ellipse
 	vector<double> xf1_ell(Nells, 0.0);       //x-coordinate of focus 1 of each ellipse
 	vector<double> yf1_ell(Nells, 0.0);       //y-coordinate of focus 1 of each ellipse
 	vector<double> xf2_ell(Nells, 0.0);       //x-coordinate of focus 2 of each ellipse
@@ -97,12 +97,12 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 			yc_ell[ell] = 0.5 * (lat_node[node1] + lat_node[node2]);
 			
 			// store long radius and area of ellipse
-			double linear_eccentricity = 0.5 * dist_euclid_2d(long_node[node1], lat_node[node1], long_node[node2], lat_node[node2]);
-			double semi_major_axis = linear_eccentricity * (1.0 + a_multiplier);
-			double semi_minor_axis = sqrt(sq(semi_major_axis) - sq(linear_eccentricity));
-			a_ell[ell] = 2 * semi_major_axis;
-			a2_ell[ell] = sq(a_ell[ell]);
-			area_inv_ell[ell] = 2.0 / (pi * semi_major_axis * semi_minor_axis);
+			linear_eccentricity = 0.5 * dist_euclid_2d(long_node[node1], lat_node[node1], long_node[node2], lat_node[node2]);
+			semi_major_axis = linear_eccentricity * (1.0 + a_multiplier);
+			semi_minor_axis = sqrt(sq(semi_major_axis) - sq(linear_eccentricity));
+			a_ell[ell] = semi_major_axis;
+			asq_ell[ell] = sq(a_ell[ell]);
+			area_inv_ell[ell] = 1.0 / (pi * semi_major_axis * semi_minor_axis);
 			
 			// store original value attributed to ellipse
 			v_ell[ell] = vnode[node1][node2];
@@ -140,17 +140,17 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 			start:
 			for (ell = 0; ell < Nells; ell++)
 			{
-				if (circle_check(x, y, xc_ell[ell], yc_ell[ell], a2_ell[ell]))
+				if (circle_check(x, y, xc_ell[ell], yc_ell[ell], asq_ell[ell]))
 				{
 					if (ellipse_check(x, y, a_ell[ell], xf1_ell[ell], yf1_ell[ell], xf2_ell[ell], yf2_ell[ell]))
 					{
 						intersections[coord][nintersections[coord]] = ell;
 						nintersections[coord]++;
 						int_total++;
-						d1 = dist_euclid_2d(x, y, xf1_ell[ell], yf1_ell[ell]);
-						d2 = dist_euclid_2d(x, y, xf2_ell[ell], yf2_ell[ell]);
-						//matrix_value += vw_ell[ell];
-						matrix_value += (vw_ell[ell] * min(d1, d2)) / (d1 + d2);
+						//d1 = dist_euclid_2d(x, y, xf1_ell[ell], yf1_ell[ell]);
+						//d2 = dist_euclid_2d(x, y, xf2_ell[ell], yf2_ell[ell]);
+						matrix_value += vw_ell[ell];
+						//matrix_value += (vw_ell[ell] * min(d1, d2)) / (d1 + d2);
 						ell_sum += area_inv_ell[ell];
 					}
 				}
@@ -237,7 +237,7 @@ finish:
 		xtick[nx] = xtick[nx - 1] + (n * psep);
 		ytick[nx] = ytick[nx - 1] + (n * psep);
 	}
-	vmax = -OVERFLO;
+	vmax = -1.0e99;
 	for (coord = 0; coord < area_matrix; coord++)
 	{
 		if (matrix_values2[coord] > vmax) { vmax = matrix_values2[coord]; }
