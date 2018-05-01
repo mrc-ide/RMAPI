@@ -243,15 +243,11 @@ void chrono_timer(chrono::high_resolution_clock::time_point &t0) {
 }
 
 //------------------------------------------------
-// check if value is within bounding circle
-bool circle_check(const double x, const double y, const double xc, const double yc, const double a2) {
-  return (sq(x - xc) + sq(y - yc)) <= a2;
-}
-
-//------------------------------------------------
 // check if value is within ellipse
-bool ellipse_check(double x, double y, double a, double xf1, double yf1, double xf2, double yf2) {
-    return 0.5*(sqrt(sq(x - xf1) + sq(y - yf1)) + sqrt(sq(x - xf2) + sq(y - yf2))) <= a;
+// x and y are the coordinates of the query point. f1 and f2 are the two foci of
+// the ellipse. a is the linear eccentricity of the ellipse.
+bool ellipse_check(const double x, const double y, const double xf1, const double yf1, const double xf2, const double yf2, const double a) {
+  return dist_euclid_2d(x, y, xf1, yf1) + dist_euclid_2d(x, y, xf2, yf2) <= 2*a;
 }
 
 //------------------------------------------------
