@@ -1,20 +1,20 @@
 
 #------------------------------------------------
-# define empty rmapiProject object
-# TODO - documentation
+#' Define empty RMAPI project
+#'
+#' TODO - some text here.
+#'
 #' @export
 
 rmapi_project <- function() {
   
   # initialise project with default values
   data <- NULL
-  parameters = list(alpha = 1,
-                    beta = 2,
-                    xlimits = NULL)
+  map <- list()
   output <- list()
   
   # create class and return
-  ret <- list(data = data, parameters = parameters, output = output)
+  ret <- list(data = data, map = map, output = output)
   class(ret) <- "rmapi_project"
   return(ret)
 }
@@ -48,10 +48,9 @@ summary.rmapi_project <- function(proj, ...) {
   }
   cat("\n")
   
-  # print parameters
-  cat("### PARAMETERS:\n")
-  cat(paste0("alpha:\t", proj$parameters$alpha, "\n"))
-  cat(paste0("beta:\t", proj$parameters$beta, "\n"))
+  # print map details
+  cat("### HEX MAP:\n")
+  cat("(TODO)\n")
   cat("\n")
   
   # print output details
@@ -74,24 +73,6 @@ print_full <- function(proj) {
   
   # print raw list
   print(unclass(proj))
-}
-
-#------------------------------------------------
-# overload list assignment symbol. Assignment occurs one level down in the list, in the parameters sublist
-# (not exported)
-
-`$<-.rmapi_project` <- function(proj, i, value) {
-  
-  # check that i is a valid parameter name
-  if ( !(i %in% c("alpha", "beta", "xlimits")) ) {
-    stop(paste(i,"is not a valid parameter name"))
-  }
-  
-  # assign value within the parameters sublist
-  proj[["parameters"]][[i]] <- value
-  
-  # return invisibly
-  invisible(proj)
 }
 
 #------------------------------------------------

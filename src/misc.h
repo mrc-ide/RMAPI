@@ -200,12 +200,8 @@ std::vector< std::vector< std::vector<int> > > rcpp_to_array_int(Rcpp::List x);
 void chrono_timer(std::chrono::high_resolution_clock::time_point &t0);
 
 //------------------------------------------------
-// check if value is within bounding circle
-bool circle_check(const double x, const double y, const double xc, const double yc, const double a2);
-
-//------------------------------------------------
 // check if value is within ellipse
-bool ellipse_check(double x, double y, double a, double xf1, double yf1, double xf2, double yf2);
+bool ellipse_check(const double x, const double y, const double xf1, const double yf1, const double xf2, const double yf2, const double a);
 
 //------------------------------------------------
 // square function (templated for different data types)

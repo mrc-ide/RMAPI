@@ -7,9 +7,12 @@ Author: Robert Verity
 Maintainer: Robert Verity <r.verity@imperial.ac.uk>
 Description: An Rcpp implementation of the MAPI software, which can be used to infer barriers/corridors of gene flow (as one example application).
 License: GPL (>= 2)
+Depends: R (>= 2.10)
 Imports:
     Rcpp (>= 0.12.13),
-    assertthat
+    assertthat,
+    sp,
+    rgeos
 LinkingTo:
     Rcpp
 RoxygenNote: 6.0.1
@@ -18,3 +21,4 @@ Suggests:
     covr
 SystemRequirements:
     C++11
+LazyData: true
