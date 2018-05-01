@@ -10,6 +10,7 @@
 #' @docType data
 #'
 #' @examples
+#' # TODO
 #'
 #' @usage data(coords_DRC)
 "coords_DRC"
@@ -118,4 +119,3 @@ sim_rect <- function(Nx = 10, Ny = 10, sep = 1, barrier_x = 0, barrier_y = 0, ba
   # return
   return(ret)
 }
->>>>>>> b767aaa46ea5a96739687c3e26e63ca382597b04
