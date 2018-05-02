@@ -32,13 +32,13 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 
 	int Nnodes = long_node.size();              //Number of nodes
 	int Nhex = long_hex.size();                 //Number of hex cells
-												// TODO - keep dist_min?
-												//double dist_min = 100;                            //Minimum distance to nearest node for point to be considered	
-												//double dist_minsq = sq(dist_min);
+	
+	double dist_min = 0.0;						//Minimum distance to nearest node for hex to be considered (set to 0 to disable)
+	double dist_minsq = sq(dist_min);
 
-												//Create ellipses ------------------------------------------------------------------------------------------------
+	//Create ellipses ------------------------------------------------------------------------------------------------
 
-	print("Setting up ellipses");
+	print("Nperms=%i eccentricity=%.2f dist_min=%.2f\nSetting up ellipses",Nperms,eccentricity,dist_min);
 
 	//Set up ellipses
 	int Nells = ((Nnodes - 1) * Nnodes) / 2;          //Number of ellipses
@@ -91,16 +91,16 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 
 	for (int hex = 0; hex < Nhex; hex++)
 	{
-		/*
-		for (int node1 = 0; node1 < Nnodes; node1++)
+		if (dist_min > 0.0)
 		{
-		if (sq(x - long_node[node1]) + sq(y - lat_node[node1]) < dist_min2) {
-		goto start;
+			for (int node1 = 0; node1 < Nnodes; node1++)
+			{
+				if (sq(x - long_node[node1]) + sq(y - lat_node[node1]) < dist_minsq) { goto start; }
+			}
+			goto skip;
 		}
-		}
-		goto skip;
+
 		start:
-		*/
 		for (int ell = 0; ell < Nells; ell++)
 		{
 			if (ellipse_check(long_hex[hex], lat_hex[hex], xfocus1[ell], yfocus1[ell], xfocus2[ell], yfocus2[ell], semi_major[ell]))
@@ -122,7 +122,8 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 	//Permute data to check statistical significance-------------------------------------------------------------------------------------------------------------------------------------------
 
 	vector<double> empirical_p; //Empirical p-value, calculated by permutation test
-	if (Nperms>0) {
+	if (Nperms > 0) 
+	{
 
 		print("Permutation testing");
 
