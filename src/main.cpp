@@ -91,14 +91,14 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 
 	for (int hex = 0; hex < Nhex; hex++)
 	{
-		if (dist_min > 0.0)
+		/*if (dist_min > 0.0)
 		{
 			for (int node1 = 0; node1 < Nnodes; node1++)
 			{
 				if (sq(x - long_node[node1]) + sq(y - lat_node[node1]) < dist_minsq) { goto start; }
 			}
 			goto skip;
-		}
+		}*/
 
 		start:
 		for (int ell = 0; ell < Nells; ell++)
