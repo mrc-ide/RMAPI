@@ -38,7 +38,9 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 
 	//Create ellipses ------------------------------------------------------------------------------------------------
 
-	print("Nperms=%i eccentricity=%.2f dist_min=%.2f\nSetting up ellipses",Nperms,eccentricity,dist_min);
+	print("Setting up ellipses");
+	print("Nperms\teccentricity\tdist_min");
+	print(Nperms, eccentricity, dist_min);
 
 	//Set up ellipses
 	int Nells = ((Nnodes - 1) * Nnodes) / 2;          //Number of ellipses
@@ -91,15 +93,15 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 
 	for (int hex = 0; hex < Nhex; hex++)
 	{
-		/*if (dist_min > 0.0)
+		if (dist_min > 0.0)
 		{
 			for (int node1 = 0; node1 < Nnodes; node1++)
 			{
-				if (sq(x - long_node[node1]) + sq(y - lat_node[node1]) < dist_minsq) { goto start; }
+				if (sq(long_hex[hex] - long_node[node1]) + sq(lat_hex[hex] - lat_node[node1]) < dist_minsq) { goto start; }
 			}
 			goto skip;
-		}*/
-
+		}
+		
 		start:
 		for (int ell = 0; ell < Nells; ell++)
 		{
@@ -108,14 +110,15 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 				intersections[hex].push_back(ell);
 				Nintersections[hex]++;
 				// TODO - option to downweight as get further from centre of ellipse
-				//d1 = dist_euclid_2d(x, y, xf1_ell[ell], yf1_ell[ell]);
-				//d2 = dist_euclid_2d(x, y, xf2_ell[ell], yf2_ell[ell]);
+				//double d1 = dist_euclid_2d(long_hex[hex], lat_hex[hex], xfocus1[ell], yfocus1[ell]);
+				//double d2 = dist_euclid_2d(long_hex[hex], lat_hex[hex], xfocus2[ell], yfocus2[ell]);
+				//map_values[hex] += (vw_ell[ell] * min(d1, d2)) / (d1 + d2);
 				map_values[hex] += vw_ell[ell];
-				//matrix_value += (vw_ell[ell] * min(d1, d2)) / (d1 + d2);
 				map_weights[hex] += area_inv[ell];
 			}
 		}
-		map_values[hex] = Nintersections[hex] > 0 ? map_values[hex] / map_weights[hex] : 0;
+		skip:
+		map_values[hex] = Nintersections[hex] > 0 ? map_values[hex] / map_weights[hex] : 0.0;
 	}
 	chrono_timer(t0);
 
@@ -125,13 +128,14 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 	if (Nperms > 0) 
 	{
 
-		print("Permutation testing");
+		print("Running permutation");
 
 		// create vector for storing empirical p-values
 		empirical_p = vector<double>(Nhex);
 
 		// create vector for indexing random permutations
 		vector<int> perm_vec = seq_int(0, Nells - 1);
+		double dp = 1.0 / Nperms;
 
 		// loop through permutations
 		for (int perm = 0; perm < Nperms; perm++)
@@ -139,9 +143,7 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 			reshuffle(perm_vec);  // new permutation
 			for (int hex = 0; hex < Nhex; hex++)
 			{
-				if (Nintersections[hex] == 0) {
-					continue;
-				}
+				if (Nintersections[hex] == 0) {continue;}
 				double vw_sum = 0.0;
 				for (int j = 0; j < Nintersections[hex]; j++)
 				{
@@ -149,7 +151,7 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 					vw_sum += v_ell[perm_vec[this_ellipse]] * area_inv[this_ellipse];
 				}
 				if (vw_sum / map_weights[hex] < map_values[hex]) {
-					empirical_p[hex] ++;
+					empirical_p[hex] +=dp;
 				}
 			}
 		} // end loop over Nperms
@@ -158,7 +160,21 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 
 	} // end if Nperms > 0
 
-	  //Return output as an Rcpp list ------------------------------------------------------------------------------------------------
+	//Return output as an Rcpp list ------------------------------------------------------------------------------------------------
+
+	double vmax = 0.0;
+	double vmin = 1.0e99;
+	for (int hex = 0; hex < Nhex; hex++)
+	{
+		if (map_values[hex] > vmax) { vmax = map_values[hex]; }
+		if (map_values[hex] < vmin) { vmin = map_values[hex]; }
+	}
+	for (int hex = 0; hex < Nhex; hex++)
+	{
+		map_values[hex] = (map_values[hex] - vmin) / (vmax - vmin);
+		//if (empirical_p[hex] > 0.95) { empirical_p[hex] = 1.0; }
+		//else { empirical_p[hex] = 0.0; }
+	}
 
 	Rcpp::List ret;
 	ret.push_back(Rcpp::wrap(map_values));
