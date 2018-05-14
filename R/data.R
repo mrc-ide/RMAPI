@@ -16,6 +16,27 @@
 "coords_DRC"
 
 #------------------------------------------------
+#' Load "simulation" data from original MAPI paper
+
+  load_old_data1 <- function()
+{
+  coord_data=read.table("C:/Users/Kjfras16/Desktop/NewGitHub/RMAPI/data/old_coord_data.txt")
+  x=coord_data["V1"]$V1
+  y=coord_data["V2"]$V2
+  coords <- cbind(x, y)
+  colnames(coords) <- c("long", "lat")
+  v_data=read.table("C:/Users/Kjfras16/Desktop/NewGitHub/RMAPI/data/old_v_data.txt")
+  v=v_data["V1"]$V1
+  sim_data=matrix(v,nrow=200,byrow=TRUE)
+
+  # produce final return object
+  cluster_names <- paste0("cluster", 1:nrow(coords))
+  ret <- cbind(data.frame(name = cluster_names, stringsAsFactors = FALSE), coords, sim_data)
+  
+  # return
+  return(ret)
+}
+#------------------------------------------------
 #' Simulate rectangular lattice of points with one or more barriers
 #'
 #' TODO - some help text here.
