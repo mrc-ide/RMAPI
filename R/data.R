@@ -36,6 +36,72 @@
   # return
   return(ret)
 }
+
+#------------------------------------------------
+#' Load "simulation" data from original MAPI paper with added 'void'
+
+  load_old_data2 <- function()
+{
+  coord_data=read.table("C:/Users/Kjfras16/Desktop/NewGitHub/RMAPI/data/old_coord_data2.txt")
+  x=coord_data["V1"]$V1
+  y=coord_data["V2"]$V2
+  coords <- cbind(x, y)
+  colnames(coords) <- c("long", "lat")
+  v_data=read.table("C:/Users/Kjfras16/Desktop/NewGitHub/RMAPI/data/old_v_data2.txt")
+  v=v_data["V1"]$V1
+  sim_data=matrix(v,nrow=191,byrow=TRUE)
+
+  # produce final return object
+  cluster_names <- paste0("cluster", 1:nrow(coords))
+  ret <- cbind(data.frame(name = cluster_names, stringsAsFactors = FALSE), coords, sim_data)
+  
+  # return
+  return(ret)
+}
+
+#------------------------------------------------
+#' Load "simulation" data from original MAPI paper with added 'voids'
+
+  load_old_data3 <- function()
+{
+  coord_data=read.table("C:/Users/Kjfras16/Desktop/NewGitHub/RMAPI/data/old_coord_data3.txt")
+  x=coord_data["V1"]$V1
+  y=coord_data["V2"]$V2
+  coords <- cbind(x, y)
+  colnames(coords) <- c("long", "lat")
+  v_data=read.table("C:/Users/Kjfras16/Desktop/NewGitHub/RMAPI/data/old_v_data3.txt")
+  v=v_data["V1"]$V1
+  sim_data=matrix(v,nrow=187,byrow=TRUE)
+
+  # produce final return object
+  cluster_names <- paste0("cluster", 1:nrow(coords))
+  ret <- cbind(data.frame(name = cluster_names, stringsAsFactors = FALSE), coords, sim_data)
+  
+  # return
+  return(ret)
+}
+
+#------------------------------------------------
+#' Load "simulation" data from original MAPI paper with added 'voids'
+
+  load_old_data4 <- function()
+{
+  coord_data=read.table("C:/Users/Kjfras16/Desktop/NewGitHub/RMAPI/data/old_coord_data4.txt")
+  x=coord_data["V1"]$V1
+  y=coord_data["V2"]$V2
+  coords <- cbind(x, y)
+  colnames(coords) <- c("long", "lat")
+  v_data=read.table("C:/Users/Kjfras16/Desktop/NewGitHub/RMAPI/data/old_v_data4.txt")
+  v=v_data["V1"]$V1
+  sim_data=matrix(v,nrow=183,byrow=TRUE)
+
+  # produce final return object
+  cluster_names <- paste0("cluster", 1:nrow(coords))
+  ret <- cbind(data.frame(name = cluster_names, stringsAsFactors = FALSE), coords, sim_data)
+  
+  # return
+  return(ret)
+}
 #------------------------------------------------
 #' Simulate rectangular lattice of points with one or more barriers
 #'

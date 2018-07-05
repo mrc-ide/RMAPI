@@ -159,9 +159,11 @@ run_sims <- function(proj, Nperms = 1e2, eccentricity = 0.5) {
   # Process raw output
   
   # get final map
-  map_values <- output_raw$map_values
+  map_values1 <- output_raw$map_values1
+  map_values2 <- output_raw$map_values2
+  map_values3 <- output_raw$map_values3
   Nintersections <- output_raw$Nintersections
-  map_values[Nintersections==0] <- NA
+  map_values1[Nintersections==0] <- NA
   
   # get map weights
   map_weights <- output_raw$map_weights
@@ -175,7 +177,7 @@ run_sims <- function(proj, Nperms = 1e2, eccentricity = 0.5) {
   }
   
   # save output as list
-  proj[["output"]] <- list(map_values = map_values, Nintersections = Nintersections, map_weights = map_weights, empirical_p = empirical_p)
+  proj[["output"]] <- list(map_values1 = map_values1, map_values2 = map_values2, map_values3 = map_values3, Nintersections = Nintersections, map_weights = map_weights, empirical_p = empirical_p)
   
   # return invisibly
   invisible(proj)
