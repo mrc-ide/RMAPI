@@ -3,8 +3,8 @@ Type: Package
 Title: Mapping Averaged Pairwise Information in R
 Version: 1.0
 Date: 2018-01-15
-Author: Robert Verity
-Maintainer: Robert Verity <r.verity@imperial.ac.uk>
+Authors@R: person("Keith", "Fraser", role = c("aut", "cre"), email = "keith.fraser@imperial.ac.uk")
+Maintainer: Keith Fraser <keith.fraser@imperial.ac.uk>
 Description: An Rcpp implementation of the MAPI software, which can be used to infer barriers/corridors of gene flow (as one example application).
 License: GPL (>= 2)
 Depends: R (>= 2.10)
@@ -18,7 +18,10 @@ LinkingTo:
 RoxygenNote: 6.0.1
 Suggests: 
     testthat,
-    covr
+    covr,
+    knitr,
+    rmarkdown
 SystemRequirements:
     C++11
 LazyData: true
+VignetteBuilder: knitr

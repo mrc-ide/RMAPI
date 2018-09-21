@@ -15,6 +15,18 @@
 NULL
 
 #------------------------------------------------
+#' @title Check that RMAPI package has loaded successfully
+#'
+#' @description Simple function to check that RMAPI package has loaded
+#'   successfully. Prints "RMAPI loaded successfully!" if so.
+#'
+#' @export
+
+check_RMAPI_loaded <- function() {
+  message("RMAPI loaded successfully!")
+}
+
+#------------------------------------------------
 #' Load data into RMAPI project
 #'
 #' TODO - some help text here.

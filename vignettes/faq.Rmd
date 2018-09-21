@@ -1,0 +1,17 @@
+---
+title: "Frequently Asked Questions"
+author: "Vignette Author"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{"Frequently Asked Questions"}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+(In development)
+
+### Q. Example question
+
+Example answer.
+

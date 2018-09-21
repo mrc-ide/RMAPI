@@ -1,24 +1,21 @@
 
 #------------------------------------------------
 # test if integer
-# (not exported)
-
+#' @noRd
 is.int <- function(x) {
   as.integer(x)==x
 }
 
 #------------------------------------------------
 # test if positive scalar value
-# (not exported)
-
+#' @noRd
 is.pos_scalar <- function(x) {
   is.numeric(x) & length(x)==1 & all(x>0)
 }
 
 #------------------------------------------------
 # replace NULL value with default
-# (not exported)
-
+#' @noRd
 define_default <- function(x, default_value) {
   if (is.null(x)) {
     x <- default_value
@@ -28,8 +25,7 @@ define_default <- function(x, default_value) {
 
 # -----------------------------------
 # ask user a yes/no question. Return TRUE/FALSE.
-# (not exported)
-
+#' @noRd
 user_yes_no <- function(x = "continue? (Y/N): ") {
   
   user_choice <- NA
@@ -41,16 +37,14 @@ user_yes_no <- function(x = "continue? (Y/N): ") {
 
 # -----------------------------------
 # takes matrix as input, converts to list format for use within Rcpp code
-# (not exported)
-
+#' @noRd
 mat_to_rcpp <- function(x) {
   return(split(x, f = 1:nrow(x)))
 }
 
 # -----------------------------------
 # takes list format returned from Rcpp and converts to matrix
-# (not exported)
-
+#' @noRd
 rcpp_to_mat <- function(x) {
   ret <- matrix(unlist(x), nrow = length(x), byrow = TRUE)
   return(ret)

@@ -1,0 +1,12 @@
+---
+title: "Basic tutorial"
+author: "Keith Fraser and Bob Verity"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{"Basic tutorial"}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# TODO - basic tutorial

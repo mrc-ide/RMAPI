@@ -2,6 +2,7 @@
 
 export(barrier_lines)
 export(bind_data)
+export(check_RMAPI_loaded)
 export(create_map)
 export(plot_map)
 export(rmapi_project)
