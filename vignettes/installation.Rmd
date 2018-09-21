@@ -39,7 +39,7 @@ Then install the RMAPI package directly from GitHub by running
 devtools::install_github("mrc-ide/RMAPI")
 ```
 
-If you have any problems installing, please check the [Known issues](todo) page to see if there is a known solution. If not then please [raise an issue](https://github.com/mrc-ide/RMAPI/issues) on github.
+If you have any problems installing, please check the [Known issues](https://mrc-ide.github.io/RMAPI/articles/known-issues.html) page to see if there is a known solution. If not then please [raise an issue](https://github.com/mrc-ide/RMAPI/issues) on github.
 
 Assuming everything installed correctly, we need to load the package:
 

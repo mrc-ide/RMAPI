@@ -1,7 +1,7 @@
 Package: RMAPI
 Type: Package
 Title: Mapping Averaged Pairwise Information in R
-Version: 1.0
+Version: 0.1.0
 Date: 2018-01-15
 Authors@R: person("Keith", "Fraser", role = c("aut", "cre"), email = "keith.fraser@imperial.ac.uk")
 Maintainer: Keith Fraser <keith.fraser@imperial.ac.uk>

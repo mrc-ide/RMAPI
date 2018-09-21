@@ -7,5 +7,5 @@
 
 RMAPI is ... (TODO)
 
-To get started, take a look at the [installation instructions](todo), followed by a [basic tutorial](todo) on running the program.
+To get started, take a look at the [installation instructions](https://mrc-ide.github.io/RMAPI/articles/installation.html), followed by a [basic tutorial](https://mrc-ide.github.io/RMAPI/articles/basic-tutorial.html) on running the program.
 

@@ -7,5 +7,5 @@
 
 Mapping Averaged Pairwise Information in R.
 
-TODO - some package description here, ending by pointing users to the [webpage](todo).
+TODO - some package description here, ending by pointing users to the [webpage](https://mrc-ide.github.io/RMAPI).
 
