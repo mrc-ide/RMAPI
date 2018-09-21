@@ -9,6 +9,7 @@
 #' @import rgeos
 #' @import graphics
 #' @import stats
+#' @import utils
 #' @importFrom grDevices chull colorRampPalette
 #' @importFrom Rcpp evalCpp
 NULL
