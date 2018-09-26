@@ -15,6 +15,60 @@
 #' @usage data(coords_DRC)
 "coords_DRC"
 
+
+#------------------------------------------------
+#' Create new distance-based pairwise data using input node positions with custom barrier
+#'
+#' TODO - some help text here.
+#'
+#' @export
+
+sim_custom_barrier <- function(x,y,xbarrier,ybarrier,vbarrier,rbarrier)
+{    
+  
+  # check inputs
+  Nnodes=length(x)
+  Nbarriers=length(xbarrier)
+  assert_that( all(is.numeric(x)) )
+  assert_that( all(is.numeric(y)) )
+  assert_that( all(is.numeric(xbarrier)) )
+  assert_that( all(is.numeric(ybarrier)) )
+  assert_that( Nnodes==length(y) )
+  assert_that( Nbarriers==length(ybarrier) )
+
+  vbarrier=vbarrier-1.0
+  coords <- cbind(x, y)
+  colnames(coords) <- c("long", "lat")
+  sim_stat <- as.matrix(dist(coords))
+  
+  args_h <- list(long_node = x,
+                 lat_node = y,
+                 long_barrier = xbarrier,
+                 lat_barrier = ybarrier,
+		 rbarrier=rbarrier,
+		 vbarrier=vbarrier) 
+
+  output_raw <- hexbarrier01(args_h)
+  vbsum <- output_raw$vbsum
+  
+  message("Calculating pairwise data based on modified distance")
+
+  for(i in 1:(Nnodes-1))
+  {
+    for(j in (i+1):Nnodes)
+    {
+      sim_stat[i,j]=sim_stat[i,j]+vbsum[((i-1)*Nnodes)+j]
+    }
+  }
+  
+  # produce final return object
+  cluster_names <- paste0("cluster", 1:nrow(coords))
+  ret <- cbind(data.frame(name = cluster_names, stringsAsFactors = FALSE), coords, sim_stat)
+  
+  # return
+  return(ret)
+}
+
 #------------------------------------------------
 #' Load "simulation" data from original MAPI paper
 
@@ -102,8 +156,9 @@
   # return
   return(ret)
 }
+
 #------------------------------------------------
-#' Simulate rectangular lattice of points with one or more barriers
+#' Create distance-based pairwise data using input node positions with linear barrier
 #'
 #' TODO - some help text here.
 #'
@@ -168,7 +223,7 @@ sim_custom <- function(x, y, barrier_x = 0, barrier_y = 0, barrier_angle = 0, ba
 }
 
 #------------------------------------------------
-#' Simulate rectangular lattice of points with one or more barriers
+#' Simulate rectangular lattice of points with linear barrier
 #'
 #' TODO - some help text here.
 #'

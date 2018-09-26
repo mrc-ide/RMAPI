@@ -16,7 +16,7 @@ double pi = 3.1415926536;
 Rcpp::List run_sims_cpp(Rcpp::List args)
 {
 	int ell, Nells, hex, node1, node2;
-	double vmin1, vmax1, vinv1, vmin2, vmax2, vinv2, vmin3, vmax3, vinv3, semi_minor;
+	double dist, vmin1, vmax1, vinv1, vmin2, vmax2, vinv2, vmin3, vmax3, vinv3, semi_minor;
 
 	// start timer
 	chrono::high_resolution_clock::time_point t0 = chrono::high_resolution_clock::now();
@@ -35,7 +35,7 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 
 	int Nnodes = long_node.size();              //Number of nodes
 	int Nhex = long_hex.size();                 //Number of hex cells
-	
+
 	double dist_min = 0.0;						//Minimum distance to nearest node for hex to be considered (set to 0 to disable)
 	double dist_minsq = sq(dist_min);
 
@@ -75,20 +75,23 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 			ycentre[ell] = 0.5 * (lat_node[node1] + lat_node[node2]);
 
 			// store long radius and area of ellipse
-			linear_eccentricity[ell] = 0.5 * dist_euclid_2d(long_node[node1], lat_node[node1], long_node[node2], lat_node[node2]);
+			dist = dist_euclid_2d(long_node[node1], lat_node[node1], long_node[node2], lat_node[node2]);
+			linear_eccentricity[ell] = 0.5*dist;
 			semi_major[ell] = linear_eccentricity[ell] / eccentricity;
 			semi_minor = sqrt(sq(semi_major[ell]) - sq(linear_eccentricity[ell]));
 			area_inv[ell] = 1.0 / (pi * semi_major[ell] * semi_minor);
 
 			// store original value attributed to ellipse
+			v_ell_null[ell] = dist;
 			v_ell[ell] = vnode[node1][node2];
-			v_ell_null[ell] = 2.0*linear_eccentricity[ell];
 			vw_ell[ell] = v_ell[ell] * area_inv[ell];
 			vw_ell_null[ell] = v_ell_null[ell] * area_inv[ell];
 			ell++;
 		}
 	}
-	
+
+	chrono_timer(t0);
+
 	//Create map by summation of ellipses intersecting each hex ------------------------------------------------------------------------------------------------
 
 	print("Computing map");
@@ -102,6 +105,7 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 
 	for (hex = 0; hex < Nhex; hex++)
 	{
+		//Rcpp::Rcout << "\nhex " << hex << ": lat=" << lat_hex[hex] << " long=" << long_hex[hex];
 		if (dist_min > 0.0)
 		{
 			for (node1 = 0; node1 < Nnodes; node1++)
@@ -110,8 +114,8 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 			}
 			goto skip;
 		}
-		
-		start:
+
+	start:
 		for (ell = 0; ell < Nells; ell++)
 		{
 			if (ellipse_check(long_hex[hex], lat_hex[hex], xfocus1[ell], yfocus1[ell], xfocus2[ell], yfocus2[ell], semi_major[ell]))
@@ -127,7 +131,7 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 				map_weights[hex] += area_inv[ell];
 			}
 		}
-		skip:
+	skip:
 		if (Nintersections[hex] > 0)
 		{
 			map_values1[hex] = map_values1[hex] / map_weights[hex];
@@ -140,9 +144,9 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 		}
 	}
 
-	vmax1 = 0.0;
+	vmax1 = -1.0e99;
 	vmin1 = 1.0e99;
-	vmax2 = 0.0;
+	vmax2 = -1.0e99;
 	vmin2 = 1.0e99;
 	for (int hex = 0; hex < Nhex; hex++)
 	{
@@ -161,7 +165,7 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 	}
 
 	chrono_timer(t0);
-	
+
 	//Permute data to check statistical significance-------------------------------------------------------------------------------------------------------------------------------------------
 
 	vector<double> empirical_p; //Empirical p-value, calculated by permutation test
@@ -193,7 +197,7 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 					}
 				}
 			}
-			vmax1 = 0.0;
+			vmax1 = -1.0e99;
 			vmin1 = 1.0e99;
 			for (int hex = 0; hex < Nhex; hex++)
 			{
@@ -232,22 +236,20 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 
 	} // end if Nperms > 0
 
-	//Normalize map values----------------------------------------------------------------------------------
+	  //Normalize map values----------------------------------------------------------------------------------
 
-	vmax3 = 0.0;
+	vmax3 = -1.0e99;
 	vmin3 = 1.0e99;
 	for (int hex = 0; hex < Nhex; hex++)
 	{
 		if (map_values3[hex] > vmax3) { vmax3 = map_values3[hex]; }
 		if (map_values3[hex] < vmin3) { vmin3 = map_values3[hex]; }
 	}
-	vinv3 = 1.0 / (vmax3 - vmin3);
-	//vector<double> map_values0(Nhex, 0.0);
+	vinv3 = vmax3 == vmin3 ? 1.0 : (1.0 / (vmax3 - vmin3));
 	for (int hex = 0; hex < Nhex; hex++)
 	{
-		//map_values0[hex] = map_values1[hex];
 		map_values3[hex] = (map_values3[hex] - vmin3) * vinv3;
-		Rcpp::Rcout << "\nMap1 value at hex " << hex << ": " << map_values1[hex] << " Map2 value: " << map_values2[hex] << " Map3 value: " << map_values3[hex] << " EP value: " << empirical_p[hex] << " Ints: " << Nintersections[hex] << " Wt: " << map_weights[hex];
+		//Rcpp::Rcout << "\nMap1 value at hex " << hex << ": " << map_values1[hex] << " Map2 value: " << map_values2[hex] << " Map3 value: " << map_values3[hex] << " EP value: " << empirical_p[hex] << " Ints: " << Nintersections[hex] << " Wt: " << map_weights[hex];
 	}
 
 	//Return output as an Rcpp list ------------------------------------------------------------------------------------------------
