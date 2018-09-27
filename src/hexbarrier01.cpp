@@ -28,7 +28,7 @@ Rcpp::List hexbarrier01(Rcpp::List args_h)
 	int Nnodes = long_node.size();													//Number of nodes
 	int Nbarriers = long_barrier.size();                                            //Number of barrier cells
 	double rbarrier = rcpp_to_double(args_h["rbarrier"]);							//Barrier cell radius
-	double vbarrier = rcpp_to_double(args_h["vbarrier"]);							//Barrier cell distance multiplier
+	vector<double> vbarrier = rcpp_to_vector_double(args_h["vbarrier"]);   		//Barrier cell distance multiplier
 
 																					//Calculate pairwise data ------------------------------------------------------------------------------------------------
 
@@ -47,7 +47,7 @@ Rcpp::List hexbarrier01(Rcpp::List args_h)
 			vb = 0.0;
 			for (barr = 0; barr < Nbarriers; barr++)
 			{
-				vb += vbarrier*v_intersect(x1, y1, x2, y2, long_barrier[barr], lat_barrier[barr], rbarrier);
+				vb += (vbarrier[barr] - 1.0)*v_intersect(x1, y1, x2, y2, long_barrier[barr], lat_barrier[barr], rbarrier);
 			}
 
 			vbsum[(node1*Nnodes) + node2] = vb;
