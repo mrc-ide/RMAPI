@@ -161,7 +161,7 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 	{
 		map_values1[hex] = (map_values1[hex] - vmin1)* vinv1;
 		map_values2[hex] = (map_values2[hex] - vmin2)* vinv2;
-		map_values3[hex] = max(0.0, map_values1[hex] - map_values2[hex]);
+		map_values3[hex] = map_values1[hex] - map_values2[hex];
 	}
 
 	chrono_timer(t0);

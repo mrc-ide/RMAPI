@@ -23,7 +23,7 @@
 #'
 #' @export
 
-sim_custom_barrier <- function(x,y,xbarrier,ybarrier,vbarrier,rbarrier)
+sim_custom_barrier <- function(x,y,xbarrier,ybarrier,rbarrier,vbarrier)
 {    
   
   # check inputs
@@ -33,10 +33,11 @@ sim_custom_barrier <- function(x,y,xbarrier,ybarrier,vbarrier,rbarrier)
   assert_that( all(is.numeric(y)) )
   assert_that( all(is.numeric(xbarrier)) )
   assert_that( all(is.numeric(ybarrier)) )
+  assert_that( all(is.numeric(vbarrier)) )
   assert_that( Nnodes==length(y) )
   assert_that( Nbarriers==length(ybarrier) )
+  assert_that( Nbarriers==length(vbarrier) )
 
-  vbarrier=vbarrier-1.0
   coords <- cbind(x, y)
   colnames(coords) <- c("long", "lat")
   sim_stat <- as.matrix(dist(coords))
