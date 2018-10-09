@@ -23,7 +23,7 @@
 #'
 #' @export
 
-sim_custom_barrier <- function(x,y,xbarrier,ybarrier,rbarrier,vbarrier)
+sim_custom_barrier <- function(x,y,xbarrier,ybarrier,rbarrier,vbarrier,distance_model)
 {    
   
   # check inputs
@@ -40,7 +40,8 @@ sim_custom_barrier <- function(x,y,xbarrier,ybarrier,rbarrier,vbarrier)
 
   coords <- cbind(x, y)
   colnames(coords) <- c("long", "lat")
-  sim_stat <- as.matrix(dist(coords))
+  if(distance_model == 1) { sim_stat <- as.matrix(dist(coords)) }
+  else { sim_stat <- as.matrix(dist(coords)) }
   
   args_h <- list(long_node = x,
                  lat_node = y,

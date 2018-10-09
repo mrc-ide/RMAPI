@@ -32,18 +32,22 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 	vector<double> lat_hex = rcpp_to_vector_double(args["lat_hex"]);        //Latitude of hex cells
 	int Nperms = rcpp_to_int(args["Nperms"]);                               //Number of permutations to run (if 0, no permutation)
 	double eccentricity = rcpp_to_double(args["eccentricity"]);             //Eccentricity of ellipses (see help for details)
+	int flag_nullmap = rcpp_to_int(args["flag_nullmap"]);					//Flag indicating whether to create null map to subtract from data map (0-No, 1-Yes)
+	int dist_model = rcpp_to_int(args["dist_model"]);						//Mathematical model governing relationship between distance and pairwise data (0-linear, 1-?)
 
-	int Nnodes = long_node.size();              //Number of nodes
-	int Nhex = long_hex.size();                 //Number of hex cells
+	//Derived values/fixed constants ------------------------------------------------------------------------------------------------
 
-	double dist_min = 0.0;						//Minimum distance to nearest node for hex to be considered (set to 0 to disable)
-	double dist_minsq = sq(dist_min);
+	int Nnodes = long_node.size();                                          //Number of nodes
+	int Nhex = long_hex.size();                                             //Number of hex cells
+																			//vector< vector<double> > distances(Nnodes, vector<double>(Nnodes,0.0);  //Euclidean distances between points //TODO - make an import from R?
+
+	//double dist_min = 0.0;                                                  //Minimum distance to nearest node for hex to be considered (set to 0 to disable)
+	//double dist_minsq = sq(dist_min);                                       //TODO: Remove this feature or make an import from R?
 
 	//Create ellipses ------------------------------------------------------------------------------------------------
 
+	Rcpp::Rcout << "\nNperms: " << Nperms << "\nEccentricity: " << eccentricity << "\nFlag_nullmap: " << flag_nullmap << "\ndist_model: " << dist_model;
 	print("Setting up ellipses");
-	print("Nperms\teccentricity\tdist_min");
-	print(Nperms, eccentricity, dist_min);
 
 	//Set up ellipses
 	Nells = ((Nnodes - 1) * Nnodes) / 2;          //Number of ellipses
@@ -75,17 +79,26 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 			ycentre[ell] = 0.5 * (lat_node[node1] + lat_node[node2]);
 
 			// store long radius and area of ellipse
-			dist = dist_euclid_2d(long_node[node1], lat_node[node1], long_node[node2], lat_node[node2]);
-			linear_eccentricity[ell] = 0.5*dist;
+			dist = dist_euclid_2d(long_node[node1], lat_node[node1], long_node[node2], lat_node[node2]); //TODO - Remove this calculation if distances are imported
+																										 //distances[node1][node2] = dist;
+			linear_eccentricity[ell] = 0.5 * dist;
 			semi_major[ell] = linear_eccentricity[ell] / eccentricity;
 			semi_minor = sqrt(sq(semi_major[ell]) - sq(linear_eccentricity[ell]));
 			area_inv[ell] = 1.0 / (pi * semi_major[ell] * semi_minor);
 
 			// store original value attributed to ellipse
-			v_ell_null[ell] = dist;
 			v_ell[ell] = vnode[node1][node2];
 			vw_ell[ell] = v_ell[ell] * area_inv[ell];
-			vw_ell_null[ell] = v_ell_null[ell] * area_inv[ell];
+			if (flag_nullmap == 1)
+			{
+				switch (dist_model)
+				{
+				case 0: {v_ell_null[ell] = dist; }
+						break;
+				default: {}
+				}
+				vw_ell_null[ell] = v_ell_null[ell] * area_inv[ell];
+			}
 			ell++;
 		}
 	}
@@ -106,16 +119,16 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 	for (hex = 0; hex < Nhex; hex++)
 	{
 		//Rcpp::Rcout << "\nhex " << hex << ": lat=" << lat_hex[hex] << " long=" << long_hex[hex];
-		if (dist_min > 0.0)
+		/*if (dist_min > 0.0)
 		{
-			for (node1 = 0; node1 < Nnodes; node1++)
-			{
-				if (sq(long_hex[hex] - long_node[node1]) + sq(lat_hex[hex] - lat_node[node1]) < dist_minsq) { goto start; }
-			}
-			goto skip;
+		for (node1 = 0; node1 < Nnodes; node1++)
+		{
+		if (sq(long_hex[hex] - long_node[node1]) + sq(lat_hex[hex] - lat_node[node1]) > dist_minsq) { goto start; }
 		}
+		goto skip;
+		}*/
 
-	start:
+		//start:
 		for (ell = 0; ell < Nells; ell++)
 		{
 			if (ellipse_check(long_hex[hex], lat_hex[hex], xfocus1[ell], yfocus1[ell], xfocus2[ell], yfocus2[ell], semi_major[ell]))
@@ -127,11 +140,11 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 				//double d2 = dist_euclid_2d(long_hex[hex], lat_hex[hex], xfocus2[ell], yfocus2[ell]);
 				//map_values1[hex] += (vw_ell[ell] * min(d1, d2)) / (d1 + d2);
 				map_values1[hex] += vw_ell[ell];
-				map_values2[hex] += vw_ell_null[ell];
+				if (flag_nullmap == 1) { map_values2[hex] += vw_ell_null[ell]; }
 				map_weights[hex] += area_inv[ell];
 			}
 		}
-	skip:
+		//skip:
 		if (Nintersections[hex] > 0)
 		{
 			map_values1[hex] = map_values1[hex] / map_weights[hex];
@@ -144,24 +157,39 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 		}
 	}
 
+
 	vmax1 = -1.0e99;
 	vmin1 = 1.0e99;
-	vmax2 = -1.0e99;
-	vmin2 = 1.0e99;
 	for (int hex = 0; hex < Nhex; hex++)
 	{
 		if (map_values1[hex] > vmax1) { vmax1 = map_values1[hex]; }
 		if (map_values1[hex] < vmin1) { vmin1 = map_values1[hex]; }
-		if (map_values2[hex] > vmax2) { vmax2 = map_values2[hex]; }
-		if (map_values2[hex] < vmin2) { vmin2 = map_values2[hex]; }
 	}
 	vinv1 = 1.0 / (vmax1 - vmin1);
-	vinv2 = 1.0 / (vmax2 - vmin2);
-	for (int hex = 0; hex < Nhex; hex++)
+
+	if (flag_nullmap == 1) //Construct map_values3 by comparing normalized map_values1 and map_values2
 	{
-		map_values1[hex] = (map_values1[hex] - vmin1)* vinv1;
-		map_values2[hex] = (map_values2[hex] - vmin2)* vinv2;
-		map_values3[hex] = map_values1[hex] - map_values2[hex];
+		vmax2 = -1.0e99;
+		vmin2 = 1.0e99;
+		for (int hex = 0; hex < Nhex; hex++)
+		{
+			if (map_values2[hex] > vmax2) { vmax2 = map_values2[hex]; }
+			if (map_values2[hex] < vmin2) { vmin2 = map_values2[hex]; }
+		}
+		vinv2 = 1.0 / (vmax2 - vmin2);
+		for (int hex = 0; hex < Nhex; hex++)
+		{
+			map_values1[hex] = (map_values1[hex] - vmin1)* vinv1;
+			map_values2[hex] = (map_values2[hex] - vmin2)* vinv2;
+			map_values3[hex] = map_values1[hex] - map_values2[hex];
+		}
+	}
+	else //Construct map_values3 by simply normalizing map_values1
+	{
+		for (int hex = 0; hex < Nhex; hex++)
+		{
+			map_values3[hex] = (map_values1[hex] - vmin1)* vinv1;
+		}
 	}
 
 	chrono_timer(t0);

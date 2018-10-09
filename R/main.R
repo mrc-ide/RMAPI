@@ -133,7 +133,7 @@ create_map <- function(proj, hex_size = 1, buffer = 2*hex_size) {
 #' @examples
 #' # TODO
 
-run_sims <- function(proj, Nperms = 1e2, eccentricity = 0.5) {
+run_sims <- function(proj, Nperms = 1e2, eccentricity = 0.5, flag_nullmap = 0, dist_model = 0) {
   
   # check inputs
   assert_that( is.rmapi_project(proj) )
@@ -161,7 +161,10 @@ run_sims <- function(proj, Nperms = 1e2, eccentricity = 0.5) {
                long_hex = long_hex,
                lat_hex = lat_hex,
                Nperms = Nperms,
-               eccentricity = eccentricity) 
+               eccentricity = eccentricity,
+	       flag_nullmap = flag_nullmap,
+	       dist_model=dist_model
+		) 
   
   # ---------------------------------------------
   # Carry out simulations in C++ to generate map data
