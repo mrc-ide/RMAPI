@@ -72,6 +72,30 @@ sim_custom_barrier <- function(x,y,xbarrier,ybarrier,rbarrier,vbarrier,distance_
 }
 
 #------------------------------------------------
+#' Load generic data from files
+
+  load_data <- function(coord_data_file,v_data_file)
+{
+  coord_data=read.table(coord_data_file)
+  x=coord_data["V1"]$V1
+  y=coord_data["V2"]$V2
+  npoints=length(x)
+  coords <- cbind(x, y)
+  colnames(coords) <- c("long", "lat")
+  v_data=read.table(v_data_file)
+  v=v_data["V1"]$V1
+  assert_that(length(v) == npoints^2)			# Pairwise data file should contain n^2 points where n is number of nodes
+  pwvalues=matrix(v,nrow=npoints,byrow=TRUE)
+
+  # produce final return object
+  cluster_names <- paste0("cluster", 1:nrow(coords))
+  ret <- cbind(data.frame(name = cluster_names, stringsAsFactors = FALSE), coords, pwvalues)
+  
+  # return
+  return(ret)
+}
+
+#------------------------------------------------
 #' Load "simulation" data from original MAPI paper
 
   load_old_data1 <- function()
