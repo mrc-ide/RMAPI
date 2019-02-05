@@ -1,32 +1,31 @@
 
-#------------------------------------------------
-#' Define empty RMAPI project
+#' #------------------------------------------------
+#' @title Define empty RMAPI project
 #'
-#' TODO - some text here.
+#' @description Define empty RMAPI project.
 #'
 #' @export
 
 rmapi_project <- function() {
   
   # initialise project with default values
-  data <- NULL
-  map <- list()
-  output <- list()
+  ret <- list(data = list(coords = NULL,
+                          pairwise_dist = NULL),
+              map = NULL,
+              output = NULL)
   
   # create class and return
-  ret <- list(data = data, map = map, output = output)
   class(ret) <- "rmapi_project"
   return(ret)
 }
 
 #------------------------------------------------
-# overload print() function to print only certain elements
-# (not exported)
-
+# overload print() function
+#' @noRd
 print.rmapi_project <- function(proj, ...) {
   
-  # print certain elements
-  print_full(proj)
+  # print summary
+  summary(proj)
   
   # return invisibly
   invisible(proj)
@@ -34,51 +33,51 @@ print.rmapi_project <- function(proj, ...) {
 
 #------------------------------------------------
 # overload summary() function.
-# (not exported)
-
+#' @noRd
 summary.rmapi_project <- function(proj, ...) {
   
   # print data details
-  cat("### DATA:\n")
-  if (is.null(proj$data)) {
-    cat("no data loaded\n")
+  message("# DATA:")
+  if (is.null(proj$data$coords)) {
+    message("no data loaded")
   } else {
-    cat(paste0("n = ", nrow(proj$data), " samples\n"))
-    cat(paste0("X% missing data\n"))	# TODO - count missing data
+    message(sprintf("n = %s samples", nrow(proj$data$coords)))
   }
-  cat("\n")
+  message("")
   
   # print map details
-  cat("### HEX MAP:\n")
-  cat("(TODO)\n")
-  cat("\n")
+  message("# HEX MAP:")
+  if (is.null(proj$map)) {
+    message("no map generated")
+  } else {
+    message(sprintf("h = %s hexagons", length(proj$map$hex)))
+  }
+  message("")
   
   # print output details
-  cat("### OUTPUT:\n")
-  if (length(proj$output)==0) {
-    cat("no output\n")
+  message("# OUTPUT:")
+  if (length(proj$output) == 0) {
+    message("no output")
   } else {
-    cat("TODO - some details of output\n")
+    message("TODO - some details of output")
   }
 }
 
 #------------------------------------------------
-# make new print function for doing standard print
-# (not exported)
-
+# make new print function for standard print
+#' @noRd
 print_full <- function(proj) {
   
   # check that viewing rmapi_project
-  assert_that(is.rmapi_project(proj))
+  assert_custom_class(proj, "rmapi_project")
   
   # print raw list
   print(unclass(proj))
 }
 
 #------------------------------------------------
-# create function for determining if object is of class rmapiProject
-# (not exported)
-
+# determine if object is of class rmapi_project
+#' @noRd
 is.rmapi_project <- function(x) {
   inherits(x, "rmapi_project")
 }

@@ -1,15 +1,20 @@
 
+#include "misc_v3.h"
+#include "probability.h"
+
 #include <Rcpp.h>
 #include <chrono>
 #include <vector>
-#include "misc.h"
-#include "probability.h"
 
 using namespace std;
 
 //------------------------------------------------
-//Global variables
-double pi = 3.1415926536;
+// check if value is within ellipse
+// x and y are the coordinates of the query point. f1 and f2 are the two foci of
+// the ellipse. a is the linear eccentricity of the ellipse.
+bool ellipse_check(const double x, const double y, const double xf1, const double yf1, const double xf2, const double yf2, const double a) {
+  return dist_euclid_2d(x, y, xf1, yf1) + dist_euclid_2d(x, y, xf2, yf2) <= 2*a;
+}
 
 //------------------------------------------------
 // [[Rcpp::export]]
@@ -17,7 +22,7 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 {
 	int ell, Nells, hex, node1, node2;
 	double dist, vmin1, vmax1, vinv1, vmin2, vmax2, vinv2, vmin3, vmax3, vinv3, semi_minor;
-
+	
 	// start timer
 	chrono::high_resolution_clock::time_point t0 = chrono::high_resolution_clock::now();
 
@@ -27,10 +32,10 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 	print("Loading data and parameters");
 	vector<double> long_node = rcpp_to_vector_double(args["long_node"]);    //Longitude of data nodes
 	vector<double> lat_node = rcpp_to_vector_double(args["lat_node"]);      //Latitude of data nodes
-	vector< vector<double> > vnode = rcpp_to_mat_double(args["vnode"]);     //Pairwise metric data
+	vector< vector<double> > vnode = rcpp_to_matrix_double(args["vnode"]);     //Pairwise metric data
 	vector<double> long_hex = rcpp_to_vector_double(args["long_hex"]);      //Longitude of hex cells
 	vector<double> lat_hex = rcpp_to_vector_double(args["lat_hex"]);        //Latitude of hex cells
-	int Nperms = rcpp_to_int(args["Nperms"]);                               //Number of permutations to run (if 0, no permutation)
+	int Nperms = rcpp_to_int(args["n_perms"]);                               //Number of permutations to run (if 0, no permutation)
 	double eccentricity = rcpp_to_double(args["eccentricity"]);             //Eccentricity of ellipses (see help for details)
 	int flag_nullmap = rcpp_to_int(args["flag_nullmap"]);					//Flag indicating whether to create null map to subtract from data map (0-No, 1-Yes)
 	int dist_model = rcpp_to_int(args["dist_model"]);						//Mathematical model governing relationship between distance and pairwise data (0-linear, 1-?)
@@ -84,8 +89,8 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 			linear_eccentricity[ell] = 0.5 * dist;
 			semi_major[ell] = linear_eccentricity[ell] / eccentricity;
 			semi_minor = sqrt(sq(semi_major[ell]) - sq(linear_eccentricity[ell]));
-			area_inv[ell] = 1.0 / (pi * semi_major[ell] * semi_minor);
-
+			area_inv[ell] = 1.0 / (M_PI * semi_major[ell] * semi_minor);
+      
 			// store original value attributed to ellipse
 			v_ell[ell] = vnode[node1][node2];
 			vw_ell[ell] = v_ell[ell] * area_inv[ell];

@@ -5,8 +5,6 @@
 
 #' @useDynLib RMAPI
 #' @import assertthat
-#' @import sp
-#' @import rgeos
 #' @import graphics
 #' @import stats
 #' @import utils
@@ -27,27 +25,36 @@ check_RMAPI_loaded <- function() {
 }
 
 #------------------------------------------------
-#' Load data into RMAPI project
+#' @title Load data into RMAPI project
 #'
-#' TODO - some help text here.
+#' @description Load data into RMAPI project.
 #'
-#' @param proj the current RMAPI project
-#' @param data a data frame, formatted into the correct RMAPI format (see Details)
-#' @param check_delete_output whether to perform a check to see if project already contains data, in which case all old data and output will be lost
+#' @param proj object of class \code{rmapi_project}.
+#' @param long vector of node longitudes.
+#' @param lat vector of node latitudes.
+#' @param pairwise_dist matrix of pairwise distances between nodes.
+#' @param check_delete_output if \code{TRUE} (the default) then check before
+#'   overwriting any existing data loaded into a project.
 #'
 #' @export
 
-bind_data <- function(proj, data, check_delete_output = TRUE) {
+bind_data <- function(proj, long, lat, pairwise_dist, check_delete_output = TRUE) {
   
   # check inputs
-  assert_that( is.rmapi_project(proj) )
-  assert_that( is.data.frame(data) )
-  assert_that( ncol(data)>=4 )
-  assert_that( nrow(data)==ncol(data)-3 )
-  assert_that( is.logical(check_delete_output) )
+  assert_custom_class(proj, "rmapi_project")
+  assert_vector(long)
+  assert_numeric(long)
+  assert_vector(lat)
+  assert_numeric(lat)
+  assert_same_length(long, lat)
+  assert_matrix(pairwise_dist)
+  assert_numeric(pairwise_dist)
+  assert_nrow(pairwise_dist, length(long))
+  assert_ncol(pairwise_dist, length(long))
+  assert_single_logical(check_delete_output)
   
   # check whether there is data loaded into project already
-  if (!is.null(proj$data)) {
+  if (!is.null(proj$data$coords)) {
     
     # return existing project if user not happy to continue
     if (check_delete_output) {
@@ -62,24 +69,24 @@ bind_data <- function(proj, data, check_delete_output = TRUE) {
   }
   
   # update project with new data
-  proj[["data"]] <- data
-  proj[["map"]] <- list()
-  proj[["output"]] <- list()
+  proj$data$coords <- data.frame(long = long, lat = lat)
+  proj$data$pairwise_dist <- pairwise_dist
   
   # return invisibly
   invisible(proj)
 }
 
 #------------------------------------------------
-#' Create mapping space
+#' @title Create mapping space
 #'
-#' TODO - some help text here.
-#' TODO - move to hex grid
+#' @description Create mapping space.
 #'
-#' @param proj the current RMAPI project
-#' @param hex_size size of hexagons
-#' @param buffer size of buffer zone around the data
+#' @param proj object of class \code{rmapi_project}.
+#' @param hex_size size of hexagons.
+#' @param buffer size of buffer zone around the data.
 #'
+#' @import rgeos
+#' @import sp
 #' @export
 #' @examples
 #' # TODO
@@ -87,90 +94,79 @@ bind_data <- function(proj, data, check_delete_output = TRUE) {
 create_map <- function(proj, hex_size = 1, buffer = 2*hex_size) {
   
   # check inputs
-  assert_that( is.rmapi_project(proj) )
-  assert_that( is.pos_scalar(hex_size) )
-  assert_that( is.pos_scalar(buffer) )
-  
-  # TODO - check project has correct elements
+  assert_custom_class(proj, "rmapi_project")
+  assert_single_pos(hex_size)
+  assert_single_pos(buffer)
   
   message("Creating hex map")
   
   # get convex hull of data
-  ch <- chull(proj$data[,2:3])
-  ch_coords <- proj$data[c(ch, ch[1]), 2:3]
+  ch <- chull(proj$data$coords[,c("long", "lat")])
+  ch_coords <- proj$data$coords[c(ch, ch[1]), c("long", "lat")]
   
   # get convex hull in SpatialPolygons format and expand by buffer
-  sp_poly_raw <- SpatialPolygons(list(Polygons(list(Polygon(ch_coords)), ID=1)))
-  sp_poly <- gBuffer(sp_poly_raw, width = buffer)
+  sp_poly_raw <- sp::SpatialPolygons(list(sp::Polygons(list(sp::Polygon(ch_coords)), ID = 1)))
+  sp_poly <- rgeos::gBuffer(sp_poly_raw, width = buffer)
   
   # get hex centre points and polygons
-  hex_pts <- spsample(sp_poly, type="hexagonal", cellsize = hex_size, offset=c(0,0))
+  hex_pts <- sp::spsample(sp_poly, type = "hexagonal", cellsize = hex_size, offset = c(0,0))
   hex_pts_df <- as.data.frame(hex_pts)
   names(hex_pts_df) <- c("long", "lat")
-  hex_polys <- HexPoints2SpatialPolygons(hex_pts)
+  hex_polys <- sp::HexPoints2SpatialPolygons(hex_pts)
   nhex <- length(hex_polys)
   
-  message(paste0(nhex, " hexagons"))
+  message(sprintf("%s hexagons created", nhex))
   
   # add to project
-  proj[["map"]]$hex <- hex_polys
-  proj[["map"]]$hex_centroid <- hex_pts_df
+  proj$map$hex <- hex_polys
+  proj$map$hex_centroid <- hex_pts_df
   
   # return invisibly
   invisible(proj)
 }
 
 #------------------------------------------------
-#' Perform RMAPI simulation
+#' @title Perform RMAPI simulation
 #'
-#' TODO - some help text here.
+#' @description Perform RMAPI simulation.
 #'
-#' @param proj the current RMAPI project
-#' @param Nperms number of permutations to run when checking statistical significance. Set to 0 to skip this step
-#' @param eccentricity eccentricity of ellipses, defined as half the distance between foci divided by the semi-major axis. Ranges between 0 (perfect circle) and 1 (straight line between foci).
+#' @param proj object of class \code{rmapi_project}.
+#' @param n_perms number of permutations to run when checking statistical
+#'   significance. Set to 0 to skip this step.
+#' @param eccentricity eccentricity of ellipses, defined as half the distance
+#'   between foci divided by the semi-major axis. Ranges between 0 (perfect
+#'   circle) and 1 (straight line between foci).
 #'
 #' @export
 #' @examples
 #' # TODO
 
-run_sims <- function(proj, Nperms = 1e2, eccentricity = 0.5, flag_nullmap = 0, dist_model = 0) {
+run_sims <- function(proj, n_perms = 1e2, eccentricity = 0.5, flag_nullmap = 0, dist_model = 0) {
   
   # check inputs
-  assert_that( is.rmapi_project(proj) )
-  assert_that( is.numeric(Nperms) )
-  assert_that( length(Nperms)==1 )
-  assert_that( is.int(Nperms) )
-  assert_that( is.pos_scalar(eccentricity) )
-  assert_that( eccentricity<1 )
-  
-  # TODO - check project has correct elements
-  
-  # Split inputs into components
-  long_node <- proj$data$long
-  lat_node <- proj$data$lat
-  pairwise_stats <- as.matrix(proj$data[,4:ncol(proj$data)])
-  long_hex <- proj$map$hex_centroid$long
-  lat_hex <- proj$map$hex_centroid$lat
+  assert_custom_class(proj, "rmapi_project")
+  assert_single_pos_int(n_perms, zero_allowed = TRUE)
+  assert_single_pos(eccentricity, zero_allowed = TRUE)
+  assert_bounded(eccentricity, left = 0, right = 1, inclusive_left = TRUE, inclusive_right = FALSE)
   
   # ---------------------------------------------
   # Set up arguments for input into C++
   
-  args <- list(long_node = long_node,
-               lat_node = lat_node,
-               vnode = mat_to_rcpp(pairwise_stats),
-               long_hex = long_hex,
-               lat_hex = lat_hex,
-               Nperms = Nperms,
+  args <- list(long_node = proj$data$coords$long,
+               lat_node = proj$data$coords$lat,
+               vnode = mat_to_rcpp(proj$data$pairwise_dist),
+               long_hex = proj$map$hex_centroid$long,
+               lat_hex = proj$map$hex_centroid$lat,
+               n_perms = n_perms,
                eccentricity = eccentricity,
-	       flag_nullmap = flag_nullmap,
-	       dist_model=dist_model
-		) 
+	             flag_nullmap = flag_nullmap,
+	             dist_model = dist_model) 
   
   # ---------------------------------------------
   # Carry out simulations in C++ to generate map data
   
   output_raw <- run_sims_cpp(args)
-  
+  return(output_raw)
   # ---------------------------------------------
   # Process raw output
   

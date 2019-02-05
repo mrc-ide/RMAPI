@@ -2,7 +2,7 @@
 % Please edit documentation in R/data.R
 \name{sim_rect}
 \alias{sim_rect}
-\title{Simulate rectangular lattice of points with one or more barriers}
+\title{Simulate rectangular lattice of points with linear barrier}
 \usage{
 sim_rect(Nx = 10, Ny = 10, sep = 1, barrier_x = 0, barrier_y = 0,
   barrier_angle = 0, barrier_penalty = 10)

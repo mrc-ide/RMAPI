@@ -1,8 +1,9 @@
 
+#include "misc_v3.h"
+
 #include <Rcpp.h>
 #include <chrono>
 #include <vector>
-#include "misc.h"
 
 using namespace std;
 

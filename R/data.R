@@ -266,11 +266,8 @@ sim_custom <- function(x, y, barrier_x = 0, barrier_y = 0, barrier_angle = 0, ba
 sim_rect <- function(Nx = 10, Ny = 10, sep = 1, barrier_x = 0, barrier_y = 0, barrier_angle = 0, barrier_penalty = 10) {
   
   # check inputs
-  assert_that( is.pos_scalar(Nx) )
-  assert_that( is.int(Nx) )
-  assert_that( is.pos_scalar(Ny) )
-  assert_that( is.int(Ny) )
-  assert_that( is.pos_scalar(sep) )
+  assert_single_pos_int(Nx, zero_allowed = FALSE)
+  assert_single_pos_int(Ny, zero_allowed = FALSE)
   
   # generate coordinates
   x_vec <- 1:Nx*sep

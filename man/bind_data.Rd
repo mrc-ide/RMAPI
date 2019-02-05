@@ -4,15 +4,20 @@
 \alias{bind_data}
 \title{Load data into RMAPI project}
 \usage{
-bind_data(proj, data, check_delete_output = TRUE)
+bind_data(proj, long, lat, pairwise_dist, check_delete_output = TRUE)
 }
 \arguments{
-\item{proj}{the current RMAPI project}
+\item{proj}{object of class \code{rmapi_project}.}
 
-\item{data}{a data frame, formatted into the correct RMAPI format (see Details)}
+\item{long}{vector of node longitudes.}
 
-\item{check_delete_output}{whether to perform a check to see if project already contains data, in which case all old data and output will be lost}
+\item{lat}{vector of node latitudes.}
+
+\item{pairwise_dist}{matrix of pairwise distances between nodes.}
+
+\item{check_delete_output}{if \code{TRUE} (the default) then check before
+overwriting any existing data loaded into a project.}
 }
 \description{
-TODO - some help text here.
+Load data into RMAPI project.
 }

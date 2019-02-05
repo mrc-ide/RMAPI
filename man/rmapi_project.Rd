@@ -7,5 +7,8 @@
 rmapi_project()
 }
 \description{
-TODO - some text here.
+Define empty RMAPI project.
+}
+\details{
+#------------------------------------------------
 }

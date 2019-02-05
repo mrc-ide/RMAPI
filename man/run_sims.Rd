@@ -4,17 +4,21 @@
 \alias{run_sims}
 \title{Perform RMAPI simulation}
 \usage{
-run_sims(proj, Nperms = 100, eccentricity = 0.5)
+run_sims(proj, nperms = 100, eccentricity = 0.5, flag_nullmap = 0,
+  dist_model = 0)
 }
 \arguments{
-\item{proj}{the current RMAPI project}
+\item{proj}{object of class \code{rmapi_project}.}
 
-\item{Nperms}{number of permutations to run when checking statistical significance. Set to 0 to skip this step}
+\item{nperms}{number of permutations to run when checking statistical
+significance. Set to 0 to skip this step.}
 
-\item{eccentricity}{eccentricity of ellipses, defined as half the distance between foci divided by the semi-major axis. Ranges between 0 (perfect circle) and 1 (straight line between foci).}
+\item{eccentricity}{eccentricity of ellipses, defined as half the distance
+between foci divided by the semi-major axis. Ranges between 0 (perfect
+circle) and 1 (straight line between foci).}
 }
 \description{
-TODO - some help text here.
+Perform RMAPI simulation.
 }
 \examples{
 # TODO

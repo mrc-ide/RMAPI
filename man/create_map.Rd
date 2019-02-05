@@ -7,15 +7,14 @@
 create_map(proj, hex_size = 1, buffer = 2 * hex_size)
 }
 \arguments{
-\item{proj}{the current RMAPI project}
+\item{proj}{object of class \code{rmapi_project}.}
 
-\item{hex_size}{size of hexagons}
+\item{hex_size}{size of hexagons.}
 
-\item{buffer}{size of buffer zone around the data}
+\item{buffer}{size of buffer zone around the data.}
 }
 \description{
-TODO - some help text here.
-TODO - move to hex grid
+Create mapping space.
 }
 \examples{
 # TODO

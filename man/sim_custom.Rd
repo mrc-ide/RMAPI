@@ -2,7 +2,7 @@
 % Please edit documentation in R/data.R
 \name{sim_custom}
 \alias{sim_custom}
-\title{Simulate rectangular lattice of points with one or more barriers}
+\title{Create distance-based pairwise data using input node positions with linear barrier}
 \usage{
 sim_custom(x, y, barrier_x = 0, barrier_y = 0, barrier_angle = 0,
   barrier_penalty = 10)
