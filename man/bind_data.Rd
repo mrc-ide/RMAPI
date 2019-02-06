@@ -4,7 +4,7 @@
 \alias{bind_data}
 \title{Load data into RMAPI project}
 \usage{
-bind_data(proj, long, lat, pairwise_dist, check_delete_output = TRUE)
+bind_data(proj, long, lat, stat_dist, check_delete_output = TRUE)
 }
 \arguments{
 \item{proj}{object of class \code{rmapi_project}.}
@@ -13,7 +13,7 @@ bind_data(proj, long, lat, pairwise_dist, check_delete_output = TRUE)
 
 \item{lat}{vector of node latitudes.}
 
-\item{pairwise_dist}{matrix of pairwise distances between nodes.}
+\item{stat_dist}{matrix of pairwise statistics between nodes.}
 
 \item{check_delete_output}{if \code{TRUE} (the default) then check before
 overwriting any existing data loaded into a project.}

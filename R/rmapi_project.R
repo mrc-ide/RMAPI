@@ -10,7 +10,8 @@ rmapi_project <- function() {
   
   # initialise project with default values
   ret <- list(data = list(coords = NULL,
-                          pairwise_dist = NULL),
+                          stat_dist = NULL,
+                          spatial_dist = NULL),
               map = NULL,
               output = NULL)
   
@@ -20,8 +21,12 @@ rmapi_project <- function() {
 }
 
 #------------------------------------------------
-# overload print() function
-#' @noRd
+#' @title Overload print function for RMAPI project
+#'
+#' @description Overload print function for RMAPI project.
+#'
+#' @export
+
 print.rmapi_project <- function(proj, ...) {
   
   # print summary
@@ -32,8 +37,12 @@ print.rmapi_project <- function(proj, ...) {
 }
 
 #------------------------------------------------
-# overload summary() function.
-#' @noRd
+#' @title Overload summary function for RMAPI project
+#'
+#' @description Overload summary function for RMAPI project.
+#'
+#' @export
+
 summary.rmapi_project <- function(proj, ...) {
   
   # print data details
@@ -64,8 +73,12 @@ summary.rmapi_project <- function(proj, ...) {
 }
 
 #------------------------------------------------
-# make new print function for standard print
-#' @noRd
+#' @title Print unclassed RMAPI project
+#'
+#' @description Print unclassed RMAPI project.
+#'
+#' @export
+
 print_full <- function(proj) {
   
   # check that viewing rmapi_project
@@ -76,8 +89,23 @@ print_full <- function(proj) {
 }
 
 #------------------------------------------------
-# determine if object is of class rmapi_project
-#' @noRd
+#' @title Overload plot function for RMAPI project
+#'
+#' @description Overload plot function for RMAPI project.
+#'
+#' @export
+
+plot.rmapi_project <- function(x, y, ...) {
+  plot_map(x)
+}
+
+#------------------------------------------------
+#' @title Determine if object is of class rmapi_project
+#'
+#' @description Determine if object is of class rmapi_project.
+#'
+#' @export
+
 is.rmapi_project <- function(x) {
   inherits(x, "rmapi_project")
 }

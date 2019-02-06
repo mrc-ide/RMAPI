@@ -4,18 +4,25 @@
 \alias{run_sims}
 \title{Perform RMAPI simulation}
 \usage{
-run_sims(proj, nperms = 100, eccentricity = 0.5, flag_nullmap = 0,
-  dist_model = 0)
+run_sims(proj, eccentricity = 0.5, n_perms = 100,
+  min_intersections = 5, dist_breaks = NULL)
 }
 \arguments{
 \item{proj}{object of class \code{rmapi_project}.}
 
-\item{nperms}{number of permutations to run when checking statistical
-significance. Set to 0 to skip this step.}
-
 \item{eccentricity}{eccentricity of ellipses, defined as half the distance
 between foci divided by the semi-major axis. Ranges between 0 (perfect
 circle) and 1 (straight line between foci).}
+
+\item{n_perms}{number of permutations to run when checking statistical
+significance. Set to 0 to skip this step.}
+
+\item{min_intersections}{minimum number of ellipses that must intersect a hex
+for it to be included in the final map.}
+
+\item{dist_breaks}{vector of breaks that divide spatial distances into
+permutation groups. Defaults to the full spatial range of the data, i.e.
+all edges are included in permutation testing.}
 }
 \description{
 Perform RMAPI simulation.

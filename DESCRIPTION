@@ -12,7 +12,8 @@ Imports:
     Rcpp (>= 0.12.13),
     assertthat,
     sp,
-    rgeos
+    rgeos,
+    viridisLite
 LinkingTo:
     Rcpp
 RoxygenNote: 6.1.1

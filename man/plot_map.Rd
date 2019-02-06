@@ -4,13 +4,13 @@
 \alias{plot_map}
 \title{Simple filled contour plot of RMAPI output}
 \usage{
-plot_map(proj, variable = "map_values")
+plot_map(proj, variable = "hex_values")
 }
 \arguments{
-\item{proj}{the current RMAPI project}
+\item{proj}{object of class \code{rmapi_project}.}
 
-\item{variable}{which element of the project output to use as map colours}
+\item{variable}{which element of the project output to use as map colours.}
 }
 \description{
-TODO - some help text here.
+Simple filled contour plot of RMAPI output.
 }

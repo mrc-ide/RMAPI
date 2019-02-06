@@ -1,25 +1,97 @@
 
 #------------------------------------------------
-#' Simple filled contour plot of RMAPI output
+# produce smooth colours directly from numeric values
+#' @noRd
+smooth_cols <- function (x,
+                         xmin = min(x, na.rm = TRUE),
+                         xmax = max(x, na.rm = TRUE), 
+                         n = 1e3,
+                         raw_cols = NULL) {
+  
+  # check inputs
+  assert_vector(x)
+  assert_numeric(x)
+  assert_single_numeric(xmin)
+  assert_leq(xmin, min(x, na.rm = TRUE))
+  assert_single_numeric(xmax)
+  assert_greq(xmax, max(x, na.rm = TRUE))
+  assert_single_pos_int(n, zero_allowed = FALSE)
+  
+  # scale to between 0 and 1
+  x <- (x - xmin)/(xmax - xmin)
+  
+  # define default colours
+  if (is.null(raw_cols)) {
+    rawCols <- c("#00008F", "#00009F", "#0000AF", "#0000BF", 
+                 "#0000CF", "#0000DF", "#0000EF", "#0000FF", "#0010FF", 
+                 "#0020FF", "#0030FF", "#0040FF", "#0050FF", "#0060FF", 
+                 "#0070FF", "#0080FF", "#008FFF", "#009FFF", "#00AFFF", 
+                 "#00BFFF", "#00CFFF", "#00DFFF", "#00EFFF", "#00FFFF", 
+                 "#10FFEF", "#20FFDF", "#30FFCF", "#40FFBF", "#50FFAF", 
+                 "#60FF9F", "#70FF8F", "#80FF80", "#8FFF70", "#9FFF60", 
+                 "#AFFF50", "#BFFF40", "#CFFF30", "#DFFF20", "#EFFF10", 
+                 "#FFFF00", "#FFEF00", "#FFDF00", "#FFCF00", "#FFBF00", 
+                 "#FFAF00", "#FF9F00", "#FF8F00", "#FF8000", "#FF7000", 
+                 "#FF6000", "#FF5000", "#FF4000", "#FF3000", "#FF2000", 
+                 "#FF1000", "#FF0000", "#EF0000", "#DF0000", "#CF0000", 
+                 "#BF0000", "#AF0000", "#9F0000", "#8F0000", "#800000")
+  }
+  
+  # get colours from colour palette
+  mypal <- colorRampPalette(rawCols)
+  ret <- mypal(n + 1)[floor(x*n) + 1]
+  
+  return(ret)
+}
+
+#------------------------------------------------
+#' @title Simple filled contour plot of RMAPI output
 #'
-#' TODO - some help text here.
+#' @description Simple filled contour plot of RMAPI output.
 #'
-#' @param proj the current RMAPI project
-#' @param variable which element of the project output to use as map colours
-#'
+#' @param proj object of class \code{rmapi_project}.
+#' @param variable which element of the project output to use as map colours.
+#'   
 #' @export
 
-plot_map <- function(proj, variable = "map_values") {
+plot_map <- function(proj, variable = NULL) {
 	
   # check inputs
-  assert_that( is.rmapi_project(proj) )
-  assert_that( variable %in% names(proj$output))
+  assert_custom_class(proj, "rmapi_project")
+  if (is.null(variable)) {
+    if ("hex_values" %in% names(proj$output)) {
+      col_vec <- smooth_cols(proj$output$hex_values)
+      col_vec <- proj$output$hex_values
+    } else {
+      col_vec <- grey(0.8)
+    }
+  } else {
+    assert_in(variable, names(proj$output))
+    col_vec <- smooth_cols(proj$output[[variable]])
+    col_vec <- proj$output[[variable]]
+  }
   
-	# get output
-	plot_vals <- proj$output[[variable]]
-	
-	plot(proj$map$hex, col = smooth_cols(plot_vals), border = NA, main = variable)
-	
+  # get hex data into dataframe
+  hex_df <- ggplot2::fortify(proj$map$hex)
+  hex_df$col <- col_vec[as.numeric(hex_df$group)]
+  
+  # produce plot
+  plot1 <- ggplot() + theme_bw() + theme(panel.grid.major = element_blank(),
+                                         panel.grid.minor = element_blank())
+  
+  # add hexs
+  plot1 <- plot1 + geom_polygon(aes(x = long, y = lat, group = group, fill = col), data = hex_df)
+  
+  # add points
+  plot1 <- plot1 + geom_point(aes(x = long, y = lat), size = 0.5, data = proj$data$coords)
+  
+  # titles and legends
+  #plot1 <- plot1 + scale_fill_gradientn(colours = viridisLite::magma(100), name = "hex_value")
+  plot1 <- plot1 + scale_fill_gradientn(colours = c("#4575B4", "#91BFDB", "#E0F3F8", "#FEE090", "#FC8D59", "#D73027"), name = "hex_value")
+  
+  
+	# return plot object
+  return(plot1)
 }
 
 #------------------------------------------------
@@ -55,36 +127,3 @@ barrier_lines <- function(barrier_x = 0, barrier_y = 0, barrier_angle = 0, ...) 
   }
 }
 
-#------------------------------------------------
-# produce smooth colours directly from numeric values
-# (not exported)
-
-smooth_cols <- function (x, xmin = min(x, na.rm = T), xmax = max(x, na.rm = TRUE), 
-          n = 1000, raw_cols = NULL) {
-  
-  # scale to between 0 and 1
-  x <- (x - xmin)/(xmax - xmin)
-  
-  # define default colours
-  if (is.null(raw_cols)) {
-    rawCols <- c("#00008F", "#00009F", "#0000AF", "#0000BF", 
-                 "#0000CF", "#0000DF", "#0000EF", "#0000FF", "#0010FF", 
-                 "#0020FF", "#0030FF", "#0040FF", "#0050FF", "#0060FF", 
-                 "#0070FF", "#0080FF", "#008FFF", "#009FFF", "#00AFFF", 
-                 "#00BFFF", "#00CFFF", "#00DFFF", "#00EFFF", "#00FFFF", 
-                 "#10FFEF", "#20FFDF", "#30FFCF", "#40FFBF", "#50FFAF", 
-                 "#60FF9F", "#70FF8F", "#80FF80", "#8FFF70", "#9FFF60", 
-                 "#AFFF50", "#BFFF40", "#CFFF30", "#DFFF20", "#EFFF10", 
-                 "#FFFF00", "#FFEF00", "#FFDF00", "#FFCF00", "#FFBF00", 
-                 "#FFAF00", "#FF9F00", "#FF8F00", "#FF8000", "#FF7000", 
-                 "#FF6000", "#FF5000", "#FF4000", "#FF3000", "#FF2000", 
-                 "#FF1000", "#FF0000", "#EF0000", "#DF0000", "#CF0000", 
-                 "#BF0000", "#AF0000", "#9F0000", "#8F0000", "#800000")
-  }
-  
-  # get colours from colour palette
-  myPal <- colorRampPalette(rawCols)
-  ret <- myPal(n + 1)[floor(x*n) + 1]
-  
-  return(ret)
-}
