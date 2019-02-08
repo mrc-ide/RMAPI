@@ -4,7 +4,7 @@
 \alias{plot_map}
 \title{Simple filled contour plot of RMAPI output}
 \usage{
-plot_map(proj, variable = "hex_values")
+plot_map(proj, variable = NULL)
 }
 \arguments{
 \item{proj}{object of class \code{rmapi_project}.}

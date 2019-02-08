@@ -17,8 +17,9 @@ bool ellipse_check(const double x, const double y, const double xf1, const doubl
 }
 
 //------------------------------------------------
+// compute map and run permutation test
 // [[Rcpp::export]]
-Rcpp::List run_sims_cpp(Rcpp::List args)
+Rcpp::List run_sims_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::List args_progress)
 {
 	
 	// start timer
@@ -31,14 +32,15 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 	vector<double> node_long = rcpp_to_vector_double(args["node_long"]);                  //Longitude of data nodes
 	vector<double> node_lat = rcpp_to_vector_double(args["node_lat"]);                    //Latitude of data nodes
 	vector<double> edge_value = rcpp_to_vector_double(args["edge_value"]);                //Values of edges
-	//vector<int> edge_group = rcpp_to_vector_int(args["edge_group"]);                      //Spatial grouping of edges
 	vector<vector<int>> edge_group_list = rcpp_to_matrix_int(args["edge_group_list"]);    //List of which edges belong to each group
 	vector<double> hex_long = rcpp_to_vector_double(args["hex_long"]);                    //Longitude of hex cells
 	vector<double> hex_lat = rcpp_to_vector_double(args["hex_lat"]);                      //Latitude of hex cells
 	int Nperms = rcpp_to_int(args["n_perms"]);                                            //Number of permutations to run (if 0, no permutation)
 	int min_intersections = rcpp_to_int(args["min_intersections"]);                       //Minimum number of ellipses required to insect a hex
 	double eccentricity = rcpp_to_double(args["eccentricity"]);                           //Eccentricity of ellipses (see help for details)
-	bool divide_weights = rcpp_to_bool(args["divide_weights"]);
+	bool report_progress = rcpp_to_bool(args["report_progress"]);                         //Whether to update progress bar
+	Rcpp::Function update_progress = args_functions["update_progress"];                   //R function for updating progress bar
+  
   
 	//Derived values/fixed constants ------------------------------------------------------------------------------------------------
   
@@ -85,7 +87,7 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 		}
 	}
   
-	chrono_timer(t0);
+	//chrono_timer(t0);
   
 	//Create map by summation of ellipses intersecting each hex ------------------------------------------------------------------------------------------------
 
@@ -118,15 +120,11 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 		// divide hex value by weight
 		if (Nintersections[hex] >= min_intersections)
 		{
-		  if (divide_weights) {
-		    hex_values[hex] /= hex_weights[hex];
-		  } else {
-		    hex_values[hex] /= double(Nintersections[hex]);
-		  }
+	    hex_values[hex] /= hex_weights[hex];
 		}
 	}
   
-	chrono_timer(t0);
+	//chrono_timer(t0);
   
 	//Permute data to check statistical significance-------------------------------------------------------------------------------------------------------------------------------------------
   
@@ -148,6 +146,12 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 		// loop through permutations
 		for (int perm = 0; perm < Nperms; perm++)
 		{
+		  
+		  // report progress
+		  if (report_progress) {
+		    update_progress(args_progress, "pb", perm, Nperms-1);
+		  }
+		  
 		  // new permutation
 			reshuffle_group(perm_vec, edge_group_list);
 		  
@@ -161,87 +165,21 @@ Rcpp::List run_sims_cpp(Rcpp::List args)
 						int this_ellipse = intersections[hex][j];
 					  hex_values_perm[hex] += edge_value[perm_vec[this_ellipse]] * area_inv[this_ellipse];
 					}
-					if (divide_weights) {
-					  hex_values_perm[hex] /= hex_weights[hex];
-					} else {
-					  hex_values_perm[hex] /= double(Nintersections[hex]);
-					}
+				  hex_values_perm[hex] /= hex_weights[hex];
 				  if (hex_values_perm[hex] < hex_values[hex])
 				  {
 				    empirical_p[hex]++;
 				  }
 				}
 			}
-			//hex_values = hex_values_perm;
-			/*
-			double vmax1 = max(hex_values_perm[hex]);
-			double vmin1 = min(hex_values_perm[hex]);
-			double vinv1 = 1.0 / (vmax1 - vmin1);
-			for (int hex = 0; hex < Nhex; hex++)
-			{
-				if (Nintersections[hex] > 0)
-				{
-					map_values1p[hex] = (map_values1p[hex] - vmin1)* vinv1;
-					if (map_values1p[hex] - map_values2[hex] < map_values3[hex]) { empirical_p[hex] += dp; }
-				}
-			}
-			*/
+			
 		} // end loop over Nperms
-
-		chrono_timer(t0);
-    /*
-		for (int hex = 0; hex < Nhex; hex++)
-		{
-			if (Nintersections[hex] > 0)
-			{
-				if (empirical_p[hex] < 0.975 && empirical_p[hex] > 0.025) { empirical_p[hex] = 0.0; }
-				else { empirical_p[hex] = 1.0; }
-			}
-			else
-			{
-				empirical_p[hex] = 0.0;
-			}
-		}
-    */
+    
+		//chrono_timer(t0);
+    
 	} // end Nperms > 0 condition
-
-	//Normalize map values----------------------------------------------------------------------------------
-  /*
-	vmax3 = -1.0e99;
-	vmin3 = 1.0e99;
-	for (int hex = 0; hex < Nhex; hex++)
-	{
-		if (map_values3[hex] > vmax3) { vmax3 = map_values3[hex]; }
-		if (map_values3[hex] < vmin3) { vmin3 = map_values3[hex]; }
-	}
-	vinv3 = vmax3 == vmin3 ? 1.0 : (1.0 / (vmax3 - vmin3));
-	for (int hex = 0; hex < Nhex; hex++)
-	{
-		map_values3[hex] = (map_values3[hex] - vmin3) * vinv3;
-		//Rcpp::Rcout << "\nMap1 value at hex " << hex << ": " << map_values1[hex] << " Map2 value: " << map_values2[hex] << " Map3 value: " << map_values3[hex] << " EP value: " << empirical_p[hex] << " Ints: " << Nintersections[hex] << " Wt: " << map_weights[hex];
-	}
-
-	//Return output as an Rcpp list ------------------------------------------------------------------------------------------------
-	Rcpp::List ret;
-	ret.push_back(Rcpp::wrap(Nintersections));
-	ret.push_back(Rcpp::wrap(map_weights));
-	ret.push_back(Rcpp::wrap(map_values1));
-	ret.push_back(Rcpp::wrap(map_values2));
-	ret.push_back(Rcpp::wrap(map_values3));
-	ret.push_back(Rcpp::wrap(empirical_p));
-
-	Rcpp::StringVector ret_names;
-	ret_names.push_back("Nintersections");
-	ret_names.push_back("map_weights");
-	ret_names.push_back("map_values1");
-	ret_names.push_back("map_values2");
-	ret_names.push_back("map_values3");
-	ret_names.push_back("empirical_p");
-
-	ret.names() = ret_names;
-	return ret;
-  */
 	
+	// return list
 	return Rcpp::List::create(Rcpp::Named("hex_values") = hex_values,
                            Rcpp::Named("hex_weights") = hex_weights,
                            Rcpp::Named("empirical_p") = empirical_p,

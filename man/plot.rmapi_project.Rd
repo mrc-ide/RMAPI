@@ -6,6 +6,13 @@
 \usage{
 plot.rmapi_project(x, y, ...)
 }
+\arguments{
+\item{x}{object of class \code{rmapi_project}.}
+
+\item{y}{(ignored).}
+
+\item{...}{(ignored).}
+}
 \description{
 Overload plot function for RMAPI project.
 }

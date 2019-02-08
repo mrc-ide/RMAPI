@@ -4,7 +4,12 @@
 \alias{summary.rmapi_project}
 \title{Overload summary function for RMAPI project}
 \usage{
-summary.rmapi_project(proj, ...)
+summary.rmapi_project(object, ...)
+}
+\arguments{
+\item{object}{object of class \code{rmapi_project}.}
+
+\item{...}{(ignored).}
 }
 \description{
 Overload summary function for RMAPI project.

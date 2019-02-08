@@ -219,8 +219,11 @@ create_map <- function(proj, hex_size = 1, buffer = 2*hex_size) {
 #'
 #' @param proj object of class \code{rmapi_project}.
 #' @param eccentricity eccentricity of ellipses, defined as half the distance
-#'   between foci divided by the semi-major axis. Ranges between 0 (perfect
-#'   circle) and 1 (straight line between foci).
+#'   between foci divided by the semi-major axis. We can say \eqn{e = sqrt{1 -
+#'   b^2/a^2}}, where \eqn{e} is the eccentricity, \eqn{a} is the length of the
+#'   semi-major axis, and \eqn{b} is the length of the semi-minor axis.
+#'   Eccentricity ranges between 0 (perfect circle) and 1 (straight line between
+#'   foci).
 #' @param n_perms number of permutations to run when checking statistical
 #'   significance. Set to 0 to skip this step.
 #' @param min_intersections minimum number of ellipses that must intersect a hex
@@ -231,14 +234,14 @@ create_map <- function(proj, hex_size = 1, buffer = 2*hex_size) {
 #' @param n_breaks alternative to defining sequence of \code{dist_breaks}. If
 #'   \code{dist_breaks == NULL} then the full spatial range of the data is split
 #'   into \code{n_breaks} equal groups.
+#' @param report_progress if \code{TRUE} then a progress bar is printed to the
+#'   console during the permutation testing procedure.
 #'
 #' @export
-#' @examples
-#' # TODO
 
 run_sims <- function(proj, eccentricity = 0.5, n_perms = 1e2,
                      min_intersections = 5, dist_breaks = NULL, n_breaks = 1,
-                     divide_weights = TRUE) {
+                     report_progress = TRUE) {
   
   # check inputs
   assert_custom_class(proj, "rmapi_project")
@@ -264,23 +267,29 @@ run_sims <- function(proj, eccentricity = 0.5, n_perms = 1e2,
   edge_group <- as.numeric(cut(proj$data$spatial_dist, breaks = dist_breaks, include.lowest = TRUE))
   edge_group_list <- mapply(function(x) which(edge_group == x) - 1, 1:n_breaks, SIMPLIFY = FALSE)
   
+  # create function list
+  args_functions <- list(update_progress = update_progress)
+  
+  # create progress bars
+  pb <- txtProgressBar(0, n_perms, initial = NA, style = 3)
+  args_progress <- list(pb = pb)
+  
   # create argument list
   args <- list(node_long = proj$data$coords$long,
                node_lat = proj$data$coords$lat,
                edge_value = proj$data$stat_dist,
-               #edge_group = edge_group,
                edge_group_list = edge_group_list,
                hex_long = proj$map$hex_centroid$long,
                hex_lat = proj$map$hex_centroid$lat,
+               eccentricity = eccentricity,
                n_perms = n_perms,
                min_intersections = min_intersections,
-               eccentricity = eccentricity,
-               divide_weights = divide_weights)
+               report_progress = report_progress)
   
   # ---------------------------------------------
   # Carry out simulations in C++ to generate map data
   
-  output_raw <- run_sims_cpp(args)
+  output_raw <- run_sims_cpp(args, args_functions, args_progress)
   
   # ---------------------------------------------
   # Process raw output
@@ -309,5 +318,57 @@ run_sims <- function(proj, eccentricity = 0.5, n_perms = 1e2,
   
   # return invisibly
   invisible(proj)
+}
+
+#------------------------------------------------
+#' @title Calculate ellipse polygon coordinates from foci and eccentricity
+#'
+#' @description Calculate ellipse polygon coordinates from foci and eccentricity.
+#'
+#' @param f1 x- and y-coordinates of the first focus.
+#' @param f2 x- and y-coordinates of the first focus.
+#' @param ecc eccentricity of the ellipse, defined as half the distance between
+#'   foci divided by the semi-major axis. We can say \eqn{e = sqrt{1 -
+#'   b^2/a^2}}, where \eqn{e} is the eccentricity, \eqn{a} is the length of the
+#'   semi-major axis, and \eqn{b} is the length of the semi-minor axis.
+#'   Eccentricity ranges between 0 (perfect circle) and 1 (straight line between
+#'   foci).
+#' @param n number of points in polygon.
+#'
+#' @export
+
+get_ellipse <- function(f1 = c(-3,-2), f2 = c(3,2), ecc = 0.8, n = 100) {
+  
+  # check inputs
+  assert_vector(f1)
+  assert_length(f1, 2)
+  assert_numeric(f1)
+  assert_vector(f2)
+  assert_length(f2, 2)
+  assert_numeric(f2)
+  assert_single_pos(ecc)
+  assert_bounded(ecc, inclusive_left = FALSE)
+  assert_single_pos_int(n)
+  
+  # define half-distance between foci (c), semi-major axis (a) and semi-minor
+  # axis(b)
+  c <- 0.5*sqrt(sum((f2-f1)^2))
+  a <- c/ecc
+  b <- sqrt(a^2-c^2)
+  
+  # define slope of ellipse (alpha) and angle of points from centre (theta)
+  alpha <- atan2(f2[2]-f1[2], f2[1]-f1[1])
+  theta <- seq(0, 2*pi, l = n+1)
+  
+  # define x and y coordinates
+  x <- (f1[1]+f2[1])/2 + a*cos(theta)*cos(alpha) - b*sin(theta)*sin(alpha)
+  y <- (f1[2]+f2[2])/2 + a*cos(theta)*sin(alpha) + b*sin(theta)*cos(alpha)
+  
+  # ensure ellipse closes perfectly
+  x[n+1] <- x[1]
+  y[n+1] <- y[1]
+  
+  # return as dataframe
+  return(data.frame(x = x, y = y))
 }
 

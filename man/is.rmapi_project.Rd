@@ -6,6 +6,9 @@
 \usage{
 is.rmapi_project(x)
 }
+\arguments{
+\item{x}{object to query class.}
+}
 \description{
 Determine if object is of class rmapi_project.
 }

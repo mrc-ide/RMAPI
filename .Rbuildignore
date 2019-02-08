@@ -1,4 +1,5 @@
 ^ignore$
+^R_ignore$
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.travis\.yml$
@@ -6,3 +7,5 @@
 ^appveyor\.yml$
 ^_pkgdown\.yml$
 ^docs$
+^index.md
+^RMAPI_.*\.tar\.gz$

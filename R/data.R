@@ -1,286 +1,159 @@
 
 #------------------------------------------------
-#' example data set to test RMAPI functionality
+#' @title Simulate data from simple model
 #'
-#' Made up data for testing - this data set should be deleted prior to release.
-#' \cr
-#' \cr
-#' Spatial points corresponding to real DRC demographic and health survey cluster locations. These points can be used to generate simulated data under different spatial barriers using the \code{sim_custom()} function.
+#' @description Simulate data from simple model.
 #'
-#' @docType data
+#' @param node_long longitudes of nodes.
+#' @param node_lat latitudes of nodes.
+#' @param barrier_list list of polygons representing barriers. Each element of
+#'   the list must be a dataframe with columns \code{long} and \code{lat}
+#'   specifying the coordinates of points that make up the polygon. Polygons
+#'   must be complete rings, meaning the final row of the dataframe must equal
+#'   the first row.
+#' @param barrier_penalty penalty values of each barrier.
+#' @param barrier_method the method by which penalties are applied:
+#'   \itemize{
+#'     \item{bullet 1 compare line, apply penalty on intersection}
+#'     \item{bullet 2 compare line, apply penalty per unit intersection}
+#'     \item{bullet 3 compare ellipse, apply penalty per unit area intersection}
+#'   }
+#' @param ecc eccentricity of ellipses (only used under \code{barrier_method = 3}).
+#' @param n_ell number of points that make up an ellipse (only used under \code{barrier_method = 3}).
+#' @param dist_transform the method by which distances are transformed to produce the final statistic:
+#'   \itemize{
+#'     \item{bullet 1 linear}
+#'     \item{bullet 2 exponential decay}
+#'   }
+#' @param lambda the rate of decay of the exponential function (only used under \code{dist_transform = 2}).
+#' @param eps the standard deviation of white noise applied to final statistics.
 #'
-#' @examples
-#' # TODO
-#'
-#' @usage data(coords_DRC)
-"coords_DRC"
-
-
-#------------------------------------------------
-#' Create new distance-based pairwise data using input node positions with custom barrier
-#'
-#' TODO - some help text here.
-#'
+#' @import sf
 #' @export
 
-sim_custom_barrier <- function(x,y,xbarrier,ybarrier,rbarrier,vbarrier,distance_model)
-{    
+sim_simple <- function(node_long,
+                       node_lat,
+                       barrier_list = list(),
+                       barrier_penalty = numeric(),
+                       barrier_method = 1,
+                       ecc = 0.9,
+                       n_ell = 20,
+                       dist_transform = 1,
+                       lambda = 0.1,
+                       eps = 0.1) {
   
   # check inputs
-  Nnodes=length(x)
-  Nbarriers=length(xbarrier)
-  assert_that( all(is.numeric(x)) )
-  assert_that( all(is.numeric(y)) )
-  assert_that( all(is.numeric(xbarrier)) )
-  assert_that( all(is.numeric(ybarrier)) )
-  assert_that( all(is.numeric(vbarrier)) )
-  assert_that( Nnodes==length(y) )
-  assert_that( Nbarriers==length(ybarrier) )
-  assert_that( Nbarriers==length(vbarrier) )
-
-  coords <- cbind(x, y)
-  colnames(coords) <- c("long", "lat")
-  if(distance_model == 1) { sim_stat <- as.matrix(dist(coords)) }
-  else { sim_stat <- as.matrix(dist(coords)) }
-  
-  args_h <- list(long_node = x,
-                 lat_node = y,
-                 long_barrier = xbarrier,
-                 lat_barrier = ybarrier,
-		 rbarrier=rbarrier,
-		 vbarrier=vbarrier) 
-
-  output_raw <- hexbarrier01(args_h)
-  vbsum <- output_raw$vbsum
-  
-  message("Calculating pairwise data based on modified distance")
-
-  for(i in 1:(Nnodes-1))
-  {
-    for(j in (i+1):Nnodes)
-    {
-      sim_stat[i,j]=sim_stat[i,j]+vbsum[((i-1)*Nnodes)+j]
+  assert_vector(node_long)
+  assert_numeric(node_long)
+  assert_vector(node_lat)
+  assert_numeric(node_lat)
+  assert_same_length(node_long, node_lat)
+  assert_list(barrier_list)
+  nb <- length(barrier_list)
+  if (nb > 0) {
+    for (i in 1:nb) {
+      assert_dataframe(barrier_list[[i]])
+      assert_in("long", names(barrier_list[[i]]))
+      assert_in("lat", names(barrier_list[[i]]))
+      assert_eq(barrier_list[[i]][1,], barrier_list[[i]][nrow(barrier_list[[i]]),])
     }
   }
+  assert_vector(barrier_penalty)
+  assert_numeric(barrier_penalty)
+  assert_same_length(barrier_list, barrier_penalty)
+  assert_single_pos_int(barrier_method)
+  assert_in(barrier_method, 1:3)
+  assert_single_numeric(ecc)
+  assert_bounded(ecc, inclusive_left = FALSE)
+  assert_single_pos_int(n_ell, zero_allowed = FALSE)
+  assert_single_pos_int(dist_transform)
+  assert_in(dist_transform, 1:2)
+  assert_single_numeric(lambda)
+  assert_single_pos(eps, zero_allowed = TRUE)
   
-  # produce final return object
-  cluster_names <- paste0("cluster", 1:nrow(coords))
-  ret <- cbind(data.frame(name = cluster_names, stringsAsFactors = FALSE), coords, sim_stat)
-  
-  # return
-  return(ret)
-}
-
-#------------------------------------------------
-#' Load generic data from files
-
-  load_data <- function(coord_data_file,v_data_file)
-{
-  coord_data=read.table(coord_data_file)
-  x=coord_data["V1"]$V1
-  y=coord_data["V2"]$V2
-  npoints=length(x)
-  coords <- cbind(x, y)
-  colnames(coords) <- c("long", "lat")
-  v_data=read.table(v_data_file)
-  v=v_data["V1"]$V1
-  assert_that(length(v) == npoints^2)			# Pairwise data file should contain n^2 points where n is number of nodes
-  pwvalues=matrix(v,nrow=npoints,byrow=TRUE)
-
-  # produce final return object
-  cluster_names <- paste0("cluster", 1:nrow(coords))
-  ret <- cbind(data.frame(name = cluster_names, stringsAsFactors = FALSE), coords, pwvalues)
-  
-  # return
-  return(ret)
-}
-
-#------------------------------------------------
-#' Load "simulation" data from original MAPI paper
-
-  load_old_data1 <- function()
-{
-  coord_data=read.table("C:/Users/Kjfras16/Desktop/NewGitHub/RMAPI/data/old_coord_data.txt")
-  x=coord_data["V1"]$V1
-  y=coord_data["V2"]$V2
-  coords <- cbind(x, y)
-  colnames(coords) <- c("long", "lat")
-  v_data=read.table("C:/Users/Kjfras16/Desktop/NewGitHub/RMAPI/data/old_v_data.txt")
-  v=v_data["V1"]$V1
-  sim_data=matrix(v,nrow=200,byrow=TRUE)
-
-  # produce final return object
-  cluster_names <- paste0("cluster", 1:nrow(coords))
-  ret <- cbind(data.frame(name = cluster_names, stringsAsFactors = FALSE), coords, sim_data)
-  
-  # return
-  return(ret)
-}
-
-#------------------------------------------------
-#' Load "simulation" data from original MAPI paper with added 'void'
-
-  load_old_data2 <- function()
-{
-  coord_data=read.table("C:/Users/Kjfras16/Desktop/NewGitHub/RMAPI/data/old_coord_data2.txt")
-  x=coord_data["V1"]$V1
-  y=coord_data["V2"]$V2
-  coords <- cbind(x, y)
-  colnames(coords) <- c("long", "lat")
-  v_data=read.table("C:/Users/Kjfras16/Desktop/NewGitHub/RMAPI/data/old_v_data2.txt")
-  v=v_data["V1"]$V1
-  sim_data=matrix(v,nrow=191,byrow=TRUE)
-
-  # produce final return object
-  cluster_names <- paste0("cluster", 1:nrow(coords))
-  ret <- cbind(data.frame(name = cluster_names, stringsAsFactors = FALSE), coords, sim_data)
-  
-  # return
-  return(ret)
-}
-
-#------------------------------------------------
-#' Load "simulation" data from original MAPI paper with added 'voids'
-
-  load_old_data3 <- function()
-{
-  coord_data=read.table("C:/Users/Kjfras16/Desktop/NewGitHub/RMAPI/data/old_coord_data3.txt")
-  x=coord_data["V1"]$V1
-  y=coord_data["V2"]$V2
-  coords <- cbind(x, y)
-  colnames(coords) <- c("long", "lat")
-  v_data=read.table("C:/Users/Kjfras16/Desktop/NewGitHub/RMAPI/data/old_v_data3.txt")
-  v=v_data["V1"]$V1
-  sim_data=matrix(v,nrow=187,byrow=TRUE)
-
-  # produce final return object
-  cluster_names <- paste0("cluster", 1:nrow(coords))
-  ret <- cbind(data.frame(name = cluster_names, stringsAsFactors = FALSE), coords, sim_data)
-  
-  # return
-  return(ret)
-}
-
-#------------------------------------------------
-#' Load "simulation" data from original MAPI paper with added 'voids'
-
-  load_old_data4 <- function()
-{
-  coord_data=read.table("C:/Users/Kjfras16/Desktop/NewGitHub/RMAPI/data/old_coord_data4.txt")
-  x=coord_data["V1"]$V1
-  y=coord_data["V2"]$V2
-  coords <- cbind(x, y)
-  colnames(coords) <- c("long", "lat")
-  v_data=read.table("C:/Users/Kjfras16/Desktop/NewGitHub/RMAPI/data/old_v_data4.txt")
-  v=v_data["V1"]$V1
-  sim_data=matrix(v,nrow=183,byrow=TRUE)
-
-  # produce final return object
-  cluster_names <- paste0("cluster", 1:nrow(coords))
-  ret <- cbind(data.frame(name = cluster_names, stringsAsFactors = FALSE), coords, sim_data)
-  
-  # return
-  return(ret)
-}
-
-#------------------------------------------------
-#' Create distance-based pairwise data using input node positions with linear barrier
-#'
-#' TODO - some help text here.
-#'
-#' @param x positions of points in the x-dimension
-#' @param y positions of points in the y-dimension
-#' @param barrier_x TODO
-#' @param barrier_y TODO
-#' @param barrier_angle TODO
-#' @param barrier_penalty TODO
-#'
-#' @export
-
-sim_custom <- function(x, y, barrier_x = 0, barrier_y = 0, barrier_angle = 0, barrier_penalty = 10) {
-  
-  # check inputs
-  assert_that( all(is.numeric(x)) )
-  assert_that( all(is.numeric(y)) )
-  assert_that( length(x)==length(y) )
-  assert_that( all(is.numeric(barrier_x)) )
-  assert_that( all(is.numeric(barrier_y)) )
-  assert_that( all(is.numeric(barrier_angle)) )
-  assert_that( all(is.numeric(barrier_penalty)) )
-  
-  # recycle inputs if different lengths
-  Nbarrier <- max(mapply(length, list(barrier_x, barrier_y, barrier_angle, barrier_penalty)))
-  barrier_x <- rep(barrier_x, Nbarrier)[1:Nbarrier]
-  barrier_y <- rep(barrier_y, Nbarrier)[1:Nbarrier]
-  barrier_angle <- rep(barrier_angle, Nbarrier)[1:Nbarrier]
-  barrier_penalty <- rep(barrier_penalty, Nbarrier)[1:Nbarrier]
-  
-  # calculate Euclidian distance between nodes
-  coords <- cbind(x, y)
-  colnames(coords) <- c("long", "lat")
-  sim_stat <- as.matrix(dist(coords))
-  
-  # apply barriers
-  for (i in 1:Nbarrier) {
+  # apply barrier penalties
+  intersect_penalty <- 0
+  if (nb > 0) {
     
-    # get shortest distance to barrier
-    theta_rad <- (barrier_angle[i] %% 360)/360*2*pi
-    x_intercept <- barrier_x[i] - barrier_y[i]*tan(theta_rad)
-    dist_barrier <- y*sin(theta_rad) - (x-x_intercept)*cos(theta_rad)
+    # convert barrier list to st_polygon
+    poly_list <- list()
+    for (i in 1:length(barrier_list)) {
+      poly_list[[i]] <- sf::st_polygon(list(as.matrix(barrier_list[[i]])))
+    }
     
-    # find which points lie each side of barrier
-    w1 <- which(dist_barrier>=0)
-    w2 <- which(dist_barrier<=0)
+    # get node coordinates in matrix
+    node_mat <- cbind(node_long, node_lat)
     
-    # apply penalty across barrier
-    sim_stat[w1,w2] <- sim_stat[w1,w2] + barrier_penalty[i]
-    sim_stat[w2,w1] <- sim_stat[w2,w1] + barrier_penalty[i]
+    # if comparing lines
+    if (barrier_method %in% c(1,2)) {
+      
+      # create all pairwise sf_linestring between nodes
+      line_list <- list()
+      n_node <- length(node_long)
+      i2 <- 1
+      for (i in 1:(n_node-1)) {
+        for (j in (i+1):n_node) {
+          line_list[[i2]] <- sf::st_linestring(node_mat[c(i,j),])
+          i2 <- i2+1
+        }
+      }
+      
+      # convert lines and polys to st_sfc
+      line_sfc <- sf::st_sfc(line_list)
+      poly_sfc <- sf::st_sfc(poly_list)
+      
+      # get boolean intersection matrix
+      intersect_mat <- as.matrix(sf::st_intersects(line_sfc, poly_sfc))
+      
+      # convert to length of intersection if using method 2
+      if (barrier_method == 2) {
+        intersect_mat[intersect_mat == TRUE] <- mapply(function(x) sf::st_length(x), sf::st_intersection(line_sfc, poly_sfc))
+      }
+    }
+    
+    # if comparing ellipse
+    if (barrier_method == 3) {
+      
+      # create all pairwise ellipses between nodes
+      ell_list <- list()
+      n_node <- length(node_long)
+      i2 <- 1
+      for (i in 1:(n_node-1)) {
+        for (j in (i+1):n_node) {
+          ell_df <- get_ellipse(f1 = node_mat[i,], f2 = node_mat[j,], ecc = ecc, n = n_ell)
+          ell_list[[i2]] <- sf::st_polygon(list(as.matrix(ell_df)))
+          i2 <- i2+1
+        }
+      }
+      
+      # convert ellipses and polys to st_sfc
+      ell_sfc <- sf::st_sfc(ell_list)
+      poly_sfc <- sf::st_sfc(poly_list)
+      
+      # get boolean intersection matrix
+      intersect_mat <- as.matrix(sf::st_intersects(ell_sfc, poly_sfc))
+      
+      # convert to area of intersection
+      intersect_mat[intersect_mat == TRUE] <- mapply(function(x) sf::st_area(x), sf::st_intersection(ell_sfc, poly_sfc))
+      
+    }
+    
+    # apply penalty
+    intersect_penalty <- rowSums(sweep(intersect_mat, 2, barrier_penalty, '*'))
+    
+  }  # end apply barrier penalties
+  
+  # get pairwise distance plus penalty
+  d <- dist(cbind(node_long, node_lat)) + intersect_penalty
+  
+  # apply transformation
+  if (dist_transform == 2) {
+    d <- exp(-lambda*d)
   }
   
-  # keep upper diagonal only
-  sim_stat[row(sim_stat)>=col(sim_stat)] <- NA
-  
-  # produce final return object
-  cluster_names <- paste0("cluster", 1:nrow(coords))
-  ret <- cbind(data.frame(name = cluster_names, stringsAsFactors = FALSE), coords, sim_stat)
+  # add noise
+  d <- d + rnorm(length(d), sd = eps)
   
   # return
-  return(ret)
-}
-
-#------------------------------------------------
-#' Simulate rectangular lattice of points with linear barrier
-#'
-#' TODO - some help text here.
-#'
-#' @param Nx number of points in the x-dimension
-#' @param Ny number of points in the y-dimension
-#' @param sep TODO
-#' @param barrier_x TODO
-#' @param barrier_y TODO
-#' @param barrier_angle TODO
-#' @param barrier_penalty TODO
-#'
-#' @export
-
-sim_rect <- function(Nx = 10, Ny = 10, sep = 1, barrier_x = 0, barrier_y = 0, barrier_angle = 0, barrier_penalty = 10) {
-  
-  # check inputs
-  assert_single_pos_int(Nx, zero_allowed = FALSE)
-  assert_single_pos_int(Ny, zero_allowed = FALSE)
-  
-  # generate coordinates
-  x_vec <- 1:Nx*sep
-  x_vec <- x_vec - mean(x_vec)
-  y_vec <- 1:Ny*sep
-  y_vec <- y_vec - mean(y_vec)
-  coords <- as.matrix(expand.grid(x_vec, y_vec))
-  x <- coords[,1]
-  y <- coords[,2]
-  
-  # generate data
-  ret <- sim_custom(x, y, barrier_x = barrier_x, barrier_y = barrier_y, barrier_angle = barrier_angle, barrier_penalty = barrier_penalty)
-  
-  # return
-  return(ret)
+  return(d)
 }

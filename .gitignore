@@ -8,6 +8,7 @@
 # OS generated files #
 ######################
 .DS_Store
+
 # specific files and folders #
 ##############################
 ignore/
@@ -17,3 +18,5 @@ ignore/
 R/.Rd*
 .Rproj.user
 inst/doc
+.RData
+.Ruserdata

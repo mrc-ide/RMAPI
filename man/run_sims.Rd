@@ -5,14 +5,18 @@
 \title{Perform RMAPI simulation}
 \usage{
 run_sims(proj, eccentricity = 0.5, n_perms = 100,
-  min_intersections = 5, dist_breaks = NULL)
+  min_intersections = 5, dist_breaks = NULL, n_breaks = 1,
+  report_progress = TRUE)
 }
 \arguments{
 \item{proj}{object of class \code{rmapi_project}.}
 
 \item{eccentricity}{eccentricity of ellipses, defined as half the distance
-between foci divided by the semi-major axis. Ranges between 0 (perfect
-circle) and 1 (straight line between foci).}
+between foci divided by the semi-major axis. We can say \eqn{e = sqrt{1 -
+b^2/a^2}}, where \eqn{e} is the eccentricity, \eqn{a} is the length of the
+semi-major axis, and \eqn{b} is the length of the semi-minor axis.
+Eccentricity ranges between 0 (perfect circle) and 1 (straight line between
+foci).}
 
 \item{n_perms}{number of permutations to run when checking statistical
 significance. Set to 0 to skip this step.}
@@ -23,10 +27,14 @@ for it to be included in the final map.}
 \item{dist_breaks}{vector of breaks that divide spatial distances into
 permutation groups. Defaults to the full spatial range of the data, i.e.
 all edges are included in permutation testing.}
+
+\item{n_breaks}{alternative to defining sequence of \code{dist_breaks}. If
+\code{dist_breaks == NULL} then the full spatial range of the data is split
+into \code{n_breaks} equal groups.}
+
+\item{report_progress}{if \code{TRUE} then a progress bar is printed to the
+console during the permutation testing procedure.}
 }
 \description{
 Perform RMAPI simulation.
-}
-\examples{
-# TODO
 }

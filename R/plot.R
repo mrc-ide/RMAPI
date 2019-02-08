@@ -1,47 +1,32 @@
 
 #------------------------------------------------
-# produce smooth colours directly from numeric values
-#' @noRd
-smooth_cols <- function (x,
-                         xmin = min(x, na.rm = TRUE),
-                         xmax = max(x, na.rm = TRUE), 
-                         n = 1e3,
-                         raw_cols = NULL) {
+#' @title Plot pairwise spatial distance against loaded statistic
+#'
+#' @description Plot pairwise spatial distance against loaded statistic.
+#'
+#' @param proj object of class \code{rmapi_project}.
+#' @param col the colour of points.
+#' 
+#' @export
+
+plot_dist <- function(proj, col = "#00000050") {
   
   # check inputs
-  assert_vector(x)
-  assert_numeric(x)
-  assert_single_numeric(xmin)
-  assert_leq(xmin, min(x, na.rm = TRUE))
-  assert_single_numeric(xmax)
-  assert_greq(xmax, max(x, na.rm = TRUE))
-  assert_single_pos_int(n, zero_allowed = FALSE)
+  assert_custom_class(proj, "rmapi_project")
+  assert_length(col, 1)
   
-  # scale to between 0 and 1
-  x <- (x - xmin)/(xmax - xmin)
+  # create basic plot
+  df_plot <- data.frame(spatial = as.vector(proj$data$spatial_dist), stat = as.vector(proj$data$stat_dist))
+  plot1 <- ggplot(df_plot) + theme_bw()
   
-  # define default colours
-  if (is.null(raw_cols)) {
-    rawCols <- c("#00008F", "#00009F", "#0000AF", "#0000BF", 
-                 "#0000CF", "#0000DF", "#0000EF", "#0000FF", "#0010FF", 
-                 "#0020FF", "#0030FF", "#0040FF", "#0050FF", "#0060FF", 
-                 "#0070FF", "#0080FF", "#008FFF", "#009FFF", "#00AFFF", 
-                 "#00BFFF", "#00CFFF", "#00DFFF", "#00EFFF", "#00FFFF", 
-                 "#10FFEF", "#20FFDF", "#30FFCF", "#40FFBF", "#50FFAF", 
-                 "#60FF9F", "#70FF8F", "#80FF80", "#8FFF70", "#9FFF60", 
-                 "#AFFF50", "#BFFF40", "#CFFF30", "#DFFF20", "#EFFF10", 
-                 "#FFFF00", "#FFEF00", "#FFDF00", "#FFCF00", "#FFBF00", 
-                 "#FFAF00", "#FF9F00", "#FF8F00", "#FF8000", "#FF7000", 
-                 "#FF6000", "#FF5000", "#FF4000", "#FF3000", "#FF2000", 
-                 "#FF1000", "#FF0000", "#EF0000", "#DF0000", "#CF0000", 
-                 "#BF0000", "#AF0000", "#9F0000", "#8F0000", "#800000")
-  }
+  # add points
+  plot1 <- plot1 + geom_point(aes(x = spatial, y = stat), col = col)
   
-  # get colours from colour palette
-  mypal <- colorRampPalette(rawCols)
-  ret <- mypal(n + 1)[floor(x*n) + 1]
+  # titles etc
+  plot1 <- plot1 + xlab("spatial distance") + ylab("statistical distance")
   
-  return(ret)
+  # return plot object
+  return(plot1)
 }
 
 #------------------------------------------------
@@ -51,7 +36,7 @@ smooth_cols <- function (x,
 #'
 #' @param proj object of class \code{rmapi_project}.
 #' @param variable which element of the project output to use as map colours.
-#'   
+#' 
 #' @export
 
 plot_map <- function(proj, variable = NULL) {
@@ -60,14 +45,12 @@ plot_map <- function(proj, variable = NULL) {
   assert_custom_class(proj, "rmapi_project")
   if (is.null(variable)) {
     if ("hex_values" %in% names(proj$output)) {
-      col_vec <- smooth_cols(proj$output$hex_values)
       col_vec <- proj$output$hex_values
     } else {
-      col_vec <- grey(0.8)
+      col_vec <- rep(0, length(proj$map$hex))
     }
   } else {
     assert_in(variable, names(proj$output))
-    col_vec <- smooth_cols(proj$output[[variable]])
     col_vec <- proj$output[[variable]]
   }
   
@@ -86,8 +69,8 @@ plot_map <- function(proj, variable = NULL) {
   plot1 <- plot1 + geom_point(aes(x = long, y = lat), size = 0.5, data = proj$data$coords)
   
   # titles and legends
-  #plot1 <- plot1 + scale_fill_gradientn(colours = viridisLite::magma(100), name = "hex_value")
   plot1 <- plot1 + scale_fill_gradientn(colours = c("#4575B4", "#91BFDB", "#E0F3F8", "#FEE090", "#FC8D59", "#D73027"), name = "hex_value")
+  plot1 <- plot1 + xlab("longitude") + ylab("latitude")
   
   
 	# return plot object

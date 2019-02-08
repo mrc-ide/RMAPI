@@ -5,7 +5,7 @@ hexbarrier01 <- function(args_h) {
     .Call('_RMAPI_hexbarrier01', PACKAGE = 'RMAPI', args_h)
 }
 
-run_sims_cpp <- function(args) {
-    .Call('_RMAPI_run_sims_cpp', PACKAGE = 'RMAPI', args)
+run_sims_cpp <- function(args, args_functions, args_progress) {
+    .Call('_RMAPI_run_sims_cpp', PACKAGE = 'RMAPI', args, args_functions, args_progress)
 }
 

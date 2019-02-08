@@ -4,7 +4,12 @@
 \alias{print.rmapi_project}
 \title{Overload print function for RMAPI project}
 \usage{
-\method{print}{rmapi_project}(proj, ...)
+\method{print}{rmapi_project}(x, ...)
+}
+\arguments{
+\item{x}{object of class \code{rmapi_project}.}
+
+\item{...}{(ignored).}
 }
 \description{
 Overload print function for RMAPI project.

@@ -6,6 +6,9 @@
 \usage{
 print_full(proj)
 }
+\arguments{
+\item{proj}{object of class \code{rmapi_project}.}
+}
 \description{
 Print unclassed RMAPI project.
 }

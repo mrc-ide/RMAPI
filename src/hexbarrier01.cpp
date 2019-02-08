@@ -16,12 +16,12 @@ Rcpp::List hexbarrier01(Rcpp::List args_h)
 {
 	int barr, node1, node2;
 	double x1, y1, x2, y2, vb;
-
+  
 	// start timer
 	chrono::high_resolution_clock::time_point t0 = chrono::high_resolution_clock::now();
-
+  
 	//Convert Rcpp arguments to native c++ arguments ------------------------------------------------------------------------------------------------
-
+  
 	vector<double> long_node = rcpp_to_vector_double(args_h["long_node"]);			//Longitude of data nodes
 	vector<double> lat_node = rcpp_to_vector_double(args_h["lat_node"]);			//Latitude of data nodes
 	vector<double> long_barrier = rcpp_to_vector_double(args_h["long_barrier"]);    //Longitude of barrier cells
@@ -34,9 +34,9 @@ Rcpp::List hexbarrier01(Rcpp::List args_h)
 																					//Calculate pairwise data ------------------------------------------------------------------------------------------------
 
 	print("Calculating distance modifiers due to barriers");
-
+  
 	vector<double> vbsum(Nnodes*Nnodes, 0.0);
-
+  
 	for (node1 = 0; node1 < Nnodes; node1++)
 	{
 		x1 = long_node[node1];
@@ -54,11 +54,11 @@ Rcpp::List hexbarrier01(Rcpp::List args_h)
 			vbsum[(node1*Nnodes) + node2] = vb;
 		}
 	}
-
+  
 	chrono_timer(t0);
 
 	//Return output as an Rcpp list ------------------------------------------------------------------------------------------------
-
+  
 	Rcpp::List ret;
 	ret.push_back(Rcpp::wrap(vbsum));
 	Rcpp::StringVector ret_names;

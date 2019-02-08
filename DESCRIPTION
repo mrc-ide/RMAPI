@@ -13,7 +13,9 @@ Imports:
     assertthat,
     sp,
     rgeos,
-    viridisLite
+    viridisLite,
+    sf,
+    ggplot2
 LinkingTo:
     Rcpp
 RoxygenNote: 6.1.1

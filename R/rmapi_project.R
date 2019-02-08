@@ -25,15 +25,18 @@ rmapi_project <- function() {
 #'
 #' @description Overload print function for RMAPI project.
 #'
+#' @param x object of class \code{rmapi_project}.
+#' @param ... (ignored).
+#'
 #' @export
 
-print.rmapi_project <- function(proj, ...) {
+print.rmapi_project <- function(x, ...) {
   
   # print summary
-  summary(proj)
+  summary(x)
   
   # return invisibly
-  invisible(proj)
+  invisible(x)
 }
 
 #------------------------------------------------
@@ -41,31 +44,34 @@ print.rmapi_project <- function(proj, ...) {
 #'
 #' @description Overload summary function for RMAPI project.
 #'
+#' @param object object of class \code{rmapi_project}.
+#' @param ... (ignored).
+#'
 #' @export
 
-summary.rmapi_project <- function(proj, ...) {
+summary.rmapi_project <- function(object, ...) {
   
   # print data details
   message("# DATA:")
-  if (is.null(proj$data$coords)) {
+  if (is.null(object$data$coords)) {
     message("no data loaded")
   } else {
-    message(sprintf("n = %s samples", nrow(proj$data$coords)))
+    message(sprintf("n = %s samples", nrow(object$data$coords)))
   }
   message("")
   
   # print map details
   message("# HEX MAP:")
-  if (is.null(proj$map)) {
+  if (is.null(object$map)) {
     message("no map generated")
   } else {
-    message(sprintf("h = %s hexagons", length(proj$map$hex)))
+    message(sprintf("h = %s hexagons", length(object$map$hex)))
   }
   message("")
   
   # print output details
   message("# OUTPUT:")
-  if (length(proj$output) == 0) {
+  if (length(object$output) == 0) {
     message("no output")
   } else {
     message("TODO - some details of output")
@@ -76,6 +82,8 @@ summary.rmapi_project <- function(proj, ...) {
 #' @title Print unclassed RMAPI project
 #'
 #' @description Print unclassed RMAPI project.
+#'
+#' @param proj object of class \code{rmapi_project}.
 #'
 #' @export
 
@@ -93,6 +101,10 @@ print_full <- function(proj) {
 #'
 #' @description Overload plot function for RMAPI project.
 #'
+#' @param x object of class \code{rmapi_project}.
+#' @param y (ignored).
+#' @param ... (ignored).
+#'
 #' @export
 
 plot.rmapi_project <- function(x, y, ...) {
@@ -103,6 +115,8 @@ plot.rmapi_project <- function(x, y, ...) {
 #' @title Determine if object is of class rmapi_project
 #'
 #' @description Determine if object is of class rmapi_project.
+#'
+#' @param x object to query class.
 #'
 #' @export
 
