@@ -16,6 +16,3 @@ create_map(proj, hex_size = 1, buffer = 2 * hex_size)
 \description{
 Create mapping space.
 }
-\examples{
-# TODO
-}

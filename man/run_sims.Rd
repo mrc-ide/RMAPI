@@ -5,8 +5,8 @@
 \title{Perform RMAPI simulation}
 \usage{
 run_sims(proj, eccentricity = 0.5, n_perms = 100,
-  min_intersections = 5, dist_breaks = NULL, n_breaks = 1,
-  report_progress = TRUE)
+  min_intersections = 5, n_breaks = 1, dist_breaks = NULL,
+  empirical_tail = "both", report_progress = TRUE)
 }
 \arguments{
 \item{proj}{object of class \code{rmapi_project}.}
@@ -24,13 +24,17 @@ significance. Set to 0 to skip this step.}
 \item{min_intersections}{minimum number of ellipses that must intersect a hex
 for it to be included in the final map.}
 
+\item{n_breaks}{alternative to defining sequence of \code{dist_breaks}. If
+\code{dist_breaks == NULL} then the full spatial range of the data is split
+into \code{n_breaks} equal groups.}
+
 \item{dist_breaks}{vector of breaks that divide spatial distances into
 permutation groups. Defaults to the full spatial range of the data, i.e.
 all edges are included in permutation testing.}
 
-\item{n_breaks}{alternative to defining sequence of \code{dist_breaks}. If
-\code{dist_breaks == NULL} then the full spatial range of the data is split
-into \code{n_breaks} equal groups.}
+\item{empirical_tail}{whether to do calculate empirical p-values using a
+one-sided test (\code{empirical_tail = "left"} or \code{empirical_tail =
+"right"}) or a two-sided test (\code{empirical_tail = "both"}).}
 
 \item{report_progress}{if \code{TRUE} then a progress bar is printed to the
 console during the permutation testing procedure.}

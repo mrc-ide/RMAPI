@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot.R
 \name{plot_map}
 \alias{plot_map}
-\title{Simple filled contour plot of RMAPI output}
+\title{Plot hex map of RMAPI output}
 \usage{
 plot_map(proj, variable = NULL)
 }
@@ -12,5 +12,5 @@ plot_map(proj, variable = NULL)
 \item{variable}{which element of the project output to use as map colours.}
 }
 \description{
-Simple filled contour plot of RMAPI output.
+Plot hex map of RMAPI output.
 }

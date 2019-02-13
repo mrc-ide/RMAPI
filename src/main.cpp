@@ -128,8 +128,8 @@ Rcpp::List run_sims_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::List a
   
 	//Permute data to check statistical significance-------------------------------------------------------------------------------------------------------------------------------------------
   
-  // empirical p-value calculated by permutation test
-	vector<int> empirical_p(Nhex);
+  // hex rankings calculated by permutation test
+	vector<int> hex_ranks(Nhex);
 	
 	// skip over if Nperms == 0
 	if (Nperms > 0)
@@ -168,7 +168,7 @@ Rcpp::List run_sims_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::List a
 				  hex_values_perm[hex] /= hex_weights[hex];
 				  if (hex_values_perm[hex] < hex_values[hex])
 				  {
-				    empirical_p[hex]++;
+				    hex_ranks[hex]++;
 				  }
 				}
 			}
@@ -182,6 +182,6 @@ Rcpp::List run_sims_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::List a
 	// return list
 	return Rcpp::List::create(Rcpp::Named("hex_values") = hex_values,
                            Rcpp::Named("hex_weights") = hex_weights,
-                           Rcpp::Named("empirical_p") = empirical_p,
+                           Rcpp::Named("hex_ranks") = hex_ranks,
                            Rcpp::Named("Nintersections") = Nintersections);
 }

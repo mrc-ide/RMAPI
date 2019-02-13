@@ -21,15 +21,9 @@ rmapi_project <- function() {
 }
 
 #------------------------------------------------
-#' @title Overload print function for RMAPI project
-#'
-#' @description Overload print function for RMAPI project.
-#'
-#' @param x object of class \code{rmapi_project}.
-#' @param ... (ignored).
-#'
+# Overload print function for RMAPI project
+#' @method print rmapi_project
 #' @export
-
 print.rmapi_project <- function(x, ...) {
   
   # print summary
@@ -40,15 +34,9 @@ print.rmapi_project <- function(x, ...) {
 }
 
 #------------------------------------------------
-#' @title Overload summary function for RMAPI project
-#'
-#' @description Overload summary function for RMAPI project.
-#'
-#' @param object object of class \code{rmapi_project}.
-#' @param ... (ignored).
-#'
+# Overload summary function for RMAPI project
+#' @method summary rmapi_project
 #' @export
-
 summary.rmapi_project <- function(object, ...) {
   
   # print data details
@@ -97,16 +85,9 @@ print_full <- function(proj) {
 }
 
 #------------------------------------------------
-#' @title Overload plot function for RMAPI project
-#'
-#' @description Overload plot function for RMAPI project.
-#'
-#' @param x object of class \code{rmapi_project}.
-#' @param y (ignored).
-#' @param ... (ignored).
-#'
+# Overload plot function for RMAPI project
+#' @method plot rmapi_project
 #' @export
-
 plot.rmapi_project <- function(x, y, ...) {
   plot_map(x)
 }

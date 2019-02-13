@@ -175,8 +175,6 @@ bind_data <- function(proj, long, lat, stat_dist, check_delete_output = TRUE) {
 #' @import rgeos
 #' @import sp
 #' @export
-#' @examples
-#' # TODO
 
 create_map <- function(proj, hex_size = 1, buffer = 2*hex_size) {
   
@@ -187,16 +185,50 @@ create_map <- function(proj, hex_size = 1, buffer = 2*hex_size) {
   
   message("Creating hex map")
   
+  # unfortunately we have to go through a long process to get hexs that cover
+  # all the nodes, the reason being that a raw call to sp::spsample() only
+  # creates hexs whose centroid is fully within the bounding poly, which can
+  # leave some nodes outside. The solution implemented here is to 1) create a
+  # bounding poly from the convex hull of the data, 2) apply a large buffer to
+  # the bounding poly, 3) generate hexs from the buffered poly, 4) subset to
+  # hexs that intersect the original poly, 5) create a new bounding poly from
+  # the convex hull of the centroids of the remaining hexs, 5) this new bounding
+  # poly is used to create the hex map, with optional buffer applied by the
+  # user.
+  
   # get convex hull of data
-  ch <- chull(proj$data$coords[,c("long", "lat")])
-  ch_coords <- proj$data$coords[c(ch, ch[1]), c("long", "lat")]
+  ch_data <- chull(proj$data$coords[,c("long", "lat")])
+  ch_data_coords <- proj$data$coords[c(ch_data, ch_data[1]), c("long", "lat")]
   
-  # get convex hull in SpatialPolygons format and expand by buffer
-  sp_poly_raw <- sp::SpatialPolygons(list(sp::Polygons(list(sp::Polygon(ch_coords)), ID = 1)))
-  sp_poly <- rgeos::gBuffer(sp_poly_raw, width = buffer)
+  # get convex hull in SpatialPolygons format and expand by fixed buffer of two hexs
+  bounding_poly_original_raw <- sp::SpatialPolygons(list(sp::Polygons(list(sp::Polygon(ch_data_coords)), ID = 1)))
+  bounding_poly_original <- rgeos::gBuffer(bounding_poly_original_raw, width = 2*hex_size)
   
-  # get hex centre points and polygons
-  hex_pts <- sp::spsample(sp_poly, type = "hexagonal", cellsize = hex_size, offset = c(0,0))
+  # get hex centroids and polygons
+  hex_pts_original <- sp::spsample(bounding_poly_original, type = "hexagonal", cellsize = hex_size, offset = c(0,0))
+  hex_pts_original_df <- as.data.frame(hex_pts_original)
+  names(hex_pts_original_df) <- c("long", "lat")
+  hex_polys_original <- sp::HexPoints2SpatialPolygons(hex_pts_original)
+  
+  # convert original bounding poly and hexs to sf format
+  bounding_poly_original_raw_sfc <- sf::st_as_sfc(bounding_poly_original_raw)
+  hex_polys_original_sfc <- sf::st_as_sfc(hex_polys_original)
+  
+  # subset hex centroids and polys to those that intersect original bounding poly
+  intersect_vec <- as.matrix(sf::st_intersects(hex_polys_original_sfc, bounding_poly_original_raw_sfc))[,1]
+  hex_pts_original_df <- hex_pts_original_df[which(intersect_vec),]
+  hex_polys_original <- hex_polys_original[which(intersect_vec)]
+  
+  # get convex hull of hex centroids
+  ch_hex <- chull(hex_pts_original_df)
+  ch_hex_coords <- hex_pts_original_df[c(ch_hex, ch_hex[1]),]
+  
+  # get convex hull in SpatialPolygons format and expand by user-defined buffer
+  bounding_poly_raw <- sp::SpatialPolygons(list(sp::Polygons(list(sp::Polygon(ch_hex_coords)), ID = 1)))
+  bounding_poly <- rgeos::gBuffer(bounding_poly_raw, width = buffer)
+  
+  # get hex centroids and polygons
+  hex_pts <- sp::spsample(bounding_poly, type = "hexagonal", cellsize = hex_size, offset = c(0,0))
   hex_pts_df <- as.data.frame(hex_pts)
   names(hex_pts_df) <- c("long", "lat")
   hex_polys <- sp::HexPoints2SpatialPolygons(hex_pts)
@@ -228,20 +260,23 @@ create_map <- function(proj, hex_size = 1, buffer = 2*hex_size) {
 #'   significance. Set to 0 to skip this step.
 #' @param min_intersections minimum number of ellipses that must intersect a hex
 #'   for it to be included in the final map.
-#' @param dist_breaks vector of breaks that divide spatial distances into
-#'   permutation groups. Defaults to the full spatial range of the data, i.e.
-#'   all edges are included in permutation testing.
 #' @param n_breaks alternative to defining sequence of \code{dist_breaks}. If
 #'   \code{dist_breaks == NULL} then the full spatial range of the data is split
 #'   into \code{n_breaks} equal groups.
+#' @param dist_breaks vector of breaks that divide spatial distances into
+#'   permutation groups. Defaults to the full spatial range of the data, i.e.
+#'   all edges are included in permutation testing.
+#' @param empirical_tail whether to do calculate empirical p-values using a
+#'   one-sided test (\code{empirical_tail = "left"} or \code{empirical_tail =
+#'   "right"}) or a two-sided test (\code{empirical_tail = "both"}).
 #' @param report_progress if \code{TRUE} then a progress bar is printed to the
 #'   console during the permutation testing procedure.
 #'
 #' @export
 
 run_sims <- function(proj, eccentricity = 0.5, n_perms = 1e2,
-                     min_intersections = 5, dist_breaks = NULL, n_breaks = 1,
-                     report_progress = TRUE) {
+                     min_intersections = 5, n_breaks = 1, dist_breaks = NULL,
+                     empirical_tail = "both", report_progress = TRUE) {
   
   # check inputs
   assert_custom_class(proj, "rmapi_project")
@@ -259,6 +294,8 @@ run_sims <- function(proj, eccentricity = 0.5, n_perms = 1e2,
   assert_eq(dist_breaks, sort(dist_breaks), message = "dist_breaks must be in increasing order")
   assert_leq(min(dist_breaks), min(proj$data$spatial_dist))
   assert_greq(max(dist_breaks), max(proj$data$spatial_dist))
+  assert_in(empirical_tail, c("left", "right", "both"))
+  assert_single_logical(report_progress)
   
   # ---------------------------------------------
   # Set up arguments for input into C++
@@ -303,17 +340,17 @@ run_sims <- function(proj, eccentricity = 0.5, n_perms = 1e2,
   hex_weights <- output_raw$hex_weights
   hex_weights[Nintersections < min_intersections] <- NA
   
-  # get empirical p-values
-  empirical_p <- NULL
+  # get hex value rank proportions
+  hex_ranks <- NULL
   if (n_perms > 0) {
-    empirical_p <- output_raw$empirical_p #/ n_perms
-    empirical_p[Nintersections < min_intersections] <- NA
+    hex_ranks <- (output_raw$hex_ranks+1)/(n_perms+1)
+    hex_ranks[Nintersections < min_intersections] <- NA
   }
   
   # save output as list
   proj$output <- list(hex_values = hex_values,
                       hex_weights = hex_weights,
-                      empirical_p = empirical_p,
+                      hex_ranks = hex_ranks,
                       n_intersections = output_raw$Nintersections)
   
   # return invisibly

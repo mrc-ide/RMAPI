@@ -15,7 +15,8 @@ Imports:
     rgeos,
     viridisLite,
     sf,
-    ggplot2
+    ggplot2,
+    leaflet
 LinkingTo:
     Rcpp
 RoxygenNote: 6.1.1
