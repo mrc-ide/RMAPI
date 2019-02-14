@@ -164,6 +164,42 @@ bind_data <- function(proj, long, lat, stat_dist, check_delete_output = TRUE) {
 }
 
 #------------------------------------------------
+#' @title Fit a simple model to data
+#'
+#' @description Fit a simple linear or exponential model to the distribution of
+#'   the observed statistic as a function of distance. Can be used in the
+#'   simulation step to generate a null model against which to compare.
+#'
+#' @param proj object of class \code{rmapi_project}.
+#' @param model which model to fit to the data: 1 = linear model, 2 =
+#'   exponential model.
+#'
+#' @export
+
+fit_model <- function(proj, model = 1) {
+  
+  # check inputs
+  assert_custom_class(proj, "rmapi_project")
+  assert_single_pos_int(model)
+  assert_in(model, 1:2)
+  
+  # fit model
+  if (model == 1) {
+    model_fit <- lm(proj$data$stat_dist ~ proj$data$spatial_dist)
+  } else {
+    df <- data.frame(x = as.vector(proj$data$spatial_dist), y = as.vector(proj$data$stat_dist))
+    model_fit <- nls(y ~ SSasymp(x, alpha, beta, log_lambda), data = df)
+  }
+  
+  # save model
+  proj$model <- list(model = model,
+                     model_fit = model_fit)
+  
+  # return invisibly
+  invisible(proj)
+}
+
+#------------------------------------------------
 #' @title Create mapping space
 #'
 #' @description Create mapping space.

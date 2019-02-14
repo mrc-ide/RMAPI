@@ -12,6 +12,7 @@ rmapi_project <- function() {
   ret <- list(data = list(coords = NULL,
                           stat_dist = NULL,
                           spatial_dist = NULL),
+              model = NULL,
               map = NULL,
               output = NULL)
   
