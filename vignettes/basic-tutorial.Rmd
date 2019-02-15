@@ -105,12 +105,16 @@ Here we can see that an eccentricity of 0.9 provides good coverage over most of 
 
 ## Running simulations
 
-Now we are ready to run permutation-testing simulations. The 
+Now we are ready to run simulations. The following command computes hex values from pairwise statistics, and compares this map against a series of analogous maps produced after first permuting edge values. The output of this function includes the raw hex values, along with the rank of the raw hex values through the list of permutations (as a proportion). Note that for the sake of this vignette we use the `report_progress = FALSE` argument to avoid printing too much output, but you should run without this argument.
 
-```{r, fig.width=10, fig.height=4}
+```{r}
 # run simulations
 p <- run_sims(p, n_perms = 1e3, eccentricity = 0.9, n_breaks = 1, report_progress = FALSE)
+```
 
+We can use the `plot_map()` function to produce simple plots of the raw hex values, and the hex ranks:
+
+```{r, fig.width=10, fig.height=4}
 # plot hex values
 plot1 <- plot_map(p, barrier_list = barrier_list)
 
@@ -121,6 +125,10 @@ plot2 <- plot_map(p, variable = "hex_ranks", barrier_list = barrier_list)
 library(gridExtra)
 grid.arrange(plot1, plot2, ncol = 2)
 ```
+
+Notice from the hex map that values tend to be higher when nodes are close together - this occurs because of our assumed  fall-off of statistical values with distance in our simulations. However, our null model for the permutation test is that there is no association between pairwise statistics and edges, and hence no spatial trend whatsoever, which is clearly not the case here. When we look at the hex ranks from the permutation test, this gives the appearance of artificial areas of significant spatial discontinuity, when in fact these are simply poorly-sampled areas. This is exactly the problem that RMAPI was designed to solve through the use of more refined purmutation testing and null models.
+
+First, we can re-run the simulations, this time using a value of `n_breaks = 20`. This divides all edges into bins based on their spatial separation, and permutation testing then only occurs within bins - for example, pairwise values between nearby nodes are only compared against values between other nearby nodes:
 
 ```{r, fig.width=10, fig.height=4}
 # run simulations
@@ -136,7 +144,9 @@ plot2 <- plot_map(p, variable = "hex_ranks", barrier_list = barrier_list)
 grid.arrange(plot1, plot2, ncol = 2)
 ```
 
-We can also produce an interactive map:
+Now, although the raw map is the same, the hex ranks give a far more accurate pattern because they account for the natural trend with distance.
+
+We can also produce an interactive map, making it easier to see how discontinuities may correspond to geographic features:
 
 ```{r, fig.width=7, fig.height=5}
 # produce interactive map
@@ -147,6 +157,8 @@ overlay_points(plot3, node_df$long, node_df$lat)
 
 ## Fitting a model
 
+The second method implemented in RMAPI is to fit a specific model to the relationship between pairwise values and spatial distance. We can use the `fit_model()` function to fit either a linear model (`type = 1`) or an exponential model (`type = 2`). Clearly based on the pattern in the data we would want the exponential model in this example:
+
 ```{r, fig.width=7, fig.height=5}
 # fit model to data
 p <- fit_model(p, type = 2)
@@ -155,7 +167,9 @@ p <- fit_model(p, type = 2)
 plot_dist(p)
 ```
 
-```{r, fig.width=10, fig.height=4}
+When running simulations with `null_method = 2`, the model fit is subtracted from the pairwise values, and the permutation testing procedure is then carried out on the residuals. This is slightly less flexible than the previous method, in that we must have an idea of the specific relationship between distance and statistical value, but can be more powerful as a result:
+
+```{r, fig.width=12, fig.height=4}
 # run simulations
 p <- run_sims(p, null_method = 2, n_perms = 1e3, eccentricity = 0.9, n_breaks = 1, report_progress = FALSE)
 
@@ -168,4 +182,6 @@ plot2 <- plot_map(p, variable = "hex_ranks", barrier_list = barrier_list)
 # use gridExtra package to arrange ggplot objects
 grid.arrange(plot1, plot2, ncol = 2)
 ```
+
+Note that there is nothing to stop us running the above procedure with more than 1 `n_breaks`, in which case the spatial permutation test is carried out on residuals, which could be useful if we believe our model is only a rough description of the actual relationship.
 

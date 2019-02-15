@@ -161,13 +161,14 @@ p &lt;-<span class="st"> </span><span class="kw"><a href="../reference/create_ma
 <div id="running-simulations" class="section level2">
 <h2 class="hasAnchor">
 <a href="#running-simulations" class="anchor"></a>Running simulations</h2>
-<p>Now we are ready to run permutation-testing simulations. The</p>
+<p>Now we are ready to run simulations. The following command computes hex values from pairwise statistics, and compares this map against a series of analogous maps produced after first permuting edge values. The output of this function includes the raw hex values, along with the rank of the raw hex values through the list of permutations (as a proportion). Note that for the sake of this vignette we use the <code>report_progress = FALSE</code> argument to avoid printing too much output, but you should run without this argument.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># run simulations</span>
 p &lt;-<span class="st"> </span><span class="kw"><a href="../reference/run_sims.html">run_sims</a></span>(p, <span class="dt">n_perms =</span> <span class="fl">1e3</span>, <span class="dt">eccentricity =</span> <span class="fl">0.9</span>, <span class="dt">n_breaks =</span> <span class="dv">1</span>, <span class="dt">report_progress =</span> <span class="ot">FALSE</span>)</code></pre></div>
 <pre><code>## Loading data and parameters
 ## Setting up ellipses
 ## Computing map
 ## Running permutation test</code></pre>
+<p>We can use the <code><a href="../reference/plot_map.html">plot_map()</a></code> function to produce simple plots of the raw hex values, and the hex ranks:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># plot hex values</span>
 plot1 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/plot_map.html">plot_map</a></span>(p, <span class="dt">barrier_list =</span> barrier_list)
 
@@ -177,7 +178,9 @@ plot2 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/plot_
 <span class="co"># use gridExtra package to arrange ggplot objects</span>
 <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(gridExtra)
 <span class="kw"><a href="https://www.rdocumentation.org/packages/gridExtra/topics/arrangeGrob">grid.arrange</a></span>(plot1, plot2, <span class="dt">ncol =</span> <span class="dv">2</span>)</code></pre></div>
-<p><img src="basic-tutorial_files/figure-html/unnamed-chunk-9-1.png" width="960"></p>
+<p><img src="basic-tutorial_files/figure-html/unnamed-chunk-10-1.png" width="960"></p>
+<p>Notice from the hex map that values tend to be higher when nodes are close together - this occurs because of our assumed fall-off of statistical values with distance in our simulations. However, our null model for the permutation test is that there is no association between pairwise statistics and edges, and hence no spatial trend whatsoever, which is clearly not the case here. When we look at the hex ranks from the permutation test, this gives the appearance of artificial areas of significant spatial discontinuity, when in fact these are simply poorly-sampled areas. This is exactly the problem that RMAPI was designed to solve through the use of more refined purmutation testing and null models.</p>
+<p>First, we can re-run the simulations, this time using a value of <code>n_breaks = 20</code>. This divides all edges into bins based on their spatial separation, and permutation testing then only occurs within bins - for example, pairwise values between nearby nodes are only compared against values between other nearby nodes:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># run simulations</span>
 p &lt;-<span class="st"> </span><span class="kw"><a href="../reference/run_sims.html">run_sims</a></span>(p, <span class="dt">n_perms =</span> <span class="fl">1e3</span>, <span class="dt">eccentricity =</span> <span class="fl">0.9</span>, <span class="dt">n_breaks =</span> <span class="dv">20</span>, <span class="dt">report_progress =</span> <span class="ot">FALSE</span>)</code></pre></div>
 <pre><code>## Loading data and parameters
@@ -192,8 +195,9 @@ plot2 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/plot_
 
 <span class="co"># use gridExtra package to arrange ggplot objects</span>
 <span class="kw"><a href="https://www.rdocumentation.org/packages/gridExtra/topics/arrangeGrob">grid.arrange</a></span>(plot1, plot2, <span class="dt">ncol =</span> <span class="dv">2</span>)</code></pre></div>
-<p><img src="basic-tutorial_files/figure-html/unnamed-chunk-10-1.png" width="960"></p>
-<p>We can also produce an interactive map:</p>
+<p><img src="basic-tutorial_files/figure-html/unnamed-chunk-11-1.png" width="960"></p>
+<p>Now, although the raw map is the same, the hex ranks give a far more accurate pattern because they account for the natural trend with distance.</p>
+<p>We can also produce an interactive map, making it easier to see how discontinuities may correspond to geographic features:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># produce interactive map</span>
 plot3 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/plot_leaflet.html">plot_leaflet</a></span>(p, <span class="dt">variable =</span> <span class="st">"hex_ranks"</span>)
 <span class="kw"><a href="../reference/overlay_points.html">overlay_points</a></span>(plot3, node_df<span class="op">$</span>long, node_df<span class="op">$</span>lat)</code></pre></div>
@@ -203,12 +207,14 @@ plot3 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/plot_
 <div id="fitting-a-model" class="section level2">
 <h2 class="hasAnchor">
 <a href="#fitting-a-model" class="anchor"></a>Fitting a model</h2>
+<p>The second method implemented in RMAPI is to fit a specific model to the relationship between pairwise values and spatial distance. We can use the <code><a href="../reference/fit_model.html">fit_model()</a></code> function to fit either a linear model (<code>type = 1</code>) or an exponential model (<code>type = 2</code>). Clearly based on the pattern in the data we would want the exponential model in this example:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># fit model to data</span>
 p &lt;-<span class="st"> </span><span class="kw"><a href="../reference/fit_model.html">fit_model</a></span>(p, <span class="dt">type =</span> <span class="dv">2</span>)
 
 <span class="co"># plot model fit over data</span>
 <span class="kw"><a href="../reference/plot_dist.html">plot_dist</a></span>(p)</code></pre></div>
-<p><img src="basic-tutorial_files/figure-html/unnamed-chunk-12-1.png" width="672"></p>
+<p><img src="basic-tutorial_files/figure-html/unnamed-chunk-13-1.png" width="672"></p>
+<p>When running simulations with <code>null_method = 2</code>, the model fit is subtracted from the pairwise values, and the permutation testing procedure is then carried out on the residuals. This is slightly less flexible than the previous method, in that we must have an idea of the specific relationship between distance and statistical value, but can be more powerful as a result:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># run simulations</span>
 p &lt;-<span class="st"> </span><span class="kw"><a href="../reference/run_sims.html">run_sims</a></span>(p, <span class="dt">null_method =</span> <span class="dv">2</span>, <span class="dt">n_perms =</span> <span class="fl">1e3</span>, <span class="dt">eccentricity =</span> <span class="fl">0.9</span>, <span class="dt">n_breaks =</span> <span class="dv">1</span>, <span class="dt">report_progress =</span> <span class="ot">FALSE</span>)</code></pre></div>
 <pre><code>## Loading data and parameters
@@ -223,7 +229,8 @@ plot2 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/plot_
 
 <span class="co"># use gridExtra package to arrange ggplot objects</span>
 <span class="kw"><a href="https://www.rdocumentation.org/packages/gridExtra/topics/arrangeGrob">grid.arrange</a></span>(plot1, plot2, <span class="dt">ncol =</span> <span class="dv">2</span>)</code></pre></div>
-<p><img src="basic-tutorial_files/figure-html/unnamed-chunk-13-1.png" width="960"></p>
+<p><img src="basic-tutorial_files/figure-html/unnamed-chunk-14-1.png" width="1152"></p>
+<p>Note that there is nothing to stop us running the above procedure with more than 1 <code>n_breaks</code>, in which case the spatial permutation test is carried out on residuals, which could be useful if we believe our model is only a rough description of the actual relationship.</p>
 </div>
   </div>
 
