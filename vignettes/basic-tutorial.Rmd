@@ -11,7 +11,6 @@ vignette: >
 
 ```{r, echo=FALSE}
 set.seed(2)
-#devtools::load_all("/Users/rverity/Dropbox/Bob/Work/My Programs/Barriers to gene flow/RMAPI")
 library(RMAPI)
 ```
 
@@ -42,7 +41,7 @@ Next we create a list of polygons that represent barriers to gene flow. Each ele
 # define barriers
 barrier_list <- list()
 barrier_list[[1]] <- data.frame(long = c(-1.54, -1.50, -1.50, -1.495, -1.495, -1.54, -1.54),
-                                lat = c(53.355, 53.355, 53.37, 53.37, 53.35, 53.35, 53.355))
+                                lat = c(53.36, 53.36, 53.37, 53.37, 53.355, 53.355, 53.36))
 barrier_penalty <- 1
 ```
 
@@ -113,4 +112,24 @@ library(gridExtra)
 grid.arrange(plot1, plot2, ncol = 2)
 ```
 
+```{r, fig.width=10, fig.height=4}
+# run simulations
+p <- run_sims(p, n_perms = 1e3, eccentricity = 0.9, n_breaks = 10, report_progress = FALSE)
+
+# plot hex values
+plot1 <- plot_map(p, barrier_list = barrier_list)
+
+# plot hex ranks
+plot2 <- plot_map(p, variable = "hex_ranks", barrier_list = barrier_list)
+
+# use gridExtra package to arrange ggplot objects
+grid.arrange(plot1, plot2, ncol = 2)
+```
+
+
+```{r, fig.width=7, fig.height=5}
+# produce interactive map
+plot3 <- plot_leaflet(p, variable = "hex_ranks")
+overlay_points(plot3, node_df$long, node_df$lat)
+```
 
