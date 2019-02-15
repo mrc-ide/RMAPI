@@ -171,20 +171,20 @@ bind_data <- function(proj, long, lat, stat_dist, check_delete_output = TRUE) {
 #'   simulation step to generate a null model against which to compare.
 #'
 #' @param proj object of class \code{rmapi_project}.
-#' @param model which model to fit to the data: 1 = linear model, 2 =
+#' @param type which model to fit to the data: 1 = linear model, 2 =
 #'   exponential model.
 #'
 #' @export
 
-fit_model <- function(proj, model = 1) {
+fit_model <- function(proj, type = 1) {
   
   # check inputs
   assert_custom_class(proj, "rmapi_project")
-  assert_single_pos_int(model)
-  assert_in(model, 1:2)
+  assert_single_pos_int(type)
+  assert_in(type, 1:2)
   
   # fit model
-  if (model == 1) {
+  if (type == 1) {
     model_fit <- lm(proj$data$stat_dist ~ proj$data$spatial_dist)
   } else {
     df <- data.frame(x = as.vector(proj$data$spatial_dist), y = as.vector(proj$data$stat_dist))
@@ -192,7 +192,7 @@ fit_model <- function(proj, model = 1) {
   }
   
   # save model
-  proj$model <- list(model = model,
+  proj$model <- list(type = type,
                      model_fit = model_fit)
   
   # return invisibly
@@ -292,10 +292,24 @@ create_map <- function(proj, hex_size = 1, buffer = 2*hex_size) {
 #'   semi-major axis, and \eqn{b} is the length of the semi-minor axis.
 #'   Eccentricity ranges between 0 (perfect circle) and 1 (straight line between
 #'   foci).
+#' @param null_method what method to use for the null model:
+#'   \enumerate{
+#'     \item permutation test on raw statistic. If \code{n_breaks = 1} then this
+#'     is identical to the original MAPI method, if \code{n_breaks > 1} then a
+#'     spatial permutation test is implemented in which edges are binned based
+#'     on spatial distance and permutation only occurs within a bin.
+#'     \item permutation test on residuals. The fitted model from a previously
+#'     call of \code{fit_model()} is used to compute residuals, and the
+#'     permutation test method is carried out on residual values. As with method
+#'     1, this permutation test can be spatially binned.
+#'     \item permutation test against a null map, generated from model fit. The
+#'     fitted model from a previously call of \code{fit_model()} is used to
+#'     produce a single null map, which is subtracted from both the real map and
+#'     all permutations prior to returning final values. As with method 1, this
+#'     permutation test can be spatially binned.
+#'   }
 #' @param n_perms number of permutations to run when checking statistical
 #'   significance. Set to 0 to skip this step.
-#' @param min_intersections minimum number of ellipses that must intersect a hex
-#'   for it to be included in the final map.
 #' @param n_breaks alternative to defining sequence of \code{dist_breaks}. If
 #'   \code{dist_breaks == NULL} then the full spatial range of the data is split
 #'   into \code{n_breaks} equal groups.
@@ -305,19 +319,23 @@ create_map <- function(proj, hex_size = 1, buffer = 2*hex_size) {
 #' @param empirical_tail whether to do calculate empirical p-values using a
 #'   one-sided test (\code{empirical_tail = "left"} or \code{empirical_tail =
 #'   "right"}) or a two-sided test (\code{empirical_tail = "both"}).
+#' @param min_intersections minimum number of ellipses that must intersect a hex
+#'   for it to be included in the final map, otherwise \code{NA}.
 #' @param report_progress if \code{TRUE} then a progress bar is printed to the
 #'   console during the permutation testing procedure.
 #'
 #' @export
 
-run_sims <- function(proj, eccentricity = 0.5, n_perms = 1e2,
-                     min_intersections = 5, n_breaks = 1, dist_breaks = NULL,
-                     empirical_tail = "both", report_progress = TRUE) {
+run_sims <- function(proj, eccentricity = 0.5, null_method = 1,
+                     n_perms = 1e2, n_breaks = 1, dist_breaks = NULL,
+                     empirical_tail = "both", min_intersections = 5, report_progress = TRUE) {
   
   # check inputs
   assert_custom_class(proj, "rmapi_project")
   assert_single_pos(eccentricity, zero_allowed = TRUE)
   assert_bounded(eccentricity, left = 0, right = 1, inclusive_left = TRUE, inclusive_right = FALSE)
+  assert_single_pos_int(null_method)
+  assert_in(null_method, 1:3)
   assert_single_pos_int(n_perms, zero_allowed = TRUE)
   assert_single_pos_int(min_intersections, zero_allowed = FALSE)
   assert_single_pos_int(n_breaks, zero_allowed = FALSE)
@@ -334,11 +352,24 @@ run_sims <- function(proj, eccentricity = 0.5, n_perms = 1e2,
   assert_single_logical(report_progress)
   
   # ---------------------------------------------
-  # Set up arguments for input into C++
+  # Process data differently depending on null method
+  
+  # get x-values, y-values predicted values
+  x <- proj$data$spatial_dist
+  y <- proj$data$stat_dist
+  y_pred <- predict(proj$model$model_fit)
+  
+  # subtract model fit under null_method = 2
+  if (null_method == 2) {
+    y <- y - y_pred
+  }
   
   # break spatial distances into groups
-  edge_group <- as.numeric(cut(proj$data$spatial_dist, breaks = dist_breaks, include.lowest = TRUE))
+  edge_group <- as.numeric(cut(x, breaks = dist_breaks, include.lowest = TRUE))
   edge_group_list <- mapply(function(x) which(edge_group == x) - 1, 1:n_breaks, SIMPLIFY = FALSE)
+  
+  # ---------------------------------------------
+  # Set up arguments for input into C++
   
   # create function list
   args_functions <- list(update_progress = update_progress)
@@ -350,11 +381,13 @@ run_sims <- function(proj, eccentricity = 0.5, n_perms = 1e2,
   # create argument list
   args <- list(node_long = proj$data$coords$long,
                node_lat = proj$data$coords$lat,
-               edge_value = proj$data$stat_dist,
+               edge_value = y,
+               edge_value_pred = y_pred,
                edge_group_list = edge_group_list,
                hex_long = proj$map$hex_centroid$long,
                hex_lat = proj$map$hex_centroid$lat,
                eccentricity = eccentricity,
+               null_method = null_method,
                n_perms = n_perms,
                min_intersections = min_intersections,
                report_progress = report_progress)
@@ -363,7 +396,7 @@ run_sims <- function(proj, eccentricity = 0.5, n_perms = 1e2,
   # Carry out simulations in C++ to generate map data
   
   output_raw <- run_sims_cpp(args, args_functions, args_progress)
-  
+  #return(output_raw)
   # ---------------------------------------------
   # Process raw output
   

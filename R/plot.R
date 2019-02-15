@@ -6,15 +6,18 @@
 #'
 #' @param proj object of class \code{rmapi_project}.
 #' @param col the colour of points.
+#' @param overlay_model whether to overlay the model fit, if \code{fit_model()}
+#'   has been called.
 #' 
 #' @import ggplot2
 #' @export
 
-plot_dist <- function(proj, col = "#00000050") {
+plot_dist <- function(proj, col = "#00000050", overlay_model = TRUE) {
   
   # check inputs
   assert_custom_class(proj, "rmapi_project")
   assert_length(col, 1)
+  assert_single_logical(overlay_model)
   
   # create basic plot
   df_plot <- data.frame(spatial = as.vector(proj$data$spatial_dist), stat = as.vector(proj$data$stat_dist))
@@ -22,6 +25,12 @@ plot_dist <- function(proj, col = "#00000050") {
   
   # add points
   plot1 <- plot1 + geom_point(aes(x = spatial, y = stat), col = col)
+  
+  # add model fit
+  if (overlay_model) {
+    df_predict <- data.frame(spatial = df_plot$spatial, stat = predict(proj$model$model_fit))
+    plot1 <- plot1 + geom_line(aes(x = spatial, y = stat), col = "red", data = df_predict)
+  }
   
   # titles etc
   plot1 <- plot1 + xlab("spatial distance") + ylab("statistical distance")

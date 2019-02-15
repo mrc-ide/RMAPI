@@ -4,12 +4,12 @@
 \alias{fit_model}
 \title{Fit a simple model to data}
 \usage{
-fit_model(proj, model = 1)
+fit_model(proj, type = 1)
 }
 \arguments{
 \item{proj}{object of class \code{rmapi_project}.}
 
-\item{model}{which model to fit to the data: 1 = linear model, 2 =
+\item{type}{which model to fit to the data: 1 = linear model, 2 =
 exponential model.}
 }
 \description{

@@ -4,12 +4,15 @@
 \alias{plot_dist}
 \title{Plot pairwise spatial distance against loaded statistic}
 \usage{
-plot_dist(proj, col = "#00000050")
+plot_dist(proj, col = "#00000050", overlay_model = TRUE)
 }
 \arguments{
 \item{proj}{object of class \code{rmapi_project}.}
 
 \item{col}{the colour of points.}
+
+\item{overlay_model}{whether to overlay the model fit, if \code{fit_model()}
+has been called.}
 }
 \description{
 Plot pairwise spatial distance against loaded statistic.

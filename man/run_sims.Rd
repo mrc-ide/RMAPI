@@ -4,9 +4,9 @@
 \alias{run_sims}
 \title{Perform RMAPI simulation}
 \usage{
-run_sims(proj, eccentricity = 0.5, n_perms = 100,
-  min_intersections = 5, n_breaks = 1, dist_breaks = NULL,
-  empirical_tail = "both", report_progress = TRUE)
+run_sims(proj, eccentricity = 0.5, null_method = 1, n_perms = 100,
+  n_breaks = 1, dist_breaks = NULL, empirical_tail = "both",
+  min_intersections = 5, report_progress = TRUE)
 }
 \arguments{
 \item{proj}{object of class \code{rmapi_project}.}
@@ -18,11 +18,25 @@ semi-major axis, and \eqn{b} is the length of the semi-minor axis.
 Eccentricity ranges between 0 (perfect circle) and 1 (straight line between
 foci).}
 
+\item{null_method}{what method to use for the null model:
+\enumerate{
+  \item permutation test on raw statistic. If \code{n_breaks = 1} then this
+  is identical to the original MAPI method, if \code{n_breaks > 1} then a
+  spatial permutation test is implemented in which edges are binned based
+  on spatial distance and permutation only occurs within a bin.
+  \item permutation test on residuals. The fitted model from a previously
+  call of \code{fit_model()} is used to compute residuals, and the
+  permutation test method is carried out on residual values. As with method
+  1, this permutation test can be spatially binned.
+  \item permutation test against a null map, generated from model fit. The
+  fitted model from a previously call of \code{fit_model()} is used to
+  produce a single null map, which is subtracted from both the real map and
+  all permutations prior to returning final values. As with method 1, this
+  permutation test can be spatially binned.
+}}
+
 \item{n_perms}{number of permutations to run when checking statistical
 significance. Set to 0 to skip this step.}
-
-\item{min_intersections}{minimum number of ellipses that must intersect a hex
-for it to be included in the final map.}
 
 \item{n_breaks}{alternative to defining sequence of \code{dist_breaks}. If
 \code{dist_breaks == NULL} then the full spatial range of the data is split
@@ -35,6 +49,9 @@ all edges are included in permutation testing.}
 \item{empirical_tail}{whether to do calculate empirical p-values using a
 one-sided test (\code{empirical_tail = "left"} or \code{empirical_tail =
 "right"}) or a two-sided test (\code{empirical_tail = "both"}).}
+
+\item{min_intersections}{minimum number of ellipses that must intersect a hex
+for it to be included in the final map, otherwise \code{NA}.}
 
 \item{report_progress}{if \code{TRUE} then a progress bar is printed to the
 console during the permutation testing procedure.}
