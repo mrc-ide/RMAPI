@@ -10,7 +10,7 @@ vignette: >
 ---
 
 ```{r, echo=FALSE}
-set.seed(2)
+set.seed(1)
 library(RMAPI)
 ```
 
@@ -40,12 +40,12 @@ Next we create a list of polygons that represent barriers to gene flow. Each ele
 ```{r}
 # define barriers
 barrier_list <- list()
-barrier_list[[1]] <- data.frame(long = c(-1.54, -1.50, -1.50, -1.495, -1.495, -1.54, -1.54),
-                                lat = c(53.36, 53.36, 53.37, 53.37, 53.355, 53.355, 53.36))
-barrier_penalty <- 1
+barrier_list[[1]] <- data.frame(long = c(-1.54, -1.51, -1.49, -1.5, -1.535, -1.54),
+                                lat = c(53.365, 53.37, 53.365, 53.36, 53.36, 53.365))
+barrier_penalty <- 5
 ```
 
-We can now simulate statistical values between nodes. The `barrier_method = 2` method used here draws a straight line between nodes and calculates the intersection with barrier polygons before applying the barrier penalty per unit intersection, meaning lines that go through a large amount of barrier experience a greater penalty. See the help for the `sim_simple()` function alternative methods of applying barriers. We also use `dist_transform = 2` here, which assumes that values fall off exponentially with distance with rate `lambda`. Finally, random error is applied to all pairwise statistics in the form of Gaussian noise with standard deviation `eps`:
+We can now simulate statistical values between nodes. The `barrier_method = 2` method used here draws a straight line between nodes and calculates the intersection with barrier polygons before applying the barrier penalty per unit intersection, meaning lines that go long-ways through a barrier experience a greater penalty. We also use `dist_transform = 2` here, which assumes that values fall off exponentially with distance with rate `lambda`. Finally, random error is applied to all pairwise statistics in the form of Gaussian noise with standard deviation `eps`. Further details of barrier penalty methods and transformations can be found in the help for the `sim_simple()` function.
 
 ```{r}
 # simulate pairwise statistics
@@ -59,7 +59,7 @@ sim_stat <- sim_simple(node_long = node_df$long,
                        eps = 0.2)
 ```
 
-If loading data from file then it must be in the same format as this simulated data.
+If loading data from file then ensure it is in the same format as this simulated data.
 
 
 ## Creating a project and binding data
@@ -81,21 +81,31 @@ Once we have data bound to a project we can use the `plot_dist()` function to ex
 plot_dist(p)
 ```
 
-In this case we can see the general shape of exponential fall-off from our simulations, but the noise makes it very difficult to see if there are any more subtle patterns, e.g. spatial barriers.
+We can see the general shape of exponential fall-off, which we should expect from our simulation parameters, but the noise makes it very difficult to see if there are any more subtle patterns, e.g. spatial barriers.
+
 
 ## Creating a hex map and testing coverage
 
-Next, we need to create a hex-map. Although 
+Next, we need to create a hex-map:
+
+```{r}
+# set up map
+p <- create_map(p, hex_size = 0.002)
+```
+
+Once we have a hex-map we can use it to explore different values of the ellipse eccentricity used in the RMAPI method. An eccentricity of 1 defines a straight line between points, and an eccentricity of 0 represents a perfect circle. Whatever our chosen value, we should ensure that the number of ellipses intersecting each hex (the "coverage") is sufficient to reduce noise, and increase reliability of the permutation testing procedure. We suggest that a minimum coverage of 100 is a good rule of thumb:
 
 ```{r, fig.width=10, fig.height=4}
-# set up map
-p <- create_map(p, hex_size = 0.003)
-
 # check that sufficient coverage
 plot_coverage(p, eccentricity = 0.9)
 ```
 
-## Run simulations
+Here we can see that an eccentricity of 0.9 provides good coverage over most of the map, although we should be wary of values on the far East-West edges.
+
+
+## Running simulations
+
+Now we are ready to run permutation-testing simulations. The 
 
 ```{r, fig.width=10, fig.height=4}
 # run simulations
@@ -114,7 +124,7 @@ grid.arrange(plot1, plot2, ncol = 2)
 
 ```{r, fig.width=10, fig.height=4}
 # run simulations
-p <- run_sims(p, n_perms = 1e3, eccentricity = 0.9, n_breaks = 10, report_progress = FALSE)
+p <- run_sims(p, n_perms = 1e3, eccentricity = 0.9, n_breaks = 20, report_progress = FALSE)
 
 # plot hex values
 plot1 <- plot_map(p, barrier_list = barrier_list)
@@ -126,10 +136,36 @@ plot2 <- plot_map(p, variable = "hex_ranks", barrier_list = barrier_list)
 grid.arrange(plot1, plot2, ncol = 2)
 ```
 
+We can also produce an interactive map:
 
 ```{r, fig.width=7, fig.height=5}
 # produce interactive map
 plot3 <- plot_leaflet(p, variable = "hex_ranks")
 overlay_points(plot3, node_df$long, node_df$lat)
+```
+
+
+## Fitting a model
+
+```{r, fig.width=7, fig.height=5}
+# fit model to data
+p <- fit_model(p, type = 2)
+
+# plot model fit over data
+plot_dist(p)
+```
+
+```{r, fig.width=10, fig.height=4}
+# run simulations
+p <- run_sims(p, null_method = 2, n_perms = 1e3, eccentricity = 0.9, n_breaks = 1, report_progress = FALSE)
+
+# plot hex values
+plot1 <- plot_map(p, barrier_list = barrier_list)
+
+# plot hex ranks
+plot2 <- plot_map(p, variable = "hex_ranks", barrier_list = barrier_list)
+
+# use gridExtra package to arrange ggplot objects
+grid.arrange(plot1, plot2, ncol = 2)
 ```
 
