@@ -23,7 +23,7 @@ Rcpp::List run_sims_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::List a
 {
 	
 	// start timer
-	chrono::high_resolution_clock::time_point t0 = chrono::high_resolution_clock::now();
+	//chrono::high_resolution_clock::time_point t0 = chrono::high_resolution_clock::now();
   
 	//Convert Rcpp arguments to native c++ arguments ------------------------------------------------------------------------------------------------
   
@@ -39,7 +39,6 @@ Rcpp::List run_sims_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::List a
 	int Nperms = rcpp_to_int(args["n_perms"]);                                            //Number of permutations to run (if 0, no permutation)
 	int min_intersections = rcpp_to_int(args["min_intersections"]);                       //Minimum number of ellipses required to insect a hex
 	double eccentricity = rcpp_to_double(args["eccentricity"]);                           //Eccentricity of ellipses (see help for details)
-	int null_method = rcpp_to_int(args["null_method"]);                                   //Method for coming up with null model
 	bool report_progress = rcpp_to_bool(args["report_progress"]);                         //Whether to update progress bar
 	Rcpp::Function update_progress = args_functions["update_progress"];                   //R function for updating progress bar
   
@@ -128,44 +127,6 @@ Rcpp::List run_sims_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::List a
   
 	//chrono_timer(t0);
   
-  //Subtract null map under null_method = 3 -------------------------------------------------------------------------------------------------------------------------------------------
-  
-  // store null hex values
-  vector<double> hex_values_null(Nhex, 0.0);
-  
-  if (null_method == 3)
-  {
-    
-    print("Computing null map");
-    
-    // compute null map
-    for (int hex = 0; hex < Nhex; hex++)
-    {
-      if (Nintersections[hex] >= min_intersections)
-      {
-        // compute hex value
-        for (int j = 0; j < Nintersections[hex]; j++)
-        {
-          int this_ellipse = intersections[hex][j];
-          hex_values_null[hex] += edge_value_pred[this_ellipse] * area_inv[this_ellipse];
-        }
-        hex_values_null[hex] /= hex_weights[hex];
-        
-        // subtract null map from raw values
-        hex_values[hex] -= hex_values_null[hex];
-      }
-    }
-    /*
-    // get range of values in raw map and null map
-    double hex_min = min(hex_values);
-    double hex_max = max(hex_values);
-    double hex_null_min = min(hex_values_null);
-    double hex_null_max = max(hex_values_null);
-    print(hex_min, hex_max);
-    */
-    
-  }
-  
 	//Permute data to check statistical significance-------------------------------------------------------------------------------------------------------------------------------------------
   
   // hex rankings calculated by permutation test
@@ -179,7 +140,6 @@ Rcpp::List run_sims_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::List a
     
     // permuted hex values
     vector<double> hex_values_perm(Nhex, 0.0);
-    vector<double> hex_values_null_perm(Nhex, 0.0);
     
 		// create vector for indexing random permutations
 		vector<int> perm_vec = seq_int(0, Nells - 1);
@@ -199,7 +159,6 @@ Rcpp::List run_sims_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::List a
 			for (int hex = 0; hex < Nhex; hex++)
 			{
 			  hex_values_perm[hex] = 0;
-			  hex_values_null_perm[hex] = 0;
 				if (Nintersections[hex] >= min_intersections)
 				{
 				  // compute hex value
@@ -207,16 +166,8 @@ Rcpp::List run_sims_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::List a
 					{
 						int this_ellipse = intersections[hex][j];
 					  hex_values_perm[hex] += edge_value[perm_vec[this_ellipse]] * area_inv[this_ellipse];
-					  hex_values_null_perm[hex] += edge_value_pred[perm_vec[this_ellipse]] * area_inv[this_ellipse];
 					}
 				  hex_values_perm[hex] /= hex_weights[hex];
-				  hex_values_null_perm[hex] /= hex_weights[hex];
-				  
-				  // subtract null map from raw values
-				  if (null_method == 3)
-				  {
-				    hex_values_perm[hex] -= hex_values_null_perm[hex];
-				  }
 				  
 				  // compare with unpermuted value
 				  if (hex_values_perm[hex] < hex_values[hex])

@@ -302,11 +302,6 @@ create_map <- function(proj, hex_size = 1, buffer = 2*hex_size) {
 #'     call of \code{fit_model()} is used to compute residuals, and the
 #'     permutation test method is carried out on residual values. As with method
 #'     1, this permutation test can be spatially binned.
-#'     \item permutation test against a null map, generated from model fit. The
-#'     fitted model from a previously call of \code{fit_model()} is used to
-#'     produce a single null map, which is subtracted from both the real map and
-#'     all permutations prior to returning final values. As with method 1, this
-#'     permutation test can be spatially binned.
 #'   }
 #' @param n_perms number of permutations to run when checking statistical
 #'   significance. Set to 0 to skip this step.
@@ -335,7 +330,7 @@ run_sims <- function(proj, eccentricity = 0.5, null_method = 1,
   assert_single_pos(eccentricity, zero_allowed = TRUE)
   assert_bounded(eccentricity, left = 0, right = 1, inclusive_left = TRUE, inclusive_right = FALSE)
   assert_single_pos_int(null_method)
-  assert_in(null_method, 1:3)
+  assert_in(null_method, 1:2)
   assert_single_pos_int(n_perms, zero_allowed = TRUE)
   assert_single_pos_int(min_intersections, zero_allowed = FALSE)
   assert_single_pos_int(n_breaks, zero_allowed = FALSE)
@@ -387,7 +382,6 @@ run_sims <- function(proj, eccentricity = 0.5, null_method = 1,
                hex_long = proj$map$hex_centroid$long,
                hex_lat = proj$map$hex_centroid$lat,
                eccentricity = eccentricity,
-               null_method = null_method,
                n_perms = n_perms,
                min_intersections = min_intersections,
                report_progress = report_progress)
@@ -396,7 +390,7 @@ run_sims <- function(proj, eccentricity = 0.5, null_method = 1,
   # Carry out simulations in C++ to generate map data
   
   output_raw <- run_sims_cpp(args, args_functions, args_progress)
-  #return(output_raw)
+  
   # ---------------------------------------------
   # Process raw output
   

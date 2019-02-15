@@ -28,11 +28,6 @@ foci).}
   call of \code{fit_model()} is used to compute residuals, and the
   permutation test method is carried out on residual values. As with method
   1, this permutation test can be spatially binned.
-  \item permutation test against a null map, generated from model fit. The
-  fitted model from a previously call of \code{fit_model()} is used to
-  produce a single null map, which is subtracted from both the real map and
-  all permutations prior to returning final values. As with method 1, this
-  permutation test can be spatially binned.
 }}
 
 \item{n_perms}{number of permutations to run when checking statistical
