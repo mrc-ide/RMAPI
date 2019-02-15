@@ -4,12 +4,18 @@
 \alias{plot_map}
 \title{Plot hex map of RMAPI output}
 \usage{
-plot_map(proj, variable = NULL)
+plot_map(proj, variable = NULL, col_scale = magma(100),
+  barrier_list = list())
 }
 \arguments{
 \item{proj}{object of class \code{rmapi_project}.}
 
 \item{variable}{which element of the project output to use as map colours.}
+
+\item{col_scale}{the colour scale to use.}
+
+\item{barrier_list}{optional list of polygon coordinates that are added to
+plot.}
 }
 \description{
 Plot hex map of RMAPI output.

@@ -5,8 +5,9 @@
 \title{Simulate data from simple model}
 \usage{
 sim_simple(node_long, node_lat, barrier_list = list(),
-  barrier_penalty = numeric(), barrier_method = 1, ecc = 0.9,
-  n_ell = 20, dist_transform = 1, lambda = 0.1, eps = 0.1)
+  barrier_penalty = numeric(), barrier_method = 1,
+  eccentricity = 0.9, n_ell = 20, dist_transform = 1, lambda = 0.1,
+  eps = 0.1)
 }
 \arguments{
 \item{node_long}{longitudes of nodes.}
@@ -28,17 +29,21 @@ the first row.}
   \item{bullet 3 compare ellipse, apply penalty per unit area intersection}
 }}
 
-\item{ecc}{eccentricity of ellipses (only used under \code{barrier_method = 3}).}
+\item{eccentricity}{eccentricity of ellipses (only used under
+\code{barrier_method = 3}).}
 
-\item{n_ell}{number of points that make up an ellipse (only used under \code{barrier_method = 3}).}
+\item{n_ell}{number of points that make up an ellipse (only used under
+\code{barrier_method = 3}).}
 
-\item{dist_transform}{the method by which distances are transformed to produce the final statistic:
+\item{dist_transform}{the method by which distances are transformed to
+produce the final statistic:
 \itemize{
   \item{bullet 1 linear}
   \item{bullet 2 exponential decay}
 }}
 
-\item{lambda}{the rate of decay of the exponential function (only used under \code{dist_transform = 2}).}
+\item{lambda}{the rate of decay of the exponential function (only used under
+\code{dist_transform = 2}).}
 
 \item{eps}{the standard deviation of white noise applied to final statistics.}
 }

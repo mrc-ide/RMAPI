@@ -206,18 +206,25 @@ fit_model <- function(proj, type = 1) {
 #'
 #' @param proj object of class \code{rmapi_project}.
 #' @param hex_size size of hexagons.
-#' @param buffer size of buffer zone around the data.
+#' @param buffer size of buffer zone around the data. It is recommended to not
+#'   use a buffer to avoid edge-effects.
 #'
 #' @import rgeos
 #' @import sp
 #' @export
 
-create_map <- function(proj, hex_size = 1, buffer = 2*hex_size) {
+create_map <- function(proj, hex_size = 1, buffer = 0) {
   
   # check inputs
   assert_custom_class(proj, "rmapi_project")
   assert_single_pos(hex_size)
   assert_single_pos(buffer)
+  
+  # check hex size
+  min_range <- min(apply(proj$data$coords, 2, function(x) diff(range(x))))
+  if (hex_size > min_range/4) {
+    stop(sprintf("hex_size too large for spatial range of data. Suggested size: %s", round(min_range/10, digits = 3)))
+  }
   
   message("Creating hex map")
   
@@ -352,10 +359,11 @@ run_sims <- function(proj, eccentricity = 0.5, null_method = 1,
   # get x-values, y-values predicted values
   x <- proj$data$spatial_dist
   y <- proj$data$stat_dist
-  y_pred <- predict(proj$model$model_fit)
+  y_pred <- NA
   
   # subtract model fit under null_method = 2
   if (null_method == 2) {
+    y_pred <- predict(proj$model$model_fit)
     y <- y - y_pred
   }
   

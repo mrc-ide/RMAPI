@@ -1,5 +1,16 @@
 
 # -----------------------------------
+# ask user a yes/no question. Return TRUE/FALSE.
+#' @noRd
+user_yes_no <- function(x = "continue? (Y/N): ") {
+  user_choice <- NA
+  while (!user_choice %in% c("Y", "y" ,"N", "n")) {
+    user_choice <- readline(x)
+  }
+  return(user_choice %in% c("Y", "y"))
+}
+
+# -----------------------------------
 # takes matrix as input, converts to list format for use within Rcpp code
 #' @noRd
 matrix_to_rcpp <- function(x) {

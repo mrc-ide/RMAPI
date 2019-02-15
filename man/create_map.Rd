@@ -4,14 +4,15 @@
 \alias{create_map}
 \title{Create mapping space}
 \usage{
-create_map(proj, hex_size = 1, buffer = 2 * hex_size)
+create_map(proj, hex_size = 1, buffer = 0)
 }
 \arguments{
 \item{proj}{object of class \code{rmapi_project}.}
 
 \item{hex_size}{size of hexagons.}
 
-\item{buffer}{size of buffer zone around the data.}
+\item{buffer}{size of buffer zone around the data. It is recommended to not
+use a buffer to avoid edge-effects.}
 }
 \description{
 Create mapping space.

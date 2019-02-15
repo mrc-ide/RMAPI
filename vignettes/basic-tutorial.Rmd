@@ -9,6 +9,108 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-# TODO - basic tutorial
+```{r, echo=FALSE}
+set.seed(2)
+#devtools::load_all("/Users/rverity/Dropbox/Bob/Work/My Programs/Barriers to gene flow/RMAPI")
+library(RMAPI)
+```
 
-Testing2
+This vignette goes through a basic RMAPI analysis, using simulated data to test different methods. It covers:
+
+1. Simulating/loading data into R
+2. Creating a project and binding data to the project
+3. Creating a hex-map and checking coverage
+4. Running simulations
+5. Plotting results
+6. Repeat analysis using an explicit fitted model
+
+
+## Simulating/loading data
+
+RMAPI uses pairwise information (i.e. statistics) between a series of spatial nodes (i.e. observations) to test for areas of significant spatial discontinuity, therefore, the basic inputs to RMAPI are: 1) coordinates of nodes, 2) values of pairwise statistics. Node coordinates need to be in dataframe format, with two columns: `long` and `lat`, and pairwise statistics need to be formatted as a square matrix.
+
+For the sake of this vignette we will use built-in functions to simulate data in the correct format, and with known spatial barriers. First, we will generate node coordinates uniformly at random over the sampling region. This is intended to represent a situation where we do not have control over sampling locations and therefore cannot create a perfect sampling grid - for example when sampling from major cities:
+
+```{r}
+# define coordinates of nodes
+node_df <- data.frame(long = runif(100, -1.548, -1.478), lat = runif(100, 53.347, 53.379))
+```
+
+Next we create a list of polygons that represent barriers to gene flow. Each element of this list should be a dataframe specifying the coordinates of a polygon, which must make a complete ring (i.e. the final row must be identical to the first). We also need to define the penalty associated with each barrier:
+
+```{r}
+# define barriers
+barrier_list <- list()
+barrier_list[[1]] <- data.frame(long = c(-1.54, -1.50, -1.50, -1.495, -1.495, -1.54, -1.54),
+                                lat = c(53.355, 53.355, 53.37, 53.37, 53.35, 53.35, 53.355))
+barrier_penalty <- 1
+```
+
+We can now simulate statistical values between nodes. The `barrier_method = 2` method used here draws a straight line between nodes and calculates the intersection with barrier polygons before applying the barrier penalty per unit intersection, meaning lines that go through a large amount of barrier experience a greater penalty. See the help for the `sim_simple()` function alternative methods of applying barriers. We also use `dist_transform = 2` here, which assumes that values fall off exponentially with distance with rate `lambda`. Finally, random error is applied to all pairwise statistics in the form of Gaussian noise with standard deviation `eps`:
+
+```{r}
+# simulate pairwise statistics
+sim_stat <- sim_simple(node_long = node_df$long,
+                       node_lat = node_df$lat,
+                       barrier_list = barrier_list,
+                       barrier_penalty = barrier_penalty,
+                       barrier_method = 2,
+                       dist_transform = 2,
+                       lambda = 50,
+                       eps = 0.2)
+```
+
+If loading data from file then it must be in the same format as this simulated data.
+
+
+## Creating a project and binding data
+
+RMAPI works using projects, which are essentially just lists containing all data, input and outputs in one place. We can create a new project, and then bind our data to the project:
+
+```{r, fig.width=7, fig.height=5}
+# create new RMAPI project
+p <- rmapi_project()
+
+# bind data
+p <- bind_data(p, node_df$long, node_df$lat, sim_stat)
+```
+
+Once we have data bound to a project we can use the `plot_dist()` function to explore the basic relationship between distance and pairwise statistical values:
+
+```{r, fig.width=7, fig.height=5}
+# plot basic relationship between spatial distance and statistic
+plot_dist(p)
+```
+
+In this case we can see the general shape of exponential fall-off from our simulations, but the noise makes it very difficult to see if there are any more subtle patterns, e.g. spatial barriers.
+
+## Creating a hex map and testing coverage
+
+Next, we need to create a hex-map. Although 
+
+```{r, fig.width=10, fig.height=4}
+# set up map
+p <- create_map(p, hex_size = 0.003)
+
+# check that sufficient coverage
+plot_coverage(p, eccentricity = 0.9)
+```
+
+## Run simulations
+
+```{r, fig.width=10, fig.height=4}
+# run simulations
+p <- run_sims(p, n_perms = 1e3, eccentricity = 0.9, n_breaks = 1, report_progress = FALSE)
+
+# plot hex values
+plot1 <- plot_map(p, barrier_list = barrier_list)
+
+# plot hex ranks
+plot2 <- plot_map(p, variable = "hex_ranks", barrier_list = barrier_list)
+
+# use gridExtra package to arrange ggplot objects
+library(gridExtra)
+grid.arrange(plot1, plot2, ncol = 2)
+```
+
+

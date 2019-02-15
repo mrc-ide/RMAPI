@@ -17,7 +17,8 @@ Imports:
     sf,
     ggplot2,
     leaflet,
-    rgdal
+    rgdal,
+    gridExtra
 LinkingTo:
     Rcpp
 RoxygenNote: 6.1.1
@@ -30,3 +31,5 @@ SystemRequirements:
     C++11
 LazyData: true
 VignetteBuilder: knitr
+Encoding: UTF-8
+

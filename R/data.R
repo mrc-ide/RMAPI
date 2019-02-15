@@ -18,14 +18,18 @@
 #'     \item{bullet 2 compare line, apply penalty per unit intersection}
 #'     \item{bullet 3 compare ellipse, apply penalty per unit area intersection}
 #'   }
-#' @param ecc eccentricity of ellipses (only used under \code{barrier_method = 3}).
-#' @param n_ell number of points that make up an ellipse (only used under \code{barrier_method = 3}).
-#' @param dist_transform the method by which distances are transformed to produce the final statistic:
+#' @param eccentricity eccentricity of ellipses (only used under
+#'   \code{barrier_method = 3}).
+#' @param n_ell number of points that make up an ellipse (only used under
+#'   \code{barrier_method = 3}).
+#' @param dist_transform the method by which distances are transformed to
+#'   produce the final statistic:
 #'   \itemize{
 #'     \item{bullet 1 linear}
 #'     \item{bullet 2 exponential decay}
 #'   }
-#' @param lambda the rate of decay of the exponential function (only used under \code{dist_transform = 2}).
+#' @param lambda the rate of decay of the exponential function (only used under
+#'   \code{dist_transform = 2}).
 #' @param eps the standard deviation of white noise applied to final statistics.
 #'
 #' @import sf
@@ -36,7 +40,7 @@ sim_simple <- function(node_long,
                        barrier_list = list(),
                        barrier_penalty = numeric(),
                        barrier_method = 1,
-                       ecc = 0.9,
+                       eccentricity = 0.9,
                        n_ell = 20,
                        dist_transform = 1,
                        lambda = 0.1,
@@ -63,8 +67,8 @@ sim_simple <- function(node_long,
   assert_same_length(barrier_list, barrier_penalty)
   assert_single_pos_int(barrier_method)
   assert_in(barrier_method, 1:3)
-  assert_single_numeric(ecc)
-  assert_bounded(ecc, inclusive_left = FALSE)
+  assert_single_numeric(eccentricity)
+  assert_bounded(eccentricity, inclusive_left = FALSE)
   assert_single_pos_int(n_ell, zero_allowed = FALSE)
   assert_single_pos_int(dist_transform)
   assert_in(dist_transform, 1:2)
@@ -120,7 +124,7 @@ sim_simple <- function(node_long,
       i2 <- 1
       for (i in 1:(n_node-1)) {
         for (j in (i+1):n_node) {
-          ell_df <- get_ellipse(f1 = node_mat[i,], f2 = node_mat[j,], ecc = ecc, n = n_ell)
+          ell_df <- get_ellipse(f1 = node_mat[i,], f2 = node_mat[j,], ecc = eccentricity, n = n_ell)
           ell_list[[i2]] <- sf::st_polygon(list(as.matrix(ell_df)))
           i2 <- i2+1
         }
@@ -154,6 +158,6 @@ sim_simple <- function(node_long,
   # add noise
   d <- d + rnorm(length(d), sd = eps)
   
-  # return
-  return(d)
+  # return matrix
+  return(as.matrix(d))
 }
