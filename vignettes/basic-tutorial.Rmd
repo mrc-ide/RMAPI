@@ -14,7 +14,7 @@ set.seed(1)
 library(RMAPI)
 ```
 
-This vignette goes through a basic RMAPI analysis, using simulated data to test different methods. It covers:
+This vignette goes through a basic RMAPI analysis, using simulated data to test different methods. It covers: (Edit test)
 
 1. Simulating/loading data into R
 2. Creating a project and binding data to the project
