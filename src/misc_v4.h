@@ -14,7 +14,6 @@
 
 //------------------------------------------------
 // define very large/small numbers for catching overflow/underflow problems
-//int OVERFLO_INT = std::numeric_limits<int>::max();
 const int OVERFLO_INT = INT_MAX/100;
 const double  OVERFLO_DOUBLE = DBL_MAX/100;
 const double UNDERFLO_DOUBLE = DBL_MIN/100;
@@ -27,13 +26,17 @@ double log_sum(double logA, double logB);
 //------------------------------------------------
 // basic sum over elements in a vector
 template<class TYPE>
-TYPE sum(const std::vector<TYPE> &xVec) {
-  TYPE output = 0;
-  for( const auto & x : xVec){
-  	output += x;
+TYPE sum(const std::vector<TYPE> &x_vec) {
+  TYPE ret = 0;
+  for (const auto & x : x_vec) {
+  	ret += x;
   }
-  return output;
+  return ret;
 }
+
+//------------------------------------------------
+// sum boolean values and return integer
+int sum_bool(const std::vector<bool> &x_vec);
 
 //------------------------------------------------
 // mean of vector
@@ -88,6 +91,14 @@ template<class TYPE>
 void quick_erase(std::vector<TYPE> &v, int index) {
   v[index] = v.back();
   v.pop_back();
+}
+
+//------------------------------------------------
+// erase-remove idiom, for erasing all instances of a particular value from
+// container
+template<class TYPE>
+void erase_remove(std::vector<TYPE> &v, TYPE x) {
+  v.erase(remove(v.begin(), v.end(), x));
 }
 
 //------------------------------------------------

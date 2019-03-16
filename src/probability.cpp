@@ -4,6 +4,51 @@
 using namespace std;
 
 //------------------------------------------------
+// draw from continuous uniform distribution on interval [0,1)
+double runif_0_1() {
+  return R::runif(0,1);
+}
+
+//------------------------------------------------
+// draw from continuous uniform distribution on interval [a,b)
+double runif1(const double a, const double b) {
+  return R::runif(a,b);
+}
+
+//------------------------------------------------
+// draw from Bernoulli(p) distribution
+bool rbernoulli1(const double p) {
+  return R::rbinom(1, p);
+}
+
+//------------------------------------------------
+// draw from Binomial(n, p) distribution
+int rbinom1(const int n, const double p) {
+  if (n == 0 || p >= 1) {
+    return n;
+  }
+  return R::rbinom(n, p);
+}
+
+//------------------------------------------------
+// draw from Geometric(p) distribution, with mean (1-p)/p
+int rgeom1(const double p) {
+  return R::rgeom(p);
+}
+
+//------------------------------------------------
+// sample single value x that lies between a and b (inclusive) with equal 
+// probability. Works on positive or negative values of a or b, and works 
+// irrespective of which of a or b is larger.
+int sample2(const int a, const int b) {
+  if (a < b) {
+    return floor(runif1(a, b+1));
+  } else {
+    return floor(runif1(b, a+1));
+  }
+}
+
+//------------------------------------------------
 // take in vector of integers (by reference). Resample these without replacement
 void reshuffle(vector<int> &x) {
   int rnd1, tmp1; // dummy variables

@@ -5,7 +5,11 @@ hexbarrier01 <- function(args_h) {
     .Call('_RMAPI_hexbarrier01', PACKAGE = 'RMAPI', args_h)
 }
 
-run_sims_cpp <- function(args, args_functions, args_progress) {
-    .Call('_RMAPI_run_sims_cpp', PACKAGE = 'RMAPI', args, args_functions, args_progress)
+rmapi_analysis_cpp <- function(args, args_functions, args_progress) {
+    .Call('_RMAPI_rmapi_analysis_cpp', PACKAGE = 'RMAPI', args, args_functions, args_progress)
+}
+
+sim_falciparum_cpp <- function(args, args_functions, args_progress) {
+    .Call('_RMAPI_sim_falciparum_cpp', PACKAGE = 'RMAPI', args, args_functions, args_progress)
 }
 

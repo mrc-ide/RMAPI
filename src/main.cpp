@@ -1,8 +1,10 @@
 
-#include "misc_v3.h"
+#include "main.h"
+#include "misc_v4.h"
 #include "probability.h"
+#include "sim.Parameters.h"
+#include "sim.Dispatcher.h"
 
-#include <Rcpp.h>
 #include <chrono>
 #include <vector>
 
@@ -19,7 +21,7 @@ bool ellipse_check(const double x, const double y, const double xf1, const doubl
 //------------------------------------------------
 // compute map and run permutation test
 // [[Rcpp::export]]
-Rcpp::List run_sims_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::List args_progress)
+Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::List args_progress)
 {
 	
 	// start timer
@@ -188,4 +190,30 @@ Rcpp::List run_sims_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::List a
                            Rcpp::Named("hex_weights") = hex_weights,
                            Rcpp::Named("hex_ranks") = hex_ranks,
                            Rcpp::Named("Nintersections") = Nintersections);
+}
+
+//------------------------------------------------
+// simulate from simple individual-based model
+// [[Rcpp::export]]
+Rcpp::List sim_falciparum_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::List args_progress) {
+  
+  // start timer
+  chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
+  
+  // extract model parameters into separate class
+  Parameters parameters(args);
+  
+  // create simulation dispatcher object
+  Dispatcher dispatcher;
+  
+  // carry out simulation
+  dispatcher.simulate();
+  
+  // end timer
+  chrono::high_resolution_clock::time_point t2 = chrono::high_resolution_clock::now();
+  chrono::duration<double> time_span = chrono::duration_cast< chrono::duration<double> >(t2-t1);
+  print("completed in", time_span.count(), "seconds\n");
+  
+  // return list
+  return Rcpp::List::create(Rcpp::Named("daily_counts") = dispatcher.daily_counts);
 }

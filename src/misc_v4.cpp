@@ -1,5 +1,5 @@
 
-#include "misc_v3.h"
+#include "misc_v4.h"
 
 using namespace std;
 
@@ -26,6 +26,16 @@ double log_sum(double logA, double logB) {
 // basic sum over elements in a vector
 // sum
 // DEFINED IN HEADER
+
+//------------------------------------------------
+// sum boolean values and return integer
+int sum_bool(const vector<bool> &x_vec) {
+  int ret = 0;
+  for (const auto & x : x_vec) {
+    ret += x;
+  }
+  return ret;
+}
 
 //------------------------------------------------
 // mean of vector
@@ -73,6 +83,12 @@ vector<int> seq_int(int from, int to, int by) {
 // erase particular element of a vector using efficient method. Warning - does
 // not preserve original order of vector
 // quick_erase
+// DEFINED IN HEADER
+
+//------------------------------------------------
+// erase-remove idiom, for erasing all instances of a particular value from
+// container
+// erase_remove
 // DEFINED IN HEADER
 
 //------------------------------------------------

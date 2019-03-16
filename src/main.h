@@ -1,4 +1,6 @@
 
+#include <Rcpp.h>
+
 #pragma once
 
 //------------------------------------------------
@@ -7,4 +9,8 @@ bool ellipse_check(const double x, const double y, const double xf1, const doubl
 
 //------------------------------------------------
 // compute map and run permutation test
-Rcpp::List run_sims_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::List args_progress);
+Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::List args_progress);
+
+//------------------------------------------------
+// simulate from simple individual-based model
+Rcpp::List sim_falciparum_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::List args_progress);

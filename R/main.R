@@ -25,6 +25,25 @@ check_RMAPI_loaded <- function() {
 }
 
 #------------------------------------------------
+#' @title Import file
+#'
+#' @description Import file from the inst/extdata folder of this package
+#' 
+#' @param name name of file.
+#'
+#' @export
+
+rmapi_file <- function(name) {
+  
+  # load file from inst/extdata folder
+  name_full <- system.file("extdata/", name, package = 'RMAPI', mustWork = TRUE)
+  ret <- readRDS(name_full)
+  
+  # return
+  return(ret)
+}
+
+#------------------------------------------------
 #' @title Get great circle distance between spatial points
 #'
 #' @description Get great circle distance between spatial points.
@@ -288,9 +307,9 @@ create_map <- function(proj, hex_size = 1, buffer = 0) {
 }
 
 #------------------------------------------------
-#' @title Perform RMAPI simulation
+#' @title Perform RMAPI analysis
 #'
-#' @description Perform RMAPI simulation.
+#' @description Perform RMAPI analysis.
 #'
 #' @param proj object of class \code{rmapi_project}.
 #' @param eccentricity eccentricity of ellipses, defined as half the distance
@@ -328,9 +347,9 @@ create_map <- function(proj, hex_size = 1, buffer = 0) {
 #'
 #' @export
 
-run_sims <- function(proj, eccentricity = 0.5, null_method = 1,
-                     n_perms = 1e2, n_breaks = 1, dist_breaks = NULL,
-                     empirical_tail = "both", min_intersections = 5, report_progress = TRUE) {
+rmapi_analysis <- function(proj, eccentricity = 0.5, null_method = 1,
+                           n_perms = 1e2, n_breaks = 1, dist_breaks = NULL,
+                           empirical_tail = "both", min_intersections = 5, report_progress = TRUE) {
   
   # check inputs
   assert_custom_class(proj, "rmapi_project")
@@ -480,3 +499,131 @@ get_ellipse <- function(f1 = c(-3,-2), f2 = c(3,2), ecc = 0.8, n = 100) {
   return(data.frame(x = x, y = y))
 }
 
+#------------------------------------------------
+#' @title Simulate genetic data from simple P.falciparum dynamic model
+#'
+#' @description Simulate genetic data from simple P.falciparum dynamic model.
+#'
+#' @param a human blood feeding rate. The proportion of mosquitoes that feed on
+#'   humans each day.
+#' @param p mosquito probability of surviving one day.
+#' @param mu mosquito instantaneous death rate. mu = -log(p) unless otherwise
+#'   specified.
+#' @param u intrinsic incubation period. The number of days from infection to
+#'   blood-stage infection in a human host.
+#' @param v extrinsic incubation period. The number of days from infection to
+#'   becoming infectious in a mosquito.
+#' @param g lag time between human blood-stage infection and production of
+#'   gametocytes.
+#' @param prob_infection probability a human becomes infected after being bitten
+#'   by an infected mosquito.
+#' @param duration_infection vector specifying probability distribution of time
+#'   (in days) of a malaria episode.
+#' @param infectivity probability a mosquito becomes infected after biting an
+#'   infective human host.
+#' @param max_innoculations maximum number of innoculations that an individual
+#'   can hold simultaneously.
+#' @param H human population size, which is assumed the same in every deme.
+#' @param seed_infections vector specifying the initial number of infected
+#'   humans in each deme.
+#' @param M vector specifying mosquito population size (strictly the number of
+#'   adult female mosquitoes) in each deme.
+#' @param time_out vector of times (days) at which output is produced.
+#'
+#' @export
+
+sim_falciparum <- function(a = 0.3,
+                           p = 0.85,
+                           mu = -log(p),
+                           u = 12,
+                           v = 10,
+                           g = 12,
+                           prob_infection = 0.6,
+                           duration_infection = dgeom(1:25, 1/5),
+                           infectivity = 0.07,
+                           max_innoculations = 5,
+                           H = 1000,
+                           seed_infections = 100,
+                           M = 1000,
+                           time_out = 100) {
+  
+  # check inputs
+  assert_single_bounded(a)
+  assert_single_bounded(p)
+  assert_single_pos(mu)
+  assert_single_pos_int(u, zero_allowed = FALSE)
+  assert_single_pos_int(v, zero_allowed = FALSE)
+  assert_single_pos_int(g, zero_allowed = FALSE)
+  assert_vector(prob_infection)
+  assert_bounded(prob_infection)
+  assert_pos(prob_infection[1], zero_allowed = FALSE)
+  assert_vector(duration_infection)
+  assert_pos(duration_infection, zero_allowed = TRUE)
+  assert_single_bounded(infectivity)
+  assert_single_pos_int(max_innoculations, zero_allowed = FALSE)
+  assert_single_pos_int(H, zero_allowed = FALSE)
+  assert_pos_int(seed_infections, zero_allowed = FALSE)
+  assert_leq(seed_infections, H)
+  assert_pos_int(M, zero_allowed = FALSE)
+  assert_same_length(seed_infections, M)
+  assert_single_pos_int(time_out, zero_allowed = TRUE)
+  
+  # normalise infection duration distribution
+  duration_infection <- duration_infection/sum(duration_infection)
+  
+  # if any prob_infection is zero then this automatically defines the value of
+  # max_innoculations
+  if (any(prob_infection == 0)) {
+    max_innoculations <- which(prob_infection == 0)[1] - 1
+  }
+  
+  # read in Mali demography distributions
+  mali_demog <- rmapi_file("mali_demog.rds")
+  
+  # ---------------------------------------------
+  # Set up arguments for input into C++
+  
+  # create function list
+  args_functions <- list(update_progress = update_progress)
+  
+  # create progress bars
+  pb <- txtProgressBar(0, 100, initial = NA, style = 3)
+  args_progress <- list(pb = pb)
+  
+  # create argument list
+  args <- list(a = a,
+               mu = mu,
+               u = u,
+               v = v,
+               g = g,
+               prob_infection = prob_infection,
+               duration_infection = duration_infection,
+               infectivity = infectivity,
+               max_innoculations = max_innoculations,
+               H = H,
+               seed_infections = seed_infections,
+               M = M,
+               life_table = mali_demog$life_table,
+               age_death = mali_demog$age_death,
+               age_stable = mali_demog$age_stable,
+               time_out = time_out)
+  
+  # ---------------------------------------------
+  # Run efficient C++ function
+  
+  output_raw <- sim_falciparum_cpp(args, args_functions, args_progress)
+  
+  # ---------------------------------------------
+  # Process raw output
+  
+  # get daily counts
+  daily_counts <- mapply(function(x) {
+    ret <- as.data.frame(rcpp_to_matrix(x))
+    names(ret) <- c("Sh", "Eh", "Ih")
+    return(ret)
+  }, output_raw$daily_counts, SIMPLIFY = FALSE)
+  
+  # return as list
+  output_processed <- list(daily_counts = daily_counts)
+  return(output_processed)
+}

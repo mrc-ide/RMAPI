@@ -56,9 +56,6 @@ assert_single <- function(x, message = "%s must be a single value", name = depar
   assert_non_null(x, name = name)
   assert_atomic(x, name = name)
   assert_length(x, 1, name = name)
-  if (!is.null(dim(x))) {
-    stop(sprintf(message, name), call. = FALSE)
-  }
   return(TRUE)
 }
 
@@ -184,6 +181,15 @@ assert_single_pos_int <- function(x, zero_allowed = TRUE, name = deparse(substit
 }
 
 #------------------------------------------------
+# x is single value bounded between limits
+#' @noRd
+assert_single_bounded <- function(x, left = 0, right = 1, inclusive_left = TRUE, inclusive_right = TRUE, name = deparse(substitute(x))) {
+  assert_length(x, n = 1, name = name)
+  assert_bounded(x, left = left, right = right, inclusive_left = inclusive_left, inclusive_right = inclusive_right, name = name)
+  return(TRUE)
+}
+
+#------------------------------------------------
 # x is a vector (and is not a list or another recursive type)
 #' @noRd
 assert_vector <- function(x, message = "%s must be a non-recursive vector", name = deparse(substitute(x))) {
@@ -227,6 +233,16 @@ assert_custom_class <- function(x, c, message = "%s must inherit from class '%s'
   if (!inherits(x, c)) {
     stop(sprintf(message, name, c), call. = FALSE)
   }
+  return(TRUE)
+}
+
+#------------------------------------------------
+# x is a plotting limit, i.e. contains two increasing values
+assert_limit <- function(x, message = "%s must be a valid plotting limit, i.e. contain two increasing values", name = deparse(substitute(x))) {
+  assert_vector(x, name = name)
+  assert_length(x, 2, name = name)
+  assert_numeric(x, name = name)
+  assert_increasing(x, name = name)
   return(TRUE)
 }
 
@@ -497,6 +513,30 @@ assert_noduplicates <- function(x, message = "%s must contain no duplicates", na
 #' @noRd
 assert_file_exists <- function(x, message = "file not found at path %s", name = deparse(substitute(x))) {
   if (!file.exists(x)) {
+    stop(sprintf(message, name), call. = FALSE)
+  }
+  return(TRUE)
+}
+
+#------------------------------------------------
+# x is increasing
+#' @noRd
+assert_increasing <- function(x, message = "%s must be increasing", name = deparse(substitute(x))) {
+  assert_non_null(x, name = name)
+  assert_numeric(x, name = name)
+  if (!all.equal(x, sort(x))) {
+    stop(sprintf(message, name), call. = FALSE)
+  }
+  return(TRUE)
+}
+
+#------------------------------------------------
+# x is decreasing
+#' @noRd
+assert_decreasing <- function(x, message = "%s must be decreasing", name = deparse(substitute(x))) {
+  assert_non_null(x, name = name)
+  assert_numeric(x, name = name)
+  if (!all.equal(x, sort(x, decreasing = TRUE))) {
     stop(sprintf(message, name), call. = FALSE)
   }
   return(TRUE)
