@@ -416,7 +416,7 @@ rmapi_analysis <- function(proj, eccentricity = 0.5, null_method = 1,
   # ---------------------------------------------
   # Carry out simulations in C++ to generate map data
   
-  output_raw <- run_sims_cpp(args, args_functions, args_progress)
+  output_raw <- rmapi_analysis_cpp(args, args_functions, args_progress)
   
   # ---------------------------------------------
   # Process raw output
@@ -533,14 +533,14 @@ get_ellipse <- function(f1 = c(-3,-2), f2 = c(3,2), ecc = 0.8, n = 100) {
 #' @export
 
 sim_falciparum <- function(a = 0.3,
-                           p = 0.85,
+                           p = 0.9,
                            mu = -log(p),
                            u = 12,
                            v = 10,
-                           g = 12,
-                           prob_infection = 0.6,
-                           duration_infection = dgeom(1:25, 1/5),
-                           infectivity = 0.07,
+                           g = 10,
+                           prob_infection = seq(0.1,0.01,-0.01),
+                           duration_infection = dgeom(1:300, 1/50),
+                           infectivity = 1,
                            max_innoculations = 5,
                            H = 1000,
                            seed_infections = 100,
@@ -566,7 +566,8 @@ sim_falciparum <- function(a = 0.3,
   assert_leq(seed_infections, H)
   assert_pos_int(M, zero_allowed = FALSE)
   assert_same_length(seed_infections, M)
-  assert_single_pos_int(time_out, zero_allowed = TRUE)
+  assert_vector(time_out)
+  assert_pos_int(time_out, zero_allowed = TRUE)
   
   # normalise infection duration distribution
   duration_infection <- duration_infection/sum(duration_infection)
@@ -574,7 +575,7 @@ sim_falciparum <- function(a = 0.3,
   # if any prob_infection is zero then this automatically defines the value of
   # max_innoculations
   if (any(prob_infection == 0)) {
-    max_innoculations <- which(prob_infection == 0)[1] - 1
+    max_innoculations <- min(max_innoculations, which(prob_infection == 0)[1] - 1)
   }
   
   # read in Mali demography distributions
@@ -616,14 +617,30 @@ sim_falciparum <- function(a = 0.3,
   # ---------------------------------------------
   # Process raw output
   
-  # get daily counts
-  daily_counts <- mapply(function(x) {
+  # get daily values
+  daily_values <- mapply(function(x) {
     ret <- as.data.frame(rcpp_to_matrix(x))
-    names(ret) <- c("Sh", "Eh", "Ih")
+    names(ret) <- c("Sh", "Eh", "Ih", "Sv", "Ev", "Iv", "EIR")
     return(ret)
-  }, output_raw$daily_counts, SIMPLIFY = FALSE)
+  }, output_raw$daily_values, SIMPLIFY = FALSE)
+  
+  # get number of innoculations by age
+  age_innoculations <- mapply(function(y) {
+    ret <- mapply(function(x) {
+      ret <- rcpp_to_matrix(x)
+      rownames(ret) <- paste0("age", 1:nrow(ret))
+      colnames(ret) <- paste0("innoc", 1:ncol(ret)-1)
+      return(ret)
+    }, y, SIMPLIFY = FALSE)
+    names(ret) <- paste0("time", time_out)
+    return(ret)
+  }, output_raw$age_innoculations, SIMPLIFY = FALSE)
+  n_demes <- length(M)
+  names(age_innoculations) <- paste0("deme", 1:n_demes)
   
   # return as list
-  output_processed <- list(daily_counts = daily_counts)
+  output_processed <- list(daily_values = daily_values,
+                           age_innoculations = age_innoculations)
   return(output_processed)
 }
+

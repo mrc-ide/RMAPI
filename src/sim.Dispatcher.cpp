@@ -1,7 +1,7 @@
 
 #include "sim.Dispatcher.h"
-#include "misc_v4.h"
 #include "probability.h"
+#include "array.h"
 
 using namespace std;
 
@@ -36,8 +36,8 @@ Dispatcher::Dispatcher() {
   
   // for each deme, store the integer index of all hosts in that deme, and the
   // integer index of infective hosts only
-  host_index = vector<vector<int>>(n_demes);
-  host_infective_index = vector<vector<int>>(n_demes);
+  host_index = array_2d_int(n_demes);
+  host_infective_index = array_2d_int(n_demes);
   for (int k=0; k<n_demes; ++k) {
     host_index[k] = seq_int(k*H, (k+1)*H-1);
     reshuffle(host_index[k]);
@@ -76,18 +76,20 @@ Dispatcher::Dispatcher() {
   mosq_pop = vector<Mosquito>(M_total);
   
   // store integer index of mosquitoes at various stages
-  Sv_index = vector<vector<int>>(n_demes);
+  Sv_index = array_2d_int(n_demes);
   int M_cum = 0;
   for (int k=0; k<n_demes; ++k) {
     Sv_index[k] = seq_int(M_cum, M_cum+M_vec[k]-1);
     M_cum += M_vec[k];
   }
-  Ev_death = vector<vector<vector<int>>>(n_demes, vector<vector<int>>(v));
-  Ev_to_Iv = vector<vector<vector<int>>>(n_demes, vector<vector<int>>(v));
-  Iv_index = vector<vector<int>>(n_demes);
+  Ev_death = array_3d_int(n_demes, v);
+  Ev_to_Iv = array_3d_int(n_demes, v);
+  Iv_index = array_2d_int(n_demes);
   
   // objects for storing results
-  daily_counts = vector<vector<vector<int>>>(n_demes, vector<vector<int>>(max_time));
+  //daily_counts = array_3d_int(n_demes, max_time);
+  daily_values = array_3d_double(n_demes, max_time);
+  age_innoculations = array_4d_int(n_demes, n_time_out, n_age, max_innoculations+1);
   
   // misc
   EIR = vector<double>(n_demes);
@@ -178,8 +180,9 @@ void Dispatcher::denovo_infection(int this_host) {
 // run simulation
 void Dispatcher::simulate() {
   
-  // define ring buffer indices
+  // initialise indices
   int ringtime = 0;
+  int index_time_out = 0;
   
   // loop through daily time steps
   for (int t=1; t<=max_time; t++) {
@@ -201,6 +204,16 @@ void Dispatcher::simulate() {
         Ev[k] -= Ev_death_size;
         Sv[k] += Ev_death_size;
       }
+      
+      // carry out Iv death
+      int Iv_death = rbinom1(Iv[k], prob_v_death);
+      for (int i=0; i<Iv_death; ++i) {
+        int rnd1 = sample2(0, Iv[k]-1-i);
+        Sv_index[k].push_back(Iv_index[k][rnd1]);
+        quick_erase(Iv_index[k], rnd1);
+      }
+      Sv[k] += Iv_death;
+      Iv[k] -= Iv_death;
       
       // move Ev into Iv
       int Ev_to_Iv_size = Ev_to_Iv[k][ringtime].size();
@@ -249,7 +262,7 @@ void Dispatcher::simulate() {
           // TODO - copy genotypes
           
           // schedule move to Iv
-          Ev_to_Iv[k][(ringtime+v) % v].push_back(this_mosq);
+          Ev_to_Iv[k][ringtime].push_back(this_mosq);
         }
         
       } // end loop through infective bites
@@ -404,10 +417,20 @@ void Dispatcher::simulate() {
     
     //-------- STORE RESULTS --------
     
-    // store daily counts
+    // store daily counts and daily values
     for (int k=0; k<n_demes; ++k) {
-      vector<int> tmp1 = {Sh[k], Eh[k], Ih[k]};
-      push_back_multiple(daily_counts[k][t-1], tmp1);
+      daily_values[k][t-1] = {double(Sh[k]), double(Eh[k]), double(Ih[k]), double(Sv[k]), double(Ev[k]), double(Iv[k]), EIR[k]};
+    }
+    
+    // store age distributions
+    if (t == time_out[index_time_out]) {
+      for (int i=0; i<H_total; ++i) {
+        int this_deme = host_pop[i].deme;
+        int this_age = floor((t - host_pop[i].birth_day)/double(365.0));
+        int this_innoc = host_pop[i].get_n_innoculations();
+        age_innoculations[this_deme][index_time_out][this_age][this_innoc]++;
+      }
+      index_time_out++;
     }
     
   } // end time loop

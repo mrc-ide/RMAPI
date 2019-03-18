@@ -215,5 +215,6 @@ Rcpp::List sim_falciparum_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
   print("completed in", time_span.count(), "seconds\n");
   
   // return list
-  return Rcpp::List::create(Rcpp::Named("daily_counts") = dispatcher.daily_counts);
+  return Rcpp::List::create(Rcpp::Named("daily_values") = dispatcher.daily_values.arr,
+                            Rcpp::Named("age_innoculations") = dispatcher.age_innoculations.arr);
 }

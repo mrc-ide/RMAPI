@@ -109,7 +109,7 @@ Now we are ready to run simulations. The following command computes hex values f
 
 ```{r}
 # run simulations
-p <- run_sims(p, n_perms = 1e3, eccentricity = 0.9, n_breaks = 1, report_progress = FALSE)
+p <- rmapi_analysis(p, n_perms = 1e3, eccentricity = 0.9, n_breaks = 1, report_progress = FALSE)
 ```
 
 We can use the `plot_map()` function to produce simple plots of the raw hex values, and the hex ranks:
@@ -135,7 +135,7 @@ First, we can re-run the simulations, this time using a value of `n_breaks = 20`
 
 ```{r, fig.width=10, fig.height=4}
 # run simulations
-p <- run_sims(p, n_perms = 1e3, eccentricity = 0.9, n_breaks = 20, report_progress = FALSE)
+p <- rmapi_analysis(p, n_perms = 1e3, eccentricity = 0.9, n_breaks = 20, report_progress = FALSE)
 
 # plot hex values
 plot1 <- plot_map(p, barrier_list = barrier_list)
@@ -174,7 +174,7 @@ When running simulations with `null_method = 2`, the model fit is subtracted fro
 
 ```{r, fig.width=12, fig.height=4}
 # run simulations
-p <- run_sims(p, null_method = 2, n_perms = 1e3, eccentricity = 0.9, n_breaks = 1, report_progress = FALSE)
+p <- rmapi_analysis(p, null_method = 2, n_perms = 1e3, eccentricity = 0.9, n_breaks = 1, report_progress = FALSE)
 
 # plot hex values
 plot1 <- plot_map(p, barrier_list = barrier_list)

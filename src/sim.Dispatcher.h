@@ -6,6 +6,8 @@
 #include "sim.Parameters.h"
 #include "sim.Host.h"
 #include "sim.Mosquito.h"
+#include "misc_v4.h"
+#include "array.h"
 
 //------------------------------------------------
 // class defining individual-based simulation model
@@ -33,8 +35,8 @@ public:
   int next_host_ID;
   
   // store the integer index of hosts in each deme
-  std::vector<std::vector<int>> host_index;
-  std::vector<std::vector<int>> host_infective_index;
+  array_2d_int host_index;
+  array_2d_int host_infective_index;
   
   // counts of mosquito types
   int M_total;
@@ -46,13 +48,14 @@ public:
   std::vector<Mosquito> mosq_pop;
   
   // store integer index of mosquitoes at various stages
-  std::vector<std::vector<int>> Sv_index;
-  std::vector<std::vector<std::vector<int>>> Ev_death;
-  std::vector<std::vector<std::vector<int>>> Ev_to_Iv;
-  std::vector<std::vector<int>> Iv_index;
+  array_2d_int Sv_index;
+  array_3d_int Ev_death;
+  array_3d_int Ev_to_Iv;
+  array_2d_int Iv_index;
   
   // objects for storing results
-  std::vector<std::vector<std::vector<int>>> daily_counts;
+  array_3d_double daily_values;
+  array_4d_int age_innoculations;
   
   // misc
   std::vector<double> EIR;

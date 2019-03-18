@@ -364,5 +364,76 @@ vector<vector<vector<double>>> rcpp_to_array_double(Rcpp::List x) {
   return ret;
 }
 #endif
+/*
+//------------------------------------------------
+// define 2d array of integers using nested vectors
+vector<vector<int>> array_2d_int(int d1) {
+  return vector<vector<int>>(d1);
+}
+vector<vector<int>> array_2d_int(int d1, int d2, int x) {
+  return vector<vector<int>>(d1, vector<int>(d2, x));
+}
 
+//------------------------------------------------
+// define 2d array of doubles using nested vectors
+vector<vector<double>> array_2d_double(int d1) {
+  return vector<vector<double>>(d1);
+}
+vector<vector<double>> array_2d_double(int d1, int d2, double x) {
+  return vector<vector<double>>(d1, vector<double>(d2, x));
+}
 
+//------------------------------------------------
+// define 3d array of integers using nested vectors
+vector<vector<vector<int>>> array_3d_int(int d1) {
+  return vector<vector<vector<int>>>(d1);
+}
+vector<vector<vector<int>>> array_3d_int(int d1, int d2) {
+  return vector<vector<vector<int>>>(d1, vector<vector<int>>(d2));
+}
+vector<vector<vector<int>>> array_3d_int(int d1, int d2, int d3, int x) {
+  return vector<vector<vector<int>>>(d1, vector<vector<int>>(d2, vector<int>(d3, x)));
+}
+
+//------------------------------------------------
+// define 3d array of doubles using nested vectors
+vector<vector<vector<double>>> array_3d_double(int d1) {
+  return vector<vector<vector<double>>>(d1);
+}
+vector<vector<vector<double>>> array_3d_double(int d1, int d2) {
+  return vector<vector<vector<double>>>(d1, vector<vector<double>>(d2));
+}
+vector<vector<vector<double>>> array_3d_double(int d1, int d2, int d3, double x) {
+  return vector<vector<vector<double>>>(d1, vector<vector<double>>(d2, vector<double>(d3, x)));
+}
+
+//------------------------------------------------
+// define 4d array of integers using nested vectors
+vector<vector<vector<vector<int>>>> array_4d_int(int d1) {
+  return vector<vector<vector<vector<int>>>>(d1);
+}
+vector<vector<vector<vector<int>>>> array_4d_int(int d1, int d2) {
+  return vector<vector<vector<vector<int>>>>(d1, vector<vector<vector<int>>>(d2));
+}
+vector<vector<vector<vector<int>>>> array_4d_int(int d1, int d2, int d3) {
+  return vector<vector<vector<vector<int>>>>(d1, vector<vector<vector<int>>>(d2, vector<vector<int>>(d3)));
+}
+vector<vector<vector<vector<int>>>> array_4d_int(int d1, int d2, int d3, int d4, int x) {
+  return vector<vector<vector<vector<int>>>>(d1, vector<vector<vector<int>>>(d2, vector<vector<int>>(d3, vector<int>(d4, x))));
+}
+
+//------------------------------------------------
+// define 4d array of doubles using nested vectors
+vector<vector<vector<vector<double>>>> array_4d_double(int d1) {
+  return vector<vector<vector<vector<double>>>>(d1);
+}
+vector<vector<vector<vector<double>>>> array_4d_double(int d1, int d2) {
+  return vector<vector<vector<vector<double>>>>(d1, vector<vector<vector<double>>>(d2));
+}
+vector<vector<vector<vector<double>>>> array_4d_double(int d1, int d2, int d3) {
+  return vector<vector<vector<vector<double>>>>(d1, vector<vector<vector<double>>>(d2, vector<vector<double>>(d3)));
+}
+vector<vector<vector<vector<double>>>> array_4d_double(int d1, int d2, int d3, int d4, double x) {
+  return vector<vector<vector<vector<double>>>>(d1, vector<vector<vector<double>>>(d2, vector<vector<double>>(d3, vector<double>(d4, x))));
+}
+*/

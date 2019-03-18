@@ -4,10 +4,11 @@
 \alias{sim_falciparum}
 \title{Simulate genetic data from simple P.falciparum dynamic model}
 \usage{
-sim_falciparum(a = 0.3, p = 0.85, mu = -log(p), u = 12, v = 10,
-  g = 12, prob_infection = 0.6, duration_infection = dgeom(1:25,
-  1/5), infectivity = 0.07, max_innoculations = 5, H = 1000,
-  seed_infections = 100, M = 1000, time_out = 100)
+sim_falciparum(a = 0.3, p = 0.9, mu = -log(p), u = 12, v = 10,
+  g = 10, prob_infection = seq(0.1, 0.01, -0.01),
+  duration_infection = dgeom(1:300, 1/50), infectivity = 1,
+  max_innoculations = 5, H = 1000, seed_infections = 100, M = 1000,
+  time_out = 100)
 }
 \arguments{
 \item{a}{human blood feeding rate. The proportion of mosquitoes that feed on

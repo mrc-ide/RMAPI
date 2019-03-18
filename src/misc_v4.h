@@ -295,5 +295,3 @@ std::vector<std::vector<std::vector<int>>> rcpp_to_array_int(Rcpp::List x);
 // converts input from Rcpp::List format to vector<vector<vector<double>>> format.
 std::vector<std::vector<std::vector<double>>> rcpp_to_array_double(Rcpp::List x);
 #endif
-
-

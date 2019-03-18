@@ -32,4 +32,3 @@ SystemRequirements:
 LazyData: true
 VignetteBuilder: knitr
 Encoding: UTF-8
-
