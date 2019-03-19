@@ -47,15 +47,9 @@ Dispatcher::Dispatcher() {
   for (int k=0; k<n_demes; ++k) {
     for (int i=0; i<H; ++i) {
       int this_host = host_index[k][i];
-      
-      // initialise host
-      host_pop[this_host].init(next_host_ID, k);
-      
-      // add death_day to scheduler
-      int death_day = host_pop[this_host].death_day;
-      if (death_day <= max_time) {
-        schedule_death[death_day].insert(this_host);
-      }
+      host_pop[this_host].init(this_host, next_host_ID, k, Sh, Eh, Ih, host_infective_index,
+                               schedule_death, schedule_Eh_to_Ih, schedule_Ih_to_Sh,
+                               schedule_infective, schedule_infective_recovery);
     }
   }
   
@@ -87,80 +81,11 @@ Dispatcher::Dispatcher() {
   Iv_index = array_2d_int(n_demes);
   
   // objects for storing results
-  //daily_counts = array_3d_int(n_demes, max_time);
   daily_values = array_3d_double(n_demes, max_time);
   age_innoculations = array_4d_int(n_demes, n_time_out, n_age, max_innoculations+1);
   
   // misc
   EIR = vector<double>(n_demes);
-  
-}
-
-//------------------------------------------------
-// new human infection by mosquito
-void Dispatcher::new_infection(int this_host, Mosquito &mosq, int t) {
-  
-  // return if already at max_innoculations
-  if (host_pop[this_host].get_n_innoculations() == max_innoculations) {
-    return;
-  }
-  
-  // update deme counts
-  int this_deme = host_pop[this_host].deme;
-  if (host_pop[this_host].get_n_asexual() == 0) {
-    Sh[this_deme]--;
-    Eh[this_deme]++;
-  }
-  
-  // update host counts
-  host_pop[this_host].n_latent++;
-  
-  // get next free innoculation slot
-  int this_slot = 0;
-  for (int i=0; i<max_innoculations; ++i) {
-    if (!host_pop[this_host].innoc_active[i]) {
-      break;
-    }
-    this_slot++;
-  }
-  if (this_slot == max_innoculations) {
-    print(host_pop[this_host].get_n_innoculations(), max_innoculations);
-    Rcpp::stop("could not find free innoculation slot");
-  }
-  
-  // add new innoculation
-  host_pop[this_host].innoc_active[this_slot] = true;
-  host_pop[this_host].innoc_status_asexual[this_slot] = Liverstage_asexual;
-  
-  // draw duration of infection
-  int duration_infection = sampler_duration_infection.draw() + 1;
-  
-  // get times of future events
-  int t1 = t + u;                           // begin bloodstage
-  int t2 = t + u + duration_infection;      // end bloodstage
-  int t3 = t + u + g;                       // begin infective
-  int t4 = t + u + g + duration_infection;  // end infective
-  int this_death_day = host_pop[this_host].death_day;
-  
-  // schedule move to Ih
-  if (t1 < this_death_day && t1 <= max_time) {
-    schedule_Eh_to_Ih[t1].emplace_back(this_host, this_slot);
-  }
-  
-  // schedule bloodstage recovery
-  if (t2 < this_death_day && t2 <= max_time) {
-    schedule_Ih_to_Sh[t2].emplace_back(this_host, this_slot);
-  }
-  
-  // schedule begin infective
-  if (t3 < this_death_day && t3 <= max_time) {
-    schedule_infective[t3].emplace_back(this_host, this_slot);
-  }
-  
-  // schedule end infective
-  if (t4 < this_death_day && t4 <= max_time) {
-    schedule_infective_recovery[t4].emplace_back(this_host, this_slot);
-  }
   
 }
 
@@ -172,7 +97,7 @@ void Dispatcher::denovo_infection(int this_host) {
   Mosquito dummy_mosquito;
   
   // infect human host
-  new_infection(this_host, dummy_mosquito, 0);
+  host_pop[this_host].new_infection(dummy_mosquito, 0);
   
 }
 
@@ -256,8 +181,8 @@ void Dispatcher::simulate() {
         } else {
           
           // choose host at random from infectives
-          //int rnd2 = sample2(0, host_infective_index[k].size()-1);
-          //int this_host = host_infective_index[k][rnd2];
+          int rnd2 = sample2(0, host_infective_index[k].size()-1);
+          int this_host = host_infective_index[k][rnd2];
           
           // TODO - copy genotypes
           
@@ -289,10 +214,12 @@ void Dispatcher::simulate() {
         // determine whether infectious bite is successful
         if (rbernoulli1(host_pop[this_host].get_prob_infection())) {
           
-          // choose mosquito at random and carry out infection
+          // choose mosquito at random
           int rnd2 = sample2(0, Iv[k]-1);
           int this_mosq = Iv_index[k][rnd2];
-          new_infection(this_host, mosq_pop[this_mosq], t);
+          
+          // carry out infection
+          host_pop[this_host].new_infection(mosq_pop[this_mosq], t);
         }
         
         // update prob_infection_index irrespective of whether infection takes hold
@@ -308,110 +235,35 @@ void Dispatcher::simulate() {
     // scheduled deaths
     for (auto it = schedule_death[t].begin(); it != schedule_death[t].end(); ++it) {
       int this_host = *it;
-      int this_deme = host_pop[this_host].deme;
-      
-      // update deme counts
-      if (host_pop[this_host].n_infected > 0) {
-        Ih[this_deme]--;
-        Sh[this_deme]++;
-      } else if (host_pop[this_host].n_latent > 0) {
-        Eh[this_deme]--;
-        Sh[this_deme]++;
-      }
-      
-      // drop from infective list if necessary
-      if (host_pop[this_host].n_infective > 0) {
-        erase_remove(host_infective_index[this_deme], this_host);
-      }
-      
-      // reset host
-      host_pop[this_host].reset(next_host_ID, t);
-      
-      // add new death_day to scheduler
-      int death_day = host_pop[this_host].death_day;
-      if (death_day <= max_time) {
-        schedule_death[death_day].insert(this_host);
-      }
+      host_pop[this_host].death(next_host_ID, t);
     }
     
     // scheduled Eh to Ih
     for (auto it = schedule_Eh_to_Ih[t].begin(); it != schedule_Eh_to_Ih[t].end(); ++it) {
       int this_host = it->first;
       int this_slot = it->second;
-      int this_deme = host_pop[this_host].deme;
-      
-      // update deme counts
-      if (host_pop[this_host].n_infected == 0) {
-        Eh[this_deme]--;
-        Ih[this_deme]++;
-      }
-      
-      // update host status
-      host_pop[this_host].innoc_status_asexual[this_slot] = Bloodstage_asexual;
-      
-      // update host counts
-      host_pop[this_host].n_latent--;
-      host_pop[this_host].n_infected++;
+      host_pop[this_host].Eh_to_Ih(this_slot);
     }
     
     // scheduled Ih to Sh
     for (auto it = schedule_Ih_to_Sh[t].begin(); it != schedule_Ih_to_Sh[t].end(); ++it) {
       int this_host = it->first;
       int this_slot = it->second;
-      int this_deme = host_pop[this_host].deme;
-      
-      // update deme counts
-      if (host_pop[this_host].n_infected == 1) {
-        Ih[this_deme]--;
-        if (host_pop[this_host].n_latent == 0) {
-          Sh[this_deme]++;
-        } else {
-          Eh[this_deme]++;
-        }
-      }
-      
-      // update host status
-      host_pop[this_host].innoc_status_asexual[this_slot] = Inactive_asexual;
-      
-      // update host counts
-      host_pop[this_host].n_infected--;
+      host_pop[this_host].Ih_to_Sh(this_slot);
     }
     
     // scheduled become infective
     for (auto it = schedule_infective[t].begin(); it != schedule_infective[t].end(); ++it) {
       int this_host = it->first;
       int this_slot = it->second;
-      int this_deme = host_pop[this_host].deme;
-      
-      // update host status
-      host_pop[this_host].innoc_status_sexual[this_slot] = Active_sexual;
-      
-      // update host counts
-      host_pop[this_host].n_infective++;
-      
-      // if newly infective then add to infectives list
-      if (host_pop[this_host].n_infective == 1) {
-        host_infective_index[this_deme].push_back(this_host);
-      }
+      host_pop[this_host].begin_infective(this_slot);
     }
     
     // scheduled infective recovery
     for (auto it = schedule_infective_recovery[t].begin(); it != schedule_infective_recovery[t].end(); ++it) {
       int this_host = it->first;
-      int this_deme = host_pop[this_host].deme;
       int this_slot = it->second;
-      
-      // update host status
-      host_pop[this_host].innoc_status_sexual[this_slot] = Inactive_sexual;
-      host_pop[this_host].innoc_active[this_slot] = false;
-      
-      // update host counts
-      host_pop[this_host].n_infective--;
-      
-      // if no longer infective then drop from infectives list
-      if (host_pop[this_host].n_infective == 0) {
-        erase_remove(host_infective_index[this_deme], this_host);
-      }
+      host_pop[this_host].end_infective(this_slot);
     }
     
     

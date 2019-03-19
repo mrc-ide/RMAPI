@@ -1,9 +1,11 @@
 
 #pragma once
 
-#include <vector>
-
 #include "sim.Parameters.h"
+#include "sim.Mosquito.h"
+#include "array.h"
+
+#include <vector>
 
 //------------------------------------------------
 // enumerate possible asexual and sexual innoculation status
@@ -18,9 +20,21 @@ public:
   
   // PUBLIC OBJECTS
   
-  // unique ID and record of current deme
-  int ID;
-  int deme;
+  // identifiers
+  int index; // where in the population (vector of hosts) this host resides
+  int ID;    // unique ID, incremented upon death
+  int deme;  // deme in which this host resides
+  
+  // pointers to external objects
+  std::vector<int>* Sh_ptr;
+  std::vector<int>* Eh_ptr;
+  std::vector<int>* Ih_ptr;
+  std::vector<std::set<int>>* schedule_death_ptr;
+  std::vector<std::vector<std::pair<int, int>>>* schedule_Eh_to_Ih_ptr;
+  std::vector<std::vector<std::pair<int, int>>>* schedule_Ih_to_Sh_ptr;
+  std::vector<std::vector<std::pair<int, int>>>* schedule_infective_ptr;
+  std::vector<std::vector<std::pair<int, int>>>* schedule_infective_recovery_ptr;
+  array_2d_int* host_infective_index_ptr;
   
   // indices relating to global distributions
   int prob_infection_index;
@@ -34,6 +48,10 @@ public:
   std::vector<Status_asexual> innoc_status_asexual;
   std::vector<Status_sexual> innoc_status_sexual;
   
+  // haplotypes
+  std::vector<std::vector<std::vector<int>>> haplotypes;
+  std::vector<int> n_haplotypes;
+  
   // innoculation counts
   int n_latent;
   int n_infected;
@@ -45,14 +63,26 @@ public:
   // constructors
   Host() {};
   
+  // other methods
+  void init(int index, int &ID, int deme,
+            std::vector<int> &Sh, std::vector<int> &Eh, std::vector<int> &Ih,
+            array_2d_int &host_infective_index,
+            std::vector<std::set<int>> &schedule_death,
+            std::vector<std::vector<std::pair<int, int>>> &schedule_Eh_to_Ih,
+            std::vector<std::vector<std::pair<int, int>>> &schedule_Ih_to_Sh,
+            std::vector<std::vector<std::pair<int, int>>> &schedule_infective,
+            std::vector<std::vector<std::pair<int, int>>> &schedule_infective_recovery);
+  void death(int &ID, int birth_day);
+  void new_infection(Mosquito &mosq, int t);
+  void Eh_to_Ih(int this_slot);
+  void Ih_to_Sh(int this_slot);
+  void begin_infective(int this_slot);
+  void end_infective(int this_slot);
+  void update_prob_infection();
+  
   // getters and setters
   int get_n_innoculations();
   int get_n_asexual();
   double get_prob_infection();
-  
-  // other methods
-  void init(int &ID, int deme);
-  void reset(int &ID, int birth_day);
-  void update_prob_infection();
   
 };

@@ -1,12 +1,15 @@
 
 #include "sim.Parameters.h"
-
 #include "misc_v4.h"
 
 using namespace std;
 
 //------------------------------------------------
 // declare static member variables
+
+// genetic parameters
+int Parameters::L;
+double Parameters::prob_cotransmission;
 
 // epidemiological parameters
 double Parameters::a;
@@ -52,6 +55,10 @@ double Parameters::prob_v_death;
 //------------------------------------------------
 // constructor
 Parameters::Parameters(const Rcpp::List &args) {
+  
+  // genetic parameters
+  L = rcpp_to_int(args["L"]);
+  prob_cotransmission = rcpp_to_double(args["prob_cotransmission"]);
   
   // epidemiological parameters
   a = rcpp_to_double(args["a"]);
@@ -99,6 +106,11 @@ Parameters::Parameters(const Rcpp::List &args) {
 //------------------------------------------------
 // print summary
 void Parameters::print_summary() {
+  
+  // genetic parameters
+  print("-- genetic parameters --");
+  print("L: ", L);
+  print("prob_cotransmission: ", prob_cotransmission);
   
   // epidemiological parameters
   print("-- epidemiological parameters --");

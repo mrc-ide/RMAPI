@@ -504,6 +504,9 @@ get_ellipse <- function(f1 = c(-3,-2), f2 = c(3,2), ecc = 0.8, n = 100) {
 #'
 #' @description Simulate genetic data from simple P.falciparum dynamic model.
 #'
+#' @param L number of loci.
+#' @param prob_cotransmission probability of mosquito transmitting multiple
+#'   haplotypes to host.
 #' @param a human blood feeding rate. The proportion of mosquitoes that feed on
 #'   humans each day.
 #' @param p mosquito probability of surviving one day.
@@ -532,7 +535,9 @@ get_ellipse <- function(f1 = c(-3,-2), f2 = c(3,2), ecc = 0.8, n = 100) {
 #'
 #' @export
 
-sim_falciparum <- function(a = 0.3,
+sim_falciparum <- function(L = 10,
+                           prob_cotransmission = 0.5,
+                           a = 0.3,
                            p = 0.9,
                            mu = -log(p),
                            u = 12,
@@ -548,6 +553,8 @@ sim_falciparum <- function(a = 0.3,
                            time_out = 100) {
   
   # check inputs
+  assert_single_pos_int(L, zero_allowed = FALSE)
+  assert_single_bounded(prob_cotransmission)
   assert_single_bounded(a)
   assert_single_bounded(p)
   assert_single_pos(mu)
@@ -592,7 +599,9 @@ sim_falciparum <- function(a = 0.3,
   args_progress <- list(pb = pb)
   
   # create argument list
-  args <- list(a = a,
+  args <- list(L = L,
+               prob_cotransmission = prob_cotransmission,
+               a = a,
                mu = mu,
                u = u,
                v = v,

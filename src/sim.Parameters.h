@@ -13,6 +13,10 @@ public:
   
   // PUBLIC OBJECTS
   
+  // genetic parameters
+  static int L;
+  static double prob_cotransmission;
+  
   // epidemiological parameters
   static double a;
   static double mu;

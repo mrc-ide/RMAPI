@@ -1,7 +1,11 @@
 
-#include <Rcpp.h>
-
 #pragma once
+
+#include "misc_v4.h"
+
+#ifdef RCPP_ACTIVE
+#include <Rcpp.h>
+#endif
 
 //------------------------------------------------
 // check if value is within ellipse

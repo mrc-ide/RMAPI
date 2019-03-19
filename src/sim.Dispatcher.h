@@ -67,7 +67,6 @@ public:
   Dispatcher();
   
   // methods
-  void new_infection(int this_host, Mosquito &mosq, int t);
   void denovo_infection(int this_host);
   void simulate();
   
