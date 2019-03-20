@@ -211,9 +211,11 @@ Rcpp::List sim_falciparum_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
   // end timer
   chrono::high_resolution_clock::time_point t2 = chrono::high_resolution_clock::now();
   chrono::duration<double> time_span = chrono::duration_cast< chrono::duration<double> >(t2-t1);
-  print("completed in", time_span.count(), "seconds\n");
+  print("simulation completed in", time_span.count(), "seconds\n");
   
   // return list
   return Rcpp::List::create(Rcpp::Named("daily_values") = dispatcher.daily_values.arr,
-                            Rcpp::Named("age_innoculations") = dispatcher.age_innoculations.arr);
+                            Rcpp::Named("age_innoculations") = dispatcher.age_innoculations.arr,
+                            Rcpp::Named("genotypes") = dispatcher.genotypes.arr,
+                            Rcpp::Named("genotype_metada") = dispatcher.genotype_metadata.arr);
 }

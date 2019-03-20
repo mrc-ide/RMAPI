@@ -2,6 +2,7 @@
 #pragma once
 
 #include <Rcpp.h>
+#include <tuple>
 
 #include "sim.Sampler.h"
 
@@ -36,6 +37,10 @@ public:
   static std::vector<int> M_vec;
   static int n_demes;
   
+  // migration
+  static std::vector<std::tuple<int, int, double>> mig_list;
+  static int n_mig_list;
+  
   // demography
   static std::vector<double> life_table;
   static std::vector<double> age_death;
@@ -46,9 +51,6 @@ public:
   static Sampler sampler_age_stable;
   static Sampler sampler_age_death;
   static Sampler sampler_duration_infection;
-  
-  // migration
-  // TODO
   
   // run parameters
   static std::vector<int> time_out;

@@ -98,7 +98,7 @@ void quick_erase(std::vector<TYPE> &v, int index) {
 // container
 template<class TYPE>
 void erase_remove(std::vector<TYPE> &v, TYPE x) {
-  v.erase(remove(v.begin(), v.end(), x));
+  v.erase(remove(v.begin(), v.end(), x), end(v));
 }
 
 //------------------------------------------------

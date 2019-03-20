@@ -34,7 +34,7 @@ public:
   std::vector<std::vector<std::pair<int, int>>>* schedule_Ih_to_Sh_ptr;
   std::vector<std::vector<std::pair<int, int>>>* schedule_infective_ptr;
   std::vector<std::vector<std::pair<int, int>>>* schedule_infective_recovery_ptr;
-  array_2d_int* host_infective_index_ptr;
+  std::vector<std::vector<int>>* host_infective_index_ptr;
   
   // indices relating to global distributions
   int prob_infection_index;
@@ -51,6 +51,7 @@ public:
   // haplotypes
   std::vector<std::vector<std::vector<int>>> haplotypes;
   std::vector<int> n_haplotypes;
+  int n_haplotypes_total;
   
   // innoculation counts
   int n_latent;
@@ -66,7 +67,7 @@ public:
   // other methods
   void init(int index, int &ID, int deme,
             std::vector<int> &Sh, std::vector<int> &Eh, std::vector<int> &Ih,
-            array_2d_int &host_infective_index,
+            std::vector<std::vector<int>> &host_infective_index,
             std::vector<std::set<int>> &schedule_death,
             std::vector<std::vector<std::pair<int, int>>> &schedule_Eh_to_Ih,
             std::vector<std::vector<std::pair<int, int>>> &schedule_Ih_to_Sh,
@@ -74,6 +75,7 @@ public:
             std::vector<std::vector<std::pair<int, int>>> &schedule_infective_recovery);
   void death(int &ID, int birth_day);
   void new_infection(Mosquito &mosq, int t);
+  void denovo_infection();
   void Eh_to_Ih(int this_slot);
   void Ih_to_Sh(int this_slot);
   void begin_infective(int this_slot);

@@ -6,6 +6,10 @@
 #include <vector>
 
 //------------------------------------------------
+// forward-declare Host class
+class Host;
+
+//------------------------------------------------
 // class defining mosquito
 class Mosquito : public Parameters {
   
@@ -26,8 +30,9 @@ public:
   Mosquito();
   
   // methods
-  void denovo();
-  void die();
+  void new_infection(Host* host_ptr);
+  void denovo_infection();
+  void death();
   std::vector<int> get_product();
   
 };

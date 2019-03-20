@@ -4,13 +4,22 @@
 \alias{sim_falciparum}
 \title{Simulate genetic data from simple P.falciparum dynamic model}
 \usage{
-sim_falciparum(a = 0.3, p = 0.9, mu = -log(p), u = 12, v = 10,
-  g = 10, prob_infection = seq(0.1, 0.01, -0.01),
+sim_falciparum(L = 24, prob_cotransmission = 0.5, genetics_on = TRUE,
+  a = 0.3, p = 0.9, mu = -log(p), u = 12, v = 10, g = 10,
+  prob_infection = seq(0.1, 0.01, -0.01),
   duration_infection = dgeom(1:300, 1/50), infectivity = 1,
   max_innoculations = 5, H = 1000, seed_infections = 100, M = 1000,
-  time_out = 100)
+  mig_matrix = diag(length(M)), time_out = 100)
 }
 \arguments{
+\item{L}{number of loci.}
+
+\item{prob_cotransmission}{probability of mosquito transmitting multiple
+haplotypes to host.}
+
+\item{genetics_on}{if \code{FALSE} then genetic aspects of simulation are
+supressed.}
+
 \item{a}{human blood feeding rate. The proportion of mosquitoes that feed on
 humans each day.}
 
@@ -47,6 +56,10 @@ humans in each deme.}
 
 \item{M}{vector specifying mosquito population size (strictly the number of
 adult female mosquitoes) in each deme.}
+
+\item{mig_matrix}{migration matrix specifing the daily probability of
+migrating from each deme to each other deme. Migration must be equal in
+both directions, meaning this matrix must be symmetric.}
 
 \item{time_out}{vector of times (days) at which output is produced.}
 }

@@ -9,7 +9,7 @@ using namespace std;
 // initialise host
 void Host::init(int index, int &ID, int deme,
                 vector<int> &Sh, vector<int> &Eh, vector<int> &Ih,
-                array_2d_int &host_infective_index,
+                vector<vector<int>> &host_infective_index,
                 vector<set<int>> &schedule_death,
                 vector<vector<pair<int, int>>> &schedule_Eh_to_Ih,
                 vector<vector<pair<int, int>>> &schedule_Ih_to_Sh,
@@ -78,6 +78,7 @@ void Host::init(int index, int &ID, int deme,
   // initiliase haplotypes
   haplotypes = vector<vector<vector<int>>>(max_innoculations);
   n_haplotypes = vector<int>(max_innoculations);
+  n_haplotypes_total = 0;
   
   // initialise innoculation counts
   n_latent = 0;
@@ -131,6 +132,7 @@ void Host::death(int &ID, int birth_day) {
   // reset haplotypes
   haplotypes = vector<vector<vector<int>>>(max_innoculations);
   fill(n_haplotypes.begin(), n_haplotypes.end(), 0);
+  n_haplotypes_total = 0;
   
   // reset innoculation counts
   n_latent = 0;
@@ -173,6 +175,27 @@ void Host::new_infection(Mosquito &mosq, int t) {
   innoc_active[this_slot] = true;
   innoc_status_asexual[this_slot] = Liverstage_asexual;
   
+  // copy over products of recombination. If mosquito holds a single haplotype
+  // then copy this over (clonal expansion). Otherwise copy over potentially
+  // multiple recombinant haplotypes.
+  if (mosq.n_haplotypes == 1) {
+    haplotypes[this_slot].emplace_back(mosq.get_product());
+    n_haplotypes[this_slot]++;
+    n_haplotypes_total++;
+  } else {
+    double p = 1.0;
+    for (int i=0; i<4; ++i) {
+      if (rbernoulli1(p)) {
+        haplotypes[this_slot].emplace_back(mosq.get_product());
+        n_haplotypes[this_slot]++;
+        n_haplotypes_total++;
+      } else {
+        break;
+      }
+      p *= prob_cotransmission;
+    }
+  }
+  
   // draw duration of infection
   int duration_infection = sampler_duration_infection.draw() + 1;
   
@@ -202,6 +225,18 @@ void Host::new_infection(Mosquito &mosq, int t) {
     (*schedule_infective_recovery_ptr)[t4].emplace_back(index, this_slot);
   }
   
+}
+
+//------------------------------------------------
+// de-novo infection
+void Host::denovo_infection() {
+  
+  // generating starting genotype in a dummy mosquito
+  Mosquito dummy_mosquito;
+  dummy_mosquito.denovo_infection();
+  
+  // carry out infection
+  new_infection(dummy_mosquito, 0);
 }
 
 //------------------------------------------------
@@ -271,6 +306,11 @@ void Host::end_infective(int this_slot) {
   
   // update host counts
   n_infective--;
+  
+  // clear heplotypes
+  haplotypes[this_slot].clear();
+  n_haplotypes_total-= n_haplotypes[this_slot];
+  n_haplotypes[this_slot] = 0;
   
   // if no longer infective then drop from infectives list
   if (n_infective == 0) {

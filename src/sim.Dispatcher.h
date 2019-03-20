@@ -36,7 +36,7 @@ public:
   
   // store the integer index of hosts in each deme
   array_2d_int host_index;
-  array_2d_int host_infective_index;
+  std::vector<std::vector<int>> host_infective_index;
   
   // counts of mosquito types
   int M_total;
@@ -56,6 +56,8 @@ public:
   // objects for storing results
   array_3d_double daily_values;
   array_4d_int age_innoculations;
+  array_5d_int genotypes;
+  array_4d_int genotype_metadata;
   
   // misc
   std::vector<double> EIR;
@@ -67,7 +69,6 @@ public:
   Dispatcher();
   
   // methods
-  void denovo_infection(int this_host);
   void simulate();
   
 };

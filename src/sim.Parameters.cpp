@@ -30,6 +30,10 @@ vector<int> Parameters::seed_infections;
 vector<int> Parameters::M_vec;
 int Parameters::n_demes;
 
+// migration
+vector<tuple<int, int, double>> Parameters::mig_list;
+int Parameters::n_mig_list;
+
 // demography
 vector<double> Parameters::life_table;
 vector<double> Parameters::age_death;
@@ -40,9 +44,6 @@ int Parameters::n_age;
 Sampler Parameters::sampler_age_stable;
 Sampler Parameters::sampler_age_death;
 Sampler Parameters::sampler_duration_infection;
-
-// migration
-// TODO
 
 // run parameters
 vector<int> Parameters::time_out;
@@ -78,6 +79,17 @@ Parameters::Parameters(const Rcpp::List &args) {
   seed_infections = rcpp_to_vector_int(args["seed_infections"]);
   M_vec = rcpp_to_vector_int(args["M"]);
   n_demes = int(M_vec.size());
+  
+  // get migration list from matrix
+  vector<vector<double>> mig_matrix = rcpp_to_matrix_double(args["mig_matrix"]);
+  for (int i=0; i<(n_demes-1); ++i) {
+    for (int j=(i+1); j<n_demes; ++j) {
+      if (mig_matrix[i][j] > 0) {
+        mig_list.push_back(make_tuple(i, j, mig_matrix[i][j]));
+      }
+    }
+  }
+  n_mig_list = mig_list.size();
   
   // demography
   life_table = rcpp_to_vector_double(args["life_table"]);

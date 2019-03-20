@@ -3,6 +3,8 @@
 #include "probability.h"
 #include "array.h"
 
+#include <tuple>
+
 using namespace std;
 
 
@@ -37,7 +39,7 @@ Dispatcher::Dispatcher() {
   // for each deme, store the integer index of all hosts in that deme, and the
   // integer index of infective hosts only
   host_index = array_2d_int(n_demes);
-  host_infective_index = array_2d_int(n_demes);
+  host_infective_index = vector<vector<int>>(n_demes);
   for (int k=0; k<n_demes; ++k) {
     host_index[k] = seq_int(k*H, (k+1)*H-1);
     reshuffle(host_index[k]);
@@ -56,7 +58,7 @@ Dispatcher::Dispatcher() {
   // seed initial infections
   for (int k=0; k<n_demes; ++k) {
     for (int i=0; i<seed_infections[k]; i++) {
-      denovo_infection(host_index[k][i]);
+      host_pop[host_index[k][i]].denovo_infection();
     }
   }
   
@@ -83,6 +85,8 @@ Dispatcher::Dispatcher() {
   // objects for storing results
   daily_values = array_3d_double(n_demes, max_time);
   age_innoculations = array_4d_int(n_demes, n_time_out, n_age, max_innoculations+1);
+  genotypes = array_5d_int(n_demes, n_time_out);
+  genotype_metadata = array_4d_int(n_demes, n_time_out);
   
   // misc
   EIR = vector<double>(n_demes);
@@ -90,20 +94,13 @@ Dispatcher::Dispatcher() {
 }
 
 //------------------------------------------------
-// de-novo human infection, without mosquito
-void Dispatcher::denovo_infection(int this_host) {
-  
-  // generating starting genotype in a dummy mosquito
-  Mosquito dummy_mosquito;
-  
-  // infect human host
-  host_pop[this_host].new_infection(dummy_mosquito, 0);
-  
-}
-
-//------------------------------------------------
 // run simulation
 void Dispatcher::simulate() {
+  
+  //vector<int> foo = {1,4,3,2,1,5,4,1};
+  //print_vector(foo);
+  //erase_remove(foo, 1);
+  //print_vector(foo);
   
   // initialise indices
   int ringtime = 0;
@@ -112,14 +109,87 @@ void Dispatcher::simulate() {
   // loop through daily time steps
   for (int t=1; t<=max_time; t++) {
     
+    // update ring buffer index
+    ringtime = (ringtime == v-1) ? 0 : ringtime+1;
+    
+    
+    //-------- MIGRATION --------
+    for (int i=0; i<n_mig_list; ++i) {
+      
+      // draw number of migrants and skip over if zero
+      int n_migrants = rbinom1(H, get<2>(mig_list[i]));
+      if (n_migrants == 0) {
+        continue;
+      }
+      
+      // get demes to swap between
+      int deme1 = get<0>(mig_list[i]);
+      int deme2 = get<1>(mig_list[i]);
+      
+      // loop through number of migrants
+      for (int j=0; j<n_migrants; ++j) {
+        
+        // draw migrant index in both demes
+        int rnd1 = sample2(0,H-1);
+        int rnd2 = sample2(0,H-1);
+        int index1 = host_index[deme1][rnd1];
+        int index2 = host_index[deme2][rnd2];
+        
+        // swap host indices
+        host_index[deme1][rnd1] = index2;
+        host_index[deme2][rnd2] = index1;
+        
+        // move infectives as needed
+        vector<int>::iterator it = find(host_infective_index[deme1].begin(), host_infective_index[deme1].end(), index1);
+        if (it != host_infective_index[deme1].end()) {
+          int tmp1 = distance(host_infective_index[deme1].begin(), it);
+          host_infective_index[deme2].push_back(host_infective_index[deme1][tmp1]);
+          quick_erase(host_infective_index[deme1], tmp1);
+        }
+        it = find(host_infective_index[deme2].begin(), host_infective_index[deme2].end(), index2);
+        if (it != host_infective_index[deme2].end()) {
+          int tmp1 = distance(host_infective_index[deme2].begin(), it);
+          host_infective_index[deme1].push_back(host_infective_index[deme2][tmp1]);
+          quick_erase(host_infective_index[deme2], tmp1);
+        }
+        
+        // update host properties
+        host_pop[index1].deme = deme2;
+        host_pop[index2].deme = deme1;
+        
+        // update deme counts
+        if (host_pop[index1].get_n_asexual() == 0) {
+          Sh[deme1]--;
+          Sh[deme2]++;
+        } else if (host_pop[index1].n_infected == 0) {
+          Eh[deme1]--;
+          Eh[deme2]++;
+        } else {
+          Ih[deme1]--;
+          Ih[deme2]++;
+        }
+        
+        if (host_pop[index2].get_n_asexual() == 0) {
+          Sh[deme2]--;
+          Sh[deme1]++;
+        } else if (host_pop[index2].n_infected == 0) {
+          Eh[deme2]--;
+          Eh[deme1]++;
+        } else {
+          Ih[deme2]--;
+          Ih[deme1]++;
+        }
+        
+      }
+    }
+    
+    //print(int(host_infective_index[0].size()));
+    
     // loop through demes
     for (int k=0; k<n_demes; ++k) {
       
       
       //-------- MOSQUITO EVENTS --------
-      
-      // update ring buffer index
-      ringtime = (ringtime == v-1) ? 0 : ringtime+1;
       
       // carry out Ev death
       int Ev_death_size = Ev_death[k][ringtime].size();
@@ -134,7 +204,9 @@ void Dispatcher::simulate() {
       int Iv_death = rbinom1(Iv[k], prob_v_death);
       for (int i=0; i<Iv_death; ++i) {
         int rnd1 = sample2(0, Iv[k]-1-i);
-        Sv_index[k].push_back(Iv_index[k][rnd1]);
+        int this_mosq = Iv_index[k][rnd1];
+        mosq_pop[this_mosq].death();
+        Sv_index[k].push_back(this_mosq);
         quick_erase(Iv_index[k], rnd1);
       }
       Sv[k] += Iv_death;
@@ -184,17 +256,18 @@ void Dispatcher::simulate() {
           int rnd2 = sample2(0, host_infective_index[k].size()-1);
           int this_host = host_infective_index[k][rnd2];
           
-          // TODO - copy genotypes
+          // infect mosquito
+          mosq_pop[this_mosq].new_infection(&host_pop[this_host]);
           
           // schedule move to Iv
           Ev_to_Iv[k][ringtime].push_back(this_mosq);
         }
         
+        // update deme counts
+        Sv[k]--;
+        Ev[k]++;
+        
       } // end loop through infective bites
-      
-      // update deme counts
-      Sv[k] -= v_infected;
-      Ev[k] += v_infected;
       
       
       //-------- NEW HUMAN EVENTS --------
@@ -274,14 +347,41 @@ void Dispatcher::simulate() {
       daily_values[k][t-1] = {double(Sh[k]), double(Eh[k]), double(Ih[k]), double(Sv[k]), double(Ev[k]), double(Iv[k]), EIR[k]};
     }
     
-    // store age distributions
+    // if one of output times
     if (t == time_out[index_time_out]) {
+      
+      // store age distributions
       for (int i=0; i<H_total; ++i) {
         int this_deme = host_pop[i].deme;
         int this_age = floor((t - host_pop[i].birth_day)/double(365.0));
         int this_innoc = host_pop[i].get_n_innoculations();
         age_innoculations[this_deme][index_time_out][this_age][this_innoc]++;
       }
+      
+      // store genotypes and associated metadata
+      for (int i=0; i<H_total; ++i) {
+        if (host_pop[i].n_infected > 0) {
+          int this_deme = host_pop[i].deme;
+          
+          // add genotypes to output object
+          vector<vector<int>> tmp_mat;
+          for (int j=0; j<max_innoculations; ++j) {
+            if (host_pop[i].innoc_active[j]) {
+              for (int i2=0; i2<host_pop[i].n_haplotypes[j]; ++i2) {
+                tmp_mat.push_back(host_pop[i].haplotypes[j][i2]);
+              }
+            }
+          }
+          genotypes.arr[this_deme][index_time_out].push_back(tmp_mat);
+          
+          // add metadata to output object
+          int this_age = floor((t - host_pop[i].birth_day)/double(365.0));
+          vector<int> tmp_vec = {host_pop[i].ID, this_age, host_pop[i].n_infected};
+          genotype_metadata[this_deme][index_time_out].push_back(tmp_vec);
+        }
+      }
+      
+      // increment output time index
       index_time_out++;
     }
     
