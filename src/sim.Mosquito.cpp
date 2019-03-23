@@ -8,7 +8,9 @@ using namespace std;
 
 //------------------------------------------------
 // constructors
-Mosquito::Mosquito() {
+void Mosquito::init(Parameters* param_ptr) {
+  L = param_ptr->L;
+  max_innoculations = param_ptr->max_innoculations;
   n_haplotypes = 0;
   n_products = 0;
 }
@@ -18,13 +20,13 @@ Mosquito::Mosquito() {
 void Mosquito::new_infection(Host* host_ptr) {
   
   // choose two haplotypes at random to copy from host
-  int rnd1 = sample2(1,host_ptr->n_haplotypes_total);
-  int rnd2 = sample2(1,host_ptr->n_haplotypes_total);
+  int rnd1 = sample2(1,host_ptr->n_infective_haplotypes_total);
+  int rnd2 = sample2(1,host_ptr->n_infective_haplotypes_total);
   
   // copy first haplotype from host
   int tmp1 = 0;
   for (int i=0; i<max_innoculations; ++i) {
-    tmp1 += host_ptr->n_haplotypes[i];
+    tmp1 += host_ptr->n_infective_haplotypes[i];
     if (tmp1 >= rnd1) {
       haplotype1 = host_ptr->haplotypes[i][tmp1-rnd1];
       n_haplotypes++;
@@ -40,7 +42,7 @@ void Mosquito::new_infection(Host* host_ptr) {
   // otherwise copy second haplotype from host
   tmp1 = 0;
   for (int i=0; i<max_innoculations; ++i) {
-    tmp1 += host_ptr->n_haplotypes[i];
+    tmp1 += host_ptr->n_infective_haplotypes[i];
     if (tmp1 >= rnd2) {
       haplotype2 = host_ptr->haplotypes[i][tmp1-rnd2];
       n_haplotypes++;

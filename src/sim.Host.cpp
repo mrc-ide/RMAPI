@@ -14,11 +14,14 @@ void Host::init(int index, int &ID, int deme,
                 vector<vector<pair<int, int>>> &schedule_Eh_to_Ih,
                 vector<vector<pair<int, int>>> &schedule_Ih_to_Sh,
                 vector<vector<pair<int, int>>> &schedule_infective,
-                vector<vector<pair<int, int>>> &schedule_infective_recovery) {
+                vector<vector<pair<int, int>>> &schedule_infective_recovery,
+                Sampler &sampler_age_stable, Sampler &sampler_age_death, Sampler &sampler_duration_infection,
+                Parameters &parameters) {
   
   // identifiers
   this->index = index;
   this->ID = ID++;
+  home_deme = deme;
   this->deme = deme;
   
   // pointers
@@ -31,12 +34,25 @@ void Host::init(int index, int &ID, int deme,
   schedule_infective_ptr = &schedule_infective;
   schedule_infective_recovery_ptr = &schedule_infective_recovery;
   host_infective_index_ptr = &host_infective_index;
+  age_stable_ptr = &sampler_age_stable;
+  age_death_ptr = &sampler_age_death;
+  duration_infection_ptr = &sampler_duration_infection;
+  param_ptr = &parameters;
+  
+  // copy over some parameters for convenience
+  L = param_ptr->L;
+  max_innoculations = param_ptr->max_innoculations;
+  n_age = param_ptr->n_age;
+  max_time = param_ptr->max_time;
+  u = param_ptr->u;
+  g = param_ptr->g;
+  prob_cotransmission = param_ptr->prob_cotransmission;
   
   // indices relating to global distributions
   prob_infection_index = 0;
   
   // draw age from demography distribution
-  int age_years = sampler_age_stable.draw() - 1;
+  int age_years = age_stable_ptr->draw() - 1;
   int extra_days = sample2(1, 365);
   int age_days = age_years*365 + extra_days;
   
@@ -46,12 +62,12 @@ void Host::init(int index, int &ID, int deme,
   // dying within that age group.
   int life_days = 0;
   double prop_year_remaining = 1 - extra_days/365.0;
-  double prob_die_this_year = life_table[age_years]*prop_year_remaining;
+  double prob_die_this_year = param_ptr->life_table[age_years]*prop_year_remaining;
   if (rbernoulli1(prob_die_this_year) || age_years == (n_age-1)) {
     life_days = age_years*365 + sample2(extra_days, 365);
   } else {
     for (int i=(age_years+1); i<n_age; ++i) {
-      if (rbernoulli1(life_table[i])) {
+      if (rbernoulli1(param_ptr->life_table[i])) {
         life_days = i*365 + sample2(1, 365);
         break;
       }
@@ -77,8 +93,8 @@ void Host::init(int index, int &ID, int deme,
   
   // initiliase haplotypes
   haplotypes = vector<vector<vector<int>>>(max_innoculations);
-  n_haplotypes = vector<int>(max_innoculations);
-  n_haplotypes_total = 0;
+  n_infective_haplotypes = vector<int>(max_innoculations);
+  n_infective_haplotypes_total = 0;
   
   // initialise innoculation counts
   n_latent = 0;
@@ -108,6 +124,9 @@ void Host::death(int &ID, int birth_day) {
   // new unique ID
   this->ID = ID++;
   
+  // make current deme home deme
+  home_deme = deme;
+  
   // reset indices relating to global distributions
   prob_infection_index = 0;
   
@@ -115,7 +134,7 @@ void Host::death(int &ID, int birth_day) {
   this->birth_day = birth_day;
   
   // draw life duration from demography distribution
-  int life_years = sampler_age_death.draw() - 1;
+  int life_years = age_death_ptr->draw() - 1;
   int life_days = life_years*365 + sample2(1, 365);
   death_day = birth_day + life_days;
   
@@ -131,8 +150,8 @@ void Host::death(int &ID, int birth_day) {
   
   // reset haplotypes
   haplotypes = vector<vector<vector<int>>>(max_innoculations);
-  fill(n_haplotypes.begin(), n_haplotypes.end(), 0);
-  n_haplotypes_total = 0;
+  fill(n_infective_haplotypes.begin(), n_infective_haplotypes.end(), 0);
+  n_infective_haplotypes_total = 0;
   
   // reset innoculation counts
   n_latent = 0;
@@ -144,6 +163,9 @@ void Host::death(int &ID, int birth_day) {
 //------------------------------------------------
 // new infection
 void Host::new_infection(Mosquito &mosq, int t) {
+  
+  // update prob_infection_index irrespective of whether infection takes hold
+  update_prob_infection();
   
   // return if already at max_innoculations
   if (get_n_innoculations() == max_innoculations) {
@@ -180,15 +202,11 @@ void Host::new_infection(Mosquito &mosq, int t) {
   // multiple recombinant haplotypes.
   if (mosq.n_haplotypes == 1) {
     haplotypes[this_slot].emplace_back(mosq.get_product());
-    n_haplotypes[this_slot]++;
-    n_haplotypes_total++;
   } else {
     double p = 1.0;
     for (int i=0; i<4; ++i) {
       if (rbernoulli1(p)) {
         haplotypes[this_slot].emplace_back(mosq.get_product());
-        n_haplotypes[this_slot]++;
-        n_haplotypes_total++;
       } else {
         break;
       }
@@ -197,7 +215,7 @@ void Host::new_infection(Mosquito &mosq, int t) {
   }
   
   // draw duration of infection
-  int duration_infection = sampler_duration_infection.draw() + 1;
+  int duration_infection = duration_infection_ptr->draw() + 1;
   
   // get times of future events
   int t1 = t + u;                           // begin bloodstage
@@ -233,6 +251,7 @@ void Host::denovo_infection() {
   
   // generating starting genotype in a dummy mosquito
   Mosquito dummy_mosquito;
+  dummy_mosquito.init(param_ptr);
   dummy_mosquito.denovo_infection();
   
   // carry out infection
@@ -280,7 +299,7 @@ void Host::Ih_to_Sh(int this_slot) {
 }
 
 //------------------------------------------------
-// become infective
+// begin infective period
 void Host::begin_infective(int this_slot) {
   
   // update host status
@@ -288,6 +307,10 @@ void Host::begin_infective(int this_slot) {
   
   // update host counts
   n_infective++;
+  
+  // update haplotype counts
+  n_infective_haplotypes[this_slot] = haplotypes[this_slot].size();
+  n_infective_haplotypes_total += n_infective_haplotypes[this_slot];
   
   // if newly infective then add to infectives list
   if (n_infective == 1) {
@@ -309,8 +332,8 @@ void Host::end_infective(int this_slot) {
   
   // clear heplotypes
   haplotypes[this_slot].clear();
-  n_haplotypes_total-= n_haplotypes[this_slot];
-  n_haplotypes[this_slot] = 0;
+  n_infective_haplotypes_total-= n_infective_haplotypes[this_slot];
+  n_infective_haplotypes[this_slot] = 0;
   
   // if no longer infective then drop from infectives list
   if (n_infective == 0) {
@@ -322,7 +345,7 @@ void Host::end_infective(int this_slot) {
 //------------------------------------------------
 // update probabilty of infection
 void Host::update_prob_infection() {
-  if (prob_infection_index < (n_prob_infection-1)) {
+  if (prob_infection_index < (param_ptr->n_prob_infection-1)) {
     prob_infection_index++;
   }
 }
@@ -342,5 +365,5 @@ int Host::get_n_asexual() {
 //------------------------------------------------
 // get current probability of infection
 double Host::get_prob_infection() {
-  return prob_infection[prob_infection_index];
+  return param_ptr->prob_infection[prob_infection_index];
 }

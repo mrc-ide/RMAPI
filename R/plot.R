@@ -214,7 +214,7 @@ plot_map <- function(proj, variable = NULL, col_scale = magma(100), barrier_list
   plot1 <- plot1 + geom_polygon(aes(x = long, y = lat, group = group, fill = col), data = hex_df)
   
   # add points
-  plot1 <- plot1 + geom_point(aes(x = long, y = lat), size = 0.5, data = proj$data$coords)
+  plot1 <- plot1 + geom_point(aes(x = long, y = lat), shape = 21, color = "white", fill = "black", size = 1, data = proj$data$coords)
   
   # titles and legends
   if (add_legend) {

@@ -15,50 +15,45 @@ public:
   // PUBLIC OBJECTS
   
   // genetic parameters
-  static int L;
-  static double prob_cotransmission;
+  int L;
+  double prob_cotransmission;
   
   // epidemiological parameters
-  static double a;
-  static double mu;
-  static int u;
-  static int v;
-  static int g;
-  static std::vector<double> prob_infection;
-  static int n_prob_infection;
-  static std::vector<double> duration_infection;
-  static int n_duration_infection;
-  static double infectivity;
-  static int max_innoculations;
+  double a;
+  double mu;
+  int u;
+  int v;
+  int g;
+  std::vector<double> prob_infection;
+  int n_prob_infection;
+  std::vector<double> duration_infection;
+  int n_duration_infection;
+  double infectivity;
+  int max_innoculations;
   
   // deme parameters
-  static int H;
-  static std::vector<int> seed_infections;
-  static std::vector<int> M_vec;
-  static int n_demes;
+  int H;
+  std::vector<int> seed_infections;
+  std::vector<int> M_vec;
+  int n_demes;
   
   // migration
-  static std::vector<std::tuple<int, int, double>> mig_list;
-  static int n_mig_list;
+  std::vector<std::tuple<int, int, double>> mig_list;
+  int n_mig_list;
   
   // demography
-  static std::vector<double> life_table;
-  static std::vector<double> age_death;
-  static std::vector<double> age_stable;
-  static int n_age;
-  
-  // objects for sampling from probability distributions
-  static Sampler sampler_age_stable;
-  static Sampler sampler_age_death;
-  static Sampler sampler_duration_infection;
+  std::vector<double> life_table;
+  std::vector<double> age_death;
+  std::vector<double> age_stable;
+  int n_age;
   
   // run parameters
-  static std::vector<int> time_out;
-  static int n_time_out;
-  static int max_time;
+  std::vector<int> time_out;
+  int n_time_out;
+  int max_time;
   
   // misc parameters
-  static double prob_v_death;  // daily probability of mosquito death
+  double prob_v_death;  // daily probability of mosquito death
   
   
   // PUBLIC FUNCTIONS

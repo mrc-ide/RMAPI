@@ -11,11 +11,15 @@ class Host;
 
 //------------------------------------------------
 // class defining mosquito
-class Mosquito : public Parameters {
+class Mosquito {
   
 public:
   
   // PUBLIC OBJECTS
+  
+  // parameters copied over
+  int L;
+  int max_innoculations;
   
   // genotypes
   std::vector<int> haplotype1;
@@ -27,9 +31,10 @@ public:
   // PUBLIC FUNCTIONS
   
   // constructors
-  Mosquito();
+  Mosquito() {};
   
   // methods
+  void init(Parameters* param_ptr);
   void new_infection(Host* host_ptr);
   void denovo_infection();
   void death();

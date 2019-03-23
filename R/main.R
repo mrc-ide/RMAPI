@@ -504,11 +504,10 @@ get_ellipse <- function(f1 = c(-3,-2), f2 = c(3,2), ecc = 0.8, n = 100) {
 #'
 #' @description Simulate genetic data from simple P.falciparum dynamic model.
 #'
-#' @param L number of loci.
+#' @param L number of loci. The maximum number of loci is 1000, as at higher
+#'   numbers haplotypes begin to exceed integer representation (2^L).
 #' @param prob_cotransmission probability of mosquito transmitting multiple
 #'   haplotypes to host.
-#' @param genetics_on if \code{FALSE} then genetic aspects of simulation are
-#'   supressed.
 #' @param a human blood feeding rate. The proportion of mosquitoes that feed on
 #'   humans each day.
 #' @param p mosquito probability of surviving one day.
@@ -542,7 +541,6 @@ get_ellipse <- function(f1 = c(-3,-2), f2 = c(3,2), ecc = 0.8, n = 100) {
 
 sim_falciparum <- function(L = 24,
                            prob_cotransmission = 0.5,
-                           genetics_on = TRUE,
                            a = 0.3,
                            p = 0.9,
                            mu = -log(p),
@@ -561,8 +559,8 @@ sim_falciparum <- function(L = 24,
   
   # check inputs
   assert_single_pos_int(L, zero_allowed = FALSE)
+  assert_leq(L, 1000)
   assert_single_bounded(prob_cotransmission)
-  assert_single_logical(genetics_on)
   assert_single_bounded(a)
   assert_single_bounded(p)
   assert_single_pos(mu)
@@ -656,13 +654,13 @@ sim_falciparum <- function(L = 24,
         return(NULL)
       } else {
         ret <- as.data.frame(rcpp_to_matrix(x))
-        names(ret) <- c("ID", "age", "n_innoculations")
+        names(ret) <- c("ID", "home_deme", "age", "n_innoculations")
         return(ret)
       }
     }, y, SIMPLIFY = FALSE)
     names(ret) <- paste0("time", time_out)
     return(ret)
-  }, output_raw$genotype_metada, SIMPLIFY = FALSE)
+  }, output_raw$indlevel_data, SIMPLIFY = FALSE)
   names(indlevel) <- paste0("deme", 1:n_demes)
   
   # add haplotypes to indlevel data

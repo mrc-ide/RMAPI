@@ -11,11 +11,29 @@
 
 //------------------------------------------------
 // class defining individual-based simulation model
-class Dispatcher : public Parameters  {
+class Dispatcher  {
   
 public:
   
   // PUBLIC OBJECTS
+  
+  // pointer to parameters
+  Parameters* param_ptr;
+  
+  // make local copies of some parameters
+  int n_demes;
+  int max_time;
+  double a;
+  int v;
+  double prob_v_death;
+  int H;
+  double infectivity;
+  double mu;
+  
+  // objects for sampling from probability distributions
+  Sampler sampler_age_stable;
+  Sampler sampler_age_death;
+  Sampler sampler_duration_infection;
   
   // scheduler objects
   std::vector<std::set<int>> schedule_death;
@@ -44,6 +62,11 @@ public:
   std::vector<int> Ev;
   std::vector<int> Iv;
   
+  // number of mosquitoes at various stages
+  std::vector<int> n_Ev_death_new;
+  array_2d_int n_Ev_death;
+  array_2d_int n_Ev_to_Iv;
+  
   // population of mosquitoes
   std::vector<Mosquito> mosq_pop;
   
@@ -55,9 +78,8 @@ public:
   
   // objects for storing results
   array_3d_double daily_values;
-  array_4d_int age_innoculations;
   array_5d_int genotypes;
-  array_4d_int genotype_metadata;
+  array_4d_int indlevel_data;
   
   // misc
   std::vector<double> EIR;
@@ -66,7 +88,7 @@ public:
   // PUBLIC FUNCTIONS
   
   // constructors
-  Dispatcher();
+  Dispatcher(Parameters &parameters);
   
   // methods
   void simulate();

@@ -5,55 +5,6 @@
 using namespace std;
 
 //------------------------------------------------
-// declare static member variables
-
-// genetic parameters
-int Parameters::L;
-double Parameters::prob_cotransmission;
-
-// epidemiological parameters
-double Parameters::a;
-double Parameters::mu;
-int Parameters::u;
-int Parameters::v;
-int Parameters::g;
-vector<double> Parameters::prob_infection;
-int Parameters::n_prob_infection;
-vector<double> Parameters::duration_infection;
-int Parameters::n_duration_infection;
-double Parameters::infectivity;
-int Parameters::max_innoculations;
-
-// deme parameters
-int Parameters::H;
-vector<int> Parameters::seed_infections;
-vector<int> Parameters::M_vec;
-int Parameters::n_demes;
-
-// migration
-vector<tuple<int, int, double>> Parameters::mig_list;
-int Parameters::n_mig_list;
-
-// demography
-vector<double> Parameters::life_table;
-vector<double> Parameters::age_death;
-vector<double> Parameters::age_stable;
-int Parameters::n_age;
-
-// objects for sampling from probability distributions
-Sampler Parameters::sampler_age_stable;
-Sampler Parameters::sampler_age_death;
-Sampler Parameters::sampler_duration_infection;
-
-// run parameters
-vector<int> Parameters::time_out;
-int Parameters::n_time_out;
-int Parameters::max_time;
-
-// misc parameters
-double Parameters::prob_v_death;
-
-//------------------------------------------------
 // constructor
 Parameters::Parameters(const Rcpp::List &args) {
   
@@ -96,14 +47,6 @@ Parameters::Parameters(const Rcpp::List &args) {
   age_death = rcpp_to_vector_double(args["age_death"]);
   age_stable = rcpp_to_vector_double(args["age_stable"]);
   n_age = int(age_stable.size());
-  
-  // objects for sampling from probability distributions
-  sampler_age_stable = Sampler(age_stable, 1000);
-  sampler_age_death = Sampler(age_death, 1000);
-  sampler_duration_infection = Sampler(duration_infection, 1000);
-  
-  // migration
-  // (TODO)
   
   // run parameters
   time_out = rcpp_to_vector_int(args["time_out"]);
@@ -162,7 +105,9 @@ void Parameters::print_summary() {
   
   // migration
   print("-- migration --");
-  print("migration: (TODO)");
+  for (int i=0; i<n_mig_list; ++i) {
+    print(get<0>(mig_list[i]), get<1>(mig_list[i]), get<2>(mig_list[i]));
+  }
   print("");
   
   // run parameters

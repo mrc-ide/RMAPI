@@ -201,9 +201,10 @@ Rcpp::List sim_falciparum_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
   
   // extract model parameters into separate class
   Parameters parameters(args);
+  //parameters.print_summary();
   
   // create simulation dispatcher object
-  Dispatcher dispatcher;
+  Dispatcher dispatcher(parameters);
   
   // carry out simulation
   dispatcher.simulate();
@@ -215,7 +216,6 @@ Rcpp::List sim_falciparum_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
   
   // return list
   return Rcpp::List::create(Rcpp::Named("daily_values") = dispatcher.daily_values.arr,
-                            Rcpp::Named("age_innoculations") = dispatcher.age_innoculations.arr,
                             Rcpp::Named("genotypes") = dispatcher.genotypes.arr,
-                            Rcpp::Named("genotype_metada") = dispatcher.genotype_metadata.arr);
+                            Rcpp::Named("indlevel_data") = dispatcher.indlevel_data.arr);
 }
