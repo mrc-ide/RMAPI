@@ -536,6 +536,8 @@ get_ellipse <- function(f1 = c(-3,-2), f2 = c(3,2), ecc = 0.8, n = 100) {
 #'   migrating from each deme to each other deme. Migration must be equal in
 #'   both directions, meaning this matrix must be symmetric.
 #' @param time_out vector of times (days) at which output is produced.
+#' @param report_progress if \code{TRUE} then a progress bar is printed to the
+#'   console during simuation.
 #'
 #' @export
 
@@ -555,7 +557,8 @@ sim_falciparum <- function(L = 24,
                            seed_infections = 100,
                            M = 1000,
                            mig_matrix = diag(length(M)),
-                           time_out = 100) {
+                           time_out = 100,
+                           report_progress = TRUE) {
   
   # check inputs
   assert_single_pos_int(L, zero_allowed = FALSE)
@@ -586,6 +589,7 @@ sim_falciparum <- function(L = 24,
   assert_eq(rowSums(mig_matrix), rep(1,n_demes))
   assert_vector(time_out)
   assert_pos_int(time_out, zero_allowed = TRUE)
+  assert_single_logical(report_progress)
   
   # normalise infection duration distribution
   duration_infection <- duration_infection/sum(duration_infection)
@@ -606,7 +610,7 @@ sim_falciparum <- function(L = 24,
   args_functions <- list(update_progress = update_progress)
   
   # create progress bars
-  pb <- txtProgressBar(0, 100, initial = NA, style = 3)
+  pb <- txtProgressBar(0, max(time_out), initial = NA, style = 3)
   args_progress <- list(pb = pb)
   
   # create argument list
@@ -628,7 +632,8 @@ sim_falciparum <- function(L = 24,
                life_table = mali_demog$life_table,
                age_death = mali_demog$age_death,
                age_stable = mali_demog$age_stable,
-               time_out = time_out)
+               time_out = time_out,
+               report_progress = report_progress)
   
   # ---------------------------------------------
   # Run efficient C++ function

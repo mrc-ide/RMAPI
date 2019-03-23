@@ -51,6 +51,7 @@ public:
   std::vector<int> time_out;
   int n_time_out;
   int max_time;
+  bool report_progress;
   
   // misc parameters
   double prob_v_death;  // daily probability of mosquito death

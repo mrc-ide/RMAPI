@@ -52,6 +52,7 @@ Parameters::Parameters(const Rcpp::List &args) {
   time_out = rcpp_to_vector_int(args["time_out"]);
   n_time_out = int(time_out.size());
   max_time = max(time_out);
+  report_progress = rcpp_to_bool(args["report_progress"]);
   
   // misc parameters
   prob_v_death = 1 - exp(-mu);  // daily probability of mosquito death

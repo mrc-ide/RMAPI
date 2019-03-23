@@ -203,8 +203,11 @@ Rcpp::List sim_falciparum_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
   Parameters parameters(args);
   //parameters.print_summary();
   
+  // R functions
+  Rcpp::Function update_progress = args_functions["update_progress"];
+  
   // create simulation dispatcher object
-  Dispatcher dispatcher(parameters);
+  Dispatcher dispatcher(parameters, update_progress, args_progress);
   
   // carry out simulation
   dispatcher.simulate();

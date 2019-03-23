@@ -17,8 +17,10 @@ public:
   
   // PUBLIC OBJECTS
   
-  // pointer to parameters
+  // pointers to inputs
   Parameters* param_ptr;
+  Rcpp::Function* update_progress_ptr;
+  Rcpp::List* args_progress_ptr;
   
   // make local copies of some parameters
   int n_demes;
@@ -88,7 +90,7 @@ public:
   // PUBLIC FUNCTIONS
   
   // constructors
-  Dispatcher(Parameters &parameters);
+  Dispatcher(Parameters &parameters, Rcpp::Function &update_progress, Rcpp::List &args_progress);
   
   // methods
   void simulate();

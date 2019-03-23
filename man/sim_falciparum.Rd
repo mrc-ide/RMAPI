@@ -9,7 +9,7 @@ sim_falciparum(L = 24, prob_cotransmission = 0.5, a = 0.3, p = 0.9,
   0.01, -0.01), duration_infection = dgeom(1:300, 1/50),
   infectivity = 1, max_innoculations = 5, H = 1000,
   seed_infections = 100, M = 1000, mig_matrix = diag(length(M)),
-  time_out = 100)
+  time_out = 100, report_progress = TRUE)
 }
 \arguments{
 \item{L}{number of loci. The maximum number of loci is 1000, as at higher
@@ -60,6 +60,9 @@ migrating from each deme to each other deme. Migration must be equal in
 both directions, meaning this matrix must be symmetric.}
 
 \item{time_out}{vector of times (days) at which output is produced.}
+
+\item{report_progress}{if \code{TRUE} then a progress bar is printed to the
+console during simuation.}
 }
 \description{
 Simulate genetic data from simple P.falciparum dynamic model.

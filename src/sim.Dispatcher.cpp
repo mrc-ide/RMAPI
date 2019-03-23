@@ -9,10 +9,12 @@ using namespace std;
 
 //------------------------------------------------
 // constructor
-Dispatcher::Dispatcher(Parameters &parameters) {
+Dispatcher::Dispatcher(Parameters &parameters, Rcpp::Function &update_progress, Rcpp::List &args_progress) {
   
-  // pointer to parameters
+  // pointers to inputs
   param_ptr = &parameters;
+  update_progress_ptr = &update_progress;
+  args_progress_ptr = &args_progress;
   
   // make local copies of some parameters
   n_demes = param_ptr->n_demes;
@@ -125,6 +127,11 @@ Dispatcher::Dispatcher(Parameters &parameters) {
 // run simulation
 void Dispatcher::simulate() {
   
+  // start message
+  if (param_ptr->report_progress) {
+    print("Running simulation");
+  }
+  
   // initialise indices
   int ringtime = 0;
   int index_time_out = 0;
@@ -134,6 +141,11 @@ void Dispatcher::simulate() {
   
   // loop through daily time steps
   for (int t=1; t<=max_time; t++) {
+    
+    // report progress
+    if (param_ptr->report_progress) {
+      (*update_progress_ptr)(*args_progress_ptr, "pb", t, max_time);
+    }
     
     // update ring buffer index
     ringtime = (ringtime == v-1) ? 0 : ringtime+1;
