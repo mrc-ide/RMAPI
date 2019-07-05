@@ -219,6 +219,49 @@ fit_model <- function(proj, type = 1) {
 }
 
 #------------------------------------------------
+#' @title Fit a simple model to data (alt)
+#'
+#' @description Alternate version of fit_model
+
+fit_model2 <- function(proj, type = 1,vmin=0,vmax=1) {
+  
+  # check inputs
+  assert_custom_class(proj, "rmapi_project")
+  assert_single_pos_int(type)
+  assert_in(type, 1:2)
+  
+  # fit model
+  if (type == 1) {
+    npts=length(proj$data$stat_dist)
+    d_space=rep(0,npts)
+    d_stat=d_space
+    for(i in 1:npts){
+      d_space[i]=p2$data$spatial_dist[i]
+      d_stat[i]=p2$data$stat_dist[i]
+    }
+    subset_list=c(1:npts)
+    for(i in 1:npts){ if(d_stat[i]<=vmin || d_stat[i]>=vmax){ subset_list[i]=NA } }
+    model_fit <- nls(d_stat ~ (a*d_space)+b,subset=subset_list,start=list(a=1,b=0),data=data.frame(d_space,d_stat))
+    fit_parameters=model_fit$m$getAllPars()
+    a=fit_parameters[1]
+    b=fit_parameters[2]
+    model_fit_final = (a*d_space)+b
+  } 
+  else {
+    df <- data.frame(x = as.vector(proj$data$spatial_dist), y = as.vector(proj$data$stat_dist))
+    model_fit <- nls(y ~ SSasymp(x, alpha, beta, log_lambda), data = df)
+    model_fit_final <- predict(model_fit)
+  }
+  
+  # save model
+  proj$model <- list(type = type,
+                     model_fit_pred = model_fit_final)
+  
+  # return invisibly
+  invisible(proj)
+}
+
+#------------------------------------------------
 #' @title Create mapping space
 #'
 #' @description Create mapping space.
@@ -356,7 +399,7 @@ rmapi_analysis <- function(proj, eccentricity = 0.5, null_method = 1,
   assert_single_pos(eccentricity, zero_allowed = TRUE)
   assert_bounded(eccentricity, left = 0, right = 1, inclusive_left = TRUE, inclusive_right = FALSE)
   assert_single_pos_int(null_method)
-  assert_in(null_method, 1:2)
+  assert_in(null_method, 1:3)
   assert_single_pos_int(n_perms, zero_allowed = TRUE)
   assert_single_pos_int(min_intersections, zero_allowed = FALSE)
   assert_single_pos_int(n_breaks, zero_allowed = FALSE)
@@ -383,6 +426,11 @@ rmapi_analysis <- function(proj, eccentricity = 0.5, null_method = 1,
   # subtract model fit under null_method = 2
   if (null_method == 2) {
     y_pred <- predict(proj$model$model_fit)
+    y <- y - y_pred
+  }
+  # subtract model fit under null_method = 3
+  if (null_method == 3) {
+    y_pred <- proj$model$model_fit_pred
     y <- y - y_pred
   }
   
@@ -696,4 +744,3 @@ sim_falciparum <- function(L = 24,
                            indlevel = indlevel)
   return(output_processed)
 }
-

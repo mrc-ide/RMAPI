@@ -43,7 +43,8 @@ plot_dist <- function(proj, col = "#00000050", overlay_model = TRUE) {
   
   # add model fit
   if (overlay_model & !is.null(proj$model)) {
-    df_predict <- data.frame(spatial = df_plot$spatial, stat = predict(proj$model$model_fit))
+    if(is.null(proj$model$model_fit_pred)) { df_predict <- data.frame(spatial = df_plot$spatial, stat = predict(proj$model$model_fit)) }
+    else { df_predict <- data.frame(spatial = df_plot$spatial, stat = proj$model$model_fit_pred) }
     plot1 <- plot1 + geom_line(aes(x = spatial, y = stat), col = "red", data = df_predict)
   }
   
