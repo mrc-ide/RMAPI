@@ -1,6 +1,6 @@
 ---
 title: "Frequently Asked Questions"
-author: "Vignette Author"
+author: "Keith Fraser"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
@@ -10,6 +10,14 @@ vignette: >
 ---
 
 (In development)
+
+### Q. How is R-MAPI installed?
+
+The installation guide can be found at https://mrc-ide.github.io/RMAPI/articles/installation.html .
+
+### Q. Example question
+
+Example answer.
 
 ### Q. Example question
 

@@ -230,27 +230,38 @@ fit_model2 <- function(proj, type = 1,vmin=0,vmax=1) {
   assert_single_pos_int(type)
   assert_in(type, 1:2)
   
+  npts=length(proj$data$stat_dist)
+  d_space=rep(0,npts)
+  d_stat=d_space
+  for(i in 1:npts){
+    d_space[i]=p2$data$spatial_dist[i]
+    d_stat[i]=p2$data$stat_dist[i]
+  }
+  df=data.frame(d_space,d_stat)
+  subset_list=c(1:npts)
+  for(i in 1:npts){ if(d_stat[i]<=vmin || d_stat[i]>=vmax){ subset_list[i]=NA } }
+
   # fit model
   if (type == 1) {
-    npts=length(proj$data$stat_dist)
-    d_space=rep(0,npts)
-    d_stat=d_space
-    for(i in 1:npts){
-      d_space[i]=p2$data$spatial_dist[i]
-      d_stat[i]=p2$data$stat_dist[i]
-    }
-    subset_list=c(1:npts)
-    for(i in 1:npts){ if(d_stat[i]<=vmin || d_stat[i]>=vmax){ subset_list[i]=NA } }
-    model_fit <- nls(d_stat ~ (a*d_space)+b,subset=subset_list,start=list(a=1,b=0),data=data.frame(d_space,d_stat))
+    model_fit <- nls(d_stat ~ (a*d_space)+b,subset=subset_list,start=list(a=1,b=0),data=df)
     fit_parameters=model_fit$m$getAllPars()
     a=fit_parameters[1]
     b=fit_parameters[2]
     model_fit_final = (a*d_space)+b
   } 
-  else {
-    df <- data.frame(x = as.vector(proj$data$spatial_dist), y = as.vector(proj$data$stat_dist))
-    model_fit <- nls(y ~ SSasymp(x, alpha, beta, log_lambda), data = df)
-    model_fit_final <- predict(model_fit)
+  if (type == 2) {
+    model_fit <- nls(d_stat ~ (a/d_space),subset=subset_list,start=list(a=1),data=df)
+    fit_parameters=model_fit$m$getAllPars()
+    a=fit_parameters[1]
+    model_fit_final = (a/d_space)
+  } 
+  if (type == 3){
+    model_fit <- nls(d_stat ~ SSasymp(d_space, alpha, beta, log_lambda),subset=subset_list, data = df)
+    fit_parameters = model_fit$m$getAllPars()
+    alpha = fit_parameters[1]
+    beta = fit_parameters[2]
+    log_lambda = fit_parameters[3]
+    model_fit_final <- SSasymp(d_space, alpha, beta, log_lambda)
   }
   
   # save model
@@ -423,12 +434,12 @@ rmapi_analysis <- function(proj, eccentricity = 0.5, null_method = 1,
   y <- proj$data$stat_dist
   y_pred <- NA
   
-  # subtract model fit under null_method = 2
+  # subtract model fit under null_method = 2 (fit_model() used)
   if (null_method == 2) {
     y_pred <- predict(proj$model$model_fit)
     y <- y - y_pred
   }
-  # subtract model fit under null_method = 3
+  # subtract model fit under null_method = 3 (fit_model2() used)
   if (null_method == 3) {
     y_pred <- proj$model$model_fit_pred
     y <- y - y_pred
