@@ -237,6 +237,94 @@ plot_map <- function(proj, variable = NULL, col_scale = magma(100), barrier_list
   return(plot1)
 }
 
+
+#------------------------------------------------
+#' @title Plot hex map of RMAPI output with hexes considered statistically significant highlighted
+#'
+#' @description Plot hex map of RMAPI output.
+#'
+#' @param proj object of class \code{rmapi_project}.
+#' @param variable which element of the project output to use as map colours.
+#' @param col_scale the colour scale to use.
+#' @param barrier_list optional list of polygon coordinates that are added to
+#'   plot.
+#' 
+#' @import ggplot2
+#' @importFrom viridisLite magma
+#' @export
+
+plot_map2 <- function(proj, col_scale = magma(100), barrier_list = list(), tails=c(0,1)) {
+	
+  # check inputs
+  assert_custom_class(proj, "rmapi_project")
+  assert_list(barrier_list)
+  assert_that(length(tails)==2)
+  #assert_that(proj$output$hex_ranks!=NULL)
+  nb <- length(barrier_list)
+  if (nb > 0) {
+    for (i in 1:nb) {
+      assert_dataframe(barrier_list[[i]])
+      assert_in("long", names(barrier_list[[i]]))
+      assert_in("lat", names(barrier_list[[i]]))
+      assert_eq(barrier_list[[i]][1,], barrier_list[[i]][nrow(barrier_list[[i]]),])
+    }
+  }
+  
+  # produce default colours
+  add_legend <- TRUE
+  col_vec <- proj$output$hex_values
+  
+  # get hex data into dataframe
+  hex_df <- ggplot2::fortify(proj$map$hex)
+  hex_df$col <- col_vec[as.numeric(hex_df$group)]
+  
+  # create frame of statistically significant data values
+  hex_df2 <- hex_df
+  nhexpts=length(hex_df$long)
+  for(i in 1:nhexpts)
+  {
+    hex_num = (((i-1) - ((i-1)%%7))/7)+1
+    long=hex_df$long[i]
+    lat=hex_df$lat[i]
+    if(proj$output$hex_ranks[hex_num] < tails[1] || proj$output$hex_ranks[hex_num] > tails[2]){} else{
+      hex_df2$long[i]=NA
+      hex_df2$lat[i]=NA
+    }
+  }
+  
+  # produce plot
+  plot1 <- ggplot() + theme_bw() + theme(panel.grid.major = element_blank(),
+                                         panel.grid.minor = element_blank())
+  
+  # add hexes
+  plot1 <- plot1 + geom_polygon(aes(x = long, y = lat, group = group, fill = col), data = hex_df)
+  
+  # overlay statistically significant hexes, outlines
+  plot1 <- plot1 + geom_polygon(aes(x = long, y = lat, group = group, fill = col), data = hex_df2, colour = "white", size = 0.5)
+  
+  # add points
+  plot1 <- plot1 + geom_point(aes(x = long, y = lat), shape = 21, color = "white", fill = "black", size = 1, data = proj$data$coords)
+  
+  # titles and legends
+  if (add_legend) {
+    plot1 <- plot1 + scale_fill_gradientn(colours = col_scale, name = "hex_values")
+  } else {
+    plot1 <- plot1 + guides(fill = FALSE)
+  }
+  plot1 <- plot1 + xlab("longitude") + ylab("latitude")
+  
+  # add barrier polygons
+  if (nb > 0) {
+    for (i in 1:nb) {
+      #plot1 <- plot1 + geom_polygon(aes(x = long, y = lat), col = "black", fill = "#00000050", data = as.data.frame(barrier_list[[i]]))
+      plot1 <- plot1 + geom_polygon(aes(x = long, y = lat), col = "white", fill = NA, data = as.data.frame(barrier_list[[i]]))
+    }
+  }
+  
+	# return plot object
+  return(plot1)
+}
+
 #------------------------------------------------
 #' @title Interactive hex map of RMAPI output
 #'

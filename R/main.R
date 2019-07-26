@@ -218,86 +218,13 @@ fit_model <- function(proj, type = 1) {
   invisible(proj)
 }
 
+
 #------------------------------------------------
 #' @title Fit a simple model to data (alt)
 #'
 #' @description Alternate version of fit_model
 
-fit_model2 <- function(proj, type = 1,vmin=0,vmax=1) {
-  
-  # check inputs
-  assert_custom_class(proj, "rmapi_project")
-  assert_single_pos_int(type)
-  assert_in(type, 1:5)
-  
-  npts=length(proj$data$stat_dist)
-  d_space=rep(0,npts)
-  d_stat=d_space
-  for(i in 1:npts){
-    d_space[i]=proj$data$spatial_dist[i]
-    d_stat[i]=proj$data$stat_dist[i]
-  }
-  df=data.frame(d_space,d_stat)
-  subset_list=c(1:npts)
-  for(i in 1:npts){ if(d_stat[i]<=vmin || d_stat[i]>=vmax){ subset_list[i]=NA } }
-
-  # fit model
-  if (type == 1) {
-    model_fit <- nls(d_stat ~ (a*d_space)+b,subset=subset_list,start=list(a=1,b=0),data=df)
-    fit_parameters=model_fit$m$getAllPars()
-    a=fit_parameters[1]
-    b=fit_parameters[2]
-    model_fit_final = (a*d_space)+b
-    cat("\nLinear model (y=ax+b) fitted: a = ",a,"\tb = ",b,"\n",sep="")
-  } 
-  if (type == 2) {
-    model_fit <- nls(d_stat ~ (a/d_space),subset=subset_list,start=list(a=1),data=df)
-    fit_parameters=model_fit$m$getAllPars()
-    a=fit_parameters[1]
-    model_fit_final = (a/d_space)
-    cat("\nInverse model (y=a/x) fitted: a = ",a,"\n",sep="")
-  } 
-  if (type == 3){
-    model_fit <- nls(d_stat ~ SSasymp(d_space, alpha, beta, log_lambda),subset=subset_list, data = df)
-    fit_parameters = model_fit$m$getAllPars()
-    alpha = fit_parameters[1]
-    beta = fit_parameters[2]
-    log_lambda = fit_parameters[3]
-    model_fit_final <- SSasymp(d_space, alpha, beta, log_lambda)
-    cat("\nSSasymp model fitted: alpha = ",alpha,"\tbeta = ",beta,"\tlog_lambda = ",log_lambda,"\n",sep="")
-  }
-  if (type == 4) {
-    model_fit <- nls(d_stat ~ a*(d_space^b),subset=subset_list,start=list(a=1,b=1),data=df)
-    fit_parameters=model_fit$m$getAllPars()
-    a=fit_parameters[1]
-    b=fit_parameters[2]
-    model_fit_final = a*(d_space^b)
-    cat("\nPower model (y=ax^b) fitted: a = ",a,"\tb = ",b,"\n",sep="")
-  } 
-  if (type == 5) {
-    model_fit <- nls(d_stat ~ a*exp(b*d_space),subset=subset_list,start=list(a=1,b=1),data=df)
-    fit_parameters=model_fit$m$getAllPars()
-    a=fit_parameters[1]
-    b=fit_parameters[2]
-    model_fit_final = a*exp(b*d_space)
-    cat("\nExponential model (y=a.exp(bx) fitted: a = ",a,"\tb = ",b,"\n",sep="")
-  } 
-  
-  # save model
-  proj$model <- list(type = type,
-                     model_fit_pred = model_fit_final)
-  
-  # return invisibly
-  invisible(proj)
-}
-
-
-#------------------------------------------------
-#' @title Fit a simple model to data (alt2)
-#'
-#' @description Alternate version of fit_model
-
-fit_model3 <- function(proj, type = 1, xmin = 0, xmax = 1, ymin = 0, ymax = 1) {
+fit_model2 <- function(proj, type = 1, xmin = 0, xmax = 1, ymin = 0, ymax = 1) {
   
   # check inputs
   assert_custom_class(proj, "rmapi_project")
