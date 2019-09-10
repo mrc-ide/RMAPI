@@ -559,9 +559,120 @@ calc_intersections <- function(proj, eccentricity = 0.5, min_intersections = 5) 
   output_raw <- calc_intersections_cpp(args)
   
   # save output as list
-  proj$output <- list(inv_hex_weights = output_raw$inv_hex_weights,
+  proj$output_int <- list(inv_hex_weights = output_raw$inv_hex_weights,
+                      hex_weights = output_raw$hex_weights,
+                      area_inv = output_raw$area_inv,
                       n_intersections = output_raw$Nintersections,
                       intersections = output_raw$intersections)
+  
+  # return invisibly
+  invisible(proj)
+}
+
+
+#------------------------------------------------
+#' @title Partial version of rmapi_analysis - calculate hex values 
+#'
+#' @description Partial version of rmapi_analysis - calculate hex values from pairwise data and previously calculated intersection and weighting data
+#'
+
+calc_hex_values <- function(proj, null_method = 1,
+                           n_perms = 1e2, n_breaks = 1, dist_breaks = NULL,
+                           empirical_tail = "both", report_progress = TRUE, min_intersections = 5) {
+  
+  # check inputs
+  assert_custom_class(proj, "rmapi_project")
+  assert_single_pos_int(null_method)
+  assert_in(null_method, 1:3)
+  assert_single_pos_int(n_perms, zero_allowed = TRUE)
+  assert_single_pos_int(min_intersections, zero_allowed = FALSE)
+  assert_single_pos_int(n_breaks, zero_allowed = FALSE)
+  if (is.null(dist_breaks)) {
+    dist_breaks <- seq(min(proj$data$spatial_dist, na.rm = TRUE), max(proj$data$spatial_dist, na.rm = TRUE), l = n_breaks + 1)
+  }
+  assert_vector(dist_breaks)
+  assert_numeric(dist_breaks)
+  assert_greq(length(dist_breaks), 2)
+  assert_eq(dist_breaks, sort(dist_breaks), message = "dist_breaks must be in increasing order")
+  assert_leq(min(dist_breaks), min(proj$data$spatial_dist))
+  assert_greq(max(dist_breaks), max(proj$data$spatial_dist))
+  assert_in(empirical_tail, c("left", "right", "both"))
+  assert_single_logical(report_progress)
+  
+  # ---------------------------------------------
+  # Process data differently depending on null method
+  
+  # get x-values, y-values predicted values
+  x <- proj$data$spatial_dist
+  y <- proj$data$stat_dist
+  y_pred <- NA
+  
+  # subtract model fit under null_method = 2 (fit_model() used)
+  if (null_method == 2) {
+    y_pred <- predict(proj$model$model_fit)
+    y <- y - y_pred
+  }
+  # subtract model fit under null_method = 3 (fit_model2() used)
+  if (null_method == 3) {
+    y_pred <- proj$model$model_fit_pred
+    y <- y - y_pred
+    y <- y - min(y)
+  }
+  
+  # break spatial distances into groups
+  edge_group <- as.numeric(cut(x, breaks = dist_breaks, include.lowest = TRUE))
+  edge_group_list <- mapply(function(x) which(edge_group == x) - 1, 1:n_breaks, SIMPLIFY = FALSE)
+  
+  # ---------------------------------------------
+  # Set up arguments for input into C++
+  
+  # create function list
+  args_functions <- list(update_progress = update_progress)
+  
+  # create progress bars
+  if(report_progress){
+    pb <- txtProgressBar(0, n_perms, initial = NA, style = 3)
+    args_progress <- list(pb = pb)
+  }
+  else{
+    args_progress <- list()
+  }
+  
+  # create argument list
+  args <- list(edge_value = y,
+               edge_group_list = edge_group_list,
+               Nintersections = proj$output_int$n_intersections,
+               intersections = proj$output_int$intersections,
+               area_inv = proj$output_int$area_inv,
+               inv_hex_weights = proj$output_int$inv_hex_weights,
+               hex_long = proj$map$hex_centroid$long,
+               hex_lat = proj$map$hex_centroid$lat,
+               n_perms = n_perms,
+               min_intersections = min_intersections,
+               report_progress = report_progress)
+  
+  # ---------------------------------------------
+  # Carry out simulations in C++ to generate map data
+  
+  output_raw <- calc_hex_values_cpp(args, args_functions, args_progress)
+  
+  # ---------------------------------------------
+  # Process raw output
+  
+  # get hex values
+  hex_values <- output_raw$hex_values
+  hex_values[proj$output_int$n_intersections < min_intersections] <- NA
+  
+  # get hex value rank proportions
+  hex_ranks <- NULL
+  if (n_perms > 0) {
+    hex_ranks <- (output_raw$hex_ranks+1)/(n_perms+1)
+    hex_ranks[proj$output_int$n_intersections < min_intersections] <- NA
+  }
+  
+  # save output as list
+  proj$output <- list(hex_values = hex_values,
+                      hex_ranks = hex_ranks)
   
   # return invisibly
   invisible(proj)

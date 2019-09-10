@@ -22,7 +22,7 @@ bool ellipse_check(const double x, const double y, const double xf1, const doubl
 // [[Rcpp::export]]
 Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::List args_progress)
 {
-	int hex, node1, node2, ell, perm, this_ellipse;
+	int hex, node1, node2, ell, perm, this_ellipse, Nint;
 	double dist, linear_eccentricity, semi_minor;
 	
 	// start timer
@@ -35,7 +35,7 @@ Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
 	vector<double> node_long = rcpp_to_vector_double(args["node_long"]);                  //Longitude of data nodes
 	vector<double> node_lat = rcpp_to_vector_double(args["node_lat"]);                    //Latitude of data nodes
 	vector<double> edge_value = rcpp_to_vector_double(args["edge_value"]);                //Values of edges
-	vector<double> edge_value_pred = rcpp_to_vector_double(args["edge_value_pred"]);      //Values of edges predicted from model fit
+	//vector<double> edge_value_pred = rcpp_to_vector_double(args["edge_value_pred"]);      //Values of edges predicted from model fit
 	vector<vector<int>> edge_group_list = rcpp_to_matrix_int(args["edge_group_list"]);    //List of which edges belong to each group
 	vector<double> hex_long = rcpp_to_vector_double(args["hex_long"]);                    //Longitude of hex cells
 	vector<double> hex_lat = rcpp_to_vector_double(args["hex_lat"]);                      //Latitude of hex cells
@@ -64,7 +64,7 @@ Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
 	vector<double> xfocus2(Nells, 0.0);               //x-coordinate of focus 2 of each ellipse
 	vector<double> yfocus2(Nells, 0.0);               //y-coordinate of focus 2 of each ellipse
 	vector<double> area_inv(Nells, 0.0);              //Inverse of area of each ellipse
-	vector<double> edge_weighted(Nells, 0.0);         //Weighted metric value of each ellipse
+	//vector<double> edge_weighted(Nells, 0.0);         //Weighted metric value of each ellipse
   
     // loop through ellipses
 	ell = 0;
@@ -86,7 +86,7 @@ Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
 			area_inv[ell] = 1.0 / (M_PI * semi_major[ell] * semi_minor);
       
 			// store weighted value of ellipse
-			edge_weighted[ell] = edge_value[ell] * area_inv[ell];
+			//edge_weighted[ell] = edge_value[ell] * area_inv[ell];
 			
 			ell++;
 		}
@@ -105,9 +105,10 @@ Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
 	vector<int> Nintersections(Nhex, 0);		//Number of ellipses intersecting hex
 	vector<vector<int>> intersections(Nhex);	//List of ellipses intersecting each hex
 	
-	// loop through hexs
+	// loop through hexes
 	for (hex = 0; hex < Nhex; hex++)
 	{
+		Nint = 0;
 		// test every ellipse for intersection with this hex
 		for (ell = 0; ell < Nells; ell++)
 		{
@@ -120,11 +121,11 @@ Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
 				
 				// store this intersection
 				intersections[hex].push_back(ell);
-				Nintersections[hex]++;
+				Nint++;
 			}
 		}
 		// divide hex value by weight
-		if (Nintersections[hex] >= min_intersections) 
+		if (Nint >= min_intersections) 
 		{
 			inv_hex_weights[hex] = 1.0 / hex_weights[hex];
 			hex_values[hex] *= inv_hex_weights[hex]; 
@@ -133,6 +134,7 @@ Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
 		{
 			inv_hex_weights[hex] = 1.0;
 		}
+		Nintersections[hex] = Nint;
 	}
   
 	//chrono_timer(t0);
@@ -165,10 +167,11 @@ Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
 			for (hex = 0; hex < Nhex; hex++)
 			{
 				hex_values_perm[hex] = 0;
-				if (Nintersections[hex] >= min_intersections)
+				Nint = Nintersections[hex];
+				if (Nint >= min_intersections)
 				{
 					// compute hex value
-					for (ell = 0; ell < Nintersections[hex]; ell++)
+					for (ell = 0; ell < Nint; ell++)
 					{
 						this_ellipse = intersections[hex][ell];
 						hex_values_perm[hex] += edge_value[perm_vec[this_ellipse]] * area_inv[this_ellipse];

@@ -17,7 +17,7 @@ using namespace std;
 // [[Rcpp::export]]
 Rcpp::List calc_intersections_cpp(Rcpp::List args)
 {
-        int hex, node1, node2, ell;
+        int hex, node1, node2, ell, Nint;
         double dist, linear_eccentricity, semi_minor;
         
         // start timer
@@ -92,6 +92,7 @@ Rcpp::List calc_intersections_cpp(Rcpp::List args)
         // loop through hexes
         for (hex = 0; hex < Nhex; hex++)
         {
+				Nint = 0;
                 // test every ellipse for intersection with this hex
                 for (ell = 0; ell < Nells; ell++)
                 {
@@ -102,11 +103,11 @@ Rcpp::List calc_intersections_cpp(Rcpp::List args)
                                 
                                 // store this intersection
                                 intersections[hex].push_back(ell);
-                                Nintersections[hex]++;
+                                Nint++;
                         }
                 }
                 // divide hex value by weight
-                if (Nintersections[hex] >= min_intersections) 
+                if (Nint >= min_intersections) 
                 {
                         inv_hex_weights[hex] = 1.0 / hex_weights[hex];
                 }
@@ -114,12 +115,15 @@ Rcpp::List calc_intersections_cpp(Rcpp::List args)
                 {
                         inv_hex_weights[hex] = 1.0;
                 }
+				Nintersections[hex] = Nint;
         }
   
         //chrono_timer(t0);
         
         // return list
         return Rcpp::List::create(Rcpp::Named("inv_hex_weights") = inv_hex_weights,
-                           Rcpp::Named("Nintersections") = Nintersections,
-                           Rcpp::Named("intersections") = intersections);
+									Rcpp::Named("hex_weights") = hex_weights,
+									Rcpp::Named("area_inv") = area_inv,
+									Rcpp::Named("Nintersections") = Nintersections,
+									Rcpp::Named("intersections") = intersections);
 }
