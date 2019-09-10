@@ -530,6 +530,42 @@ rmapi_analysis <- function(proj, eccentricity = 0.5, null_method = 1,
   # return invisibly
   invisible(proj)
 }
+#------------------------------------------------
+#' @title Partial version of rmapi_analysis - calculate intersection and weighting data for making multiple maps
+#'
+#' @description Partial version of rmapi_analysis - calculate intersection and weighting data for making multiple maps
+#' 
+calc_intersections <- function(proj, eccentricity = 0.5, min_intersections = 5) {
+  
+  # check inputs
+  assert_custom_class(proj, "rmapi_project")
+  assert_single_pos(eccentricity, zero_allowed = TRUE)
+  assert_bounded(eccentricity, left = 0, right = 1, inclusive_left = TRUE, inclusive_right = FALSE)
+  assert_single_pos_int(min_intersections, zero_allowed = FALSE)
+  
+  # ---------------------------------------------
+  # Set up arguments for input into C++
+  
+  args <- list(node_long = proj$data$coords$long,
+               node_lat = proj$data$coords$lat,
+               hex_long = proj$map$hex_centroid$long,
+               hex_lat = proj$map$hex_centroid$lat,
+               eccentricity = eccentricity,
+               min_intersections = min_intersections)
+  
+  # ---------------------------------------------
+  # Carry out simulations in C++ to generate intersection and weighting data
+  
+  output_raw <- calc_intersections_cpp(args)
+  
+  # save output as list
+  proj$output <- list(inv_hex_weights = output_raw$inv_hex_weights,
+                      n_intersections = output_raw$Nintersections,
+                      intersections = output_raw$intersections)
+  
+  # return invisibly
+  invisible(proj)
+}
 
 #------------------------------------------------
 #' @title Calculate ellipse polygon coordinates from foci and eccentricity
