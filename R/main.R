@@ -223,9 +223,9 @@ fit_model <- function(proj, type = 1) {
 #' @title Fit a simple model to data (alt)
 #'
 #' @description Alternate version of fit_model using x and y min and max; 1: Linear model, 2: SSasymp
-#' model, 3: Power model, 4: Exponential model; a_fit and b_fit are parameters for type 1,3,4.
+#' model, 3: Power model, 4: Exponential model; a_fit, b_fit and c_fit are starting parameter values.
 
-fit_model2 <- function(proj, type = 1, xmin = 0, xmax = 1, ymin = 0, ymax = 1, a_fit = 1, b_fit = 1) {
+fit_model2 <- function(proj, type = 1, xmin = 0, xmax = 1, ymin = 0, ymax = 1, a_fit = 1, b_fit = 1, c_fit=0) {
   
   # check inputs
   assert_custom_class(proj, "rmapi_project")
@@ -233,54 +233,52 @@ fit_model2 <- function(proj, type = 1, xmin = 0, xmax = 1, ymin = 0, ymax = 1, a
   assert_in(type, 1:5)
   
   npts=length(proj$data$stat_dist)
-  d_space=rep(0,npts)
-  d_stat=d_space
-  for(i in 1:npts){
-    d_space[i]=proj$data$spatial_dist[i]
-    d_stat[i]=proj$data$stat_dist[i]
-  }
-  df=data.frame(d_space,d_stat)
+  df <- data.frame(x = as.vector(proj$data$spatial_dist), y = as.vector(proj$data$stat_dist))
   subset_list=c(1:npts)
   for(i in 1:npts){ 
-  x=d_space[i]
-  y=d_stat[i]
+  x=df$x[i]
+  y=df$y[i]
   if(x <= xmin || x >= xmax){ subset_list[i]=NA } 
   else{if(y <= ymin || y >= ymax){ subset_list[i]=NA }}
   }
+  
 
   # fit model
   if (type == 1) {
-    model_fit <- nls(d_stat ~ (a*d_space)+b,subset=subset_list,start=list(a=a_fit,b=b_fit),data=df)
+    model_fit <- nls(y ~ (a*x)+b,subset=subset_list,start=list(a=a_fit,b=b_fit),data=df)
     fit_parameters=model_fit$m$getAllPars()
     a=fit_parameters[1]
     b=fit_parameters[2]
-    model_fit_final = (a*d_space)+b
+    model_fit_final = (a*df$x)+b
     cat("\nLinear model (y=ax+b) fitted: a = ",a,"\tb = ",b,"\n",sep="")
   } 
   if (type == 2){
-    model_fit <- nls(d_stat ~ SSasymp(d_space, alpha, beta, log_lambda),subset=subset_list, data = df)
+    model_fit <- nls(y ~ SSasymp(x, alpha, beta, log_lambda),subset=subset_list, 
+                     start=list(alpha=a_fit,beta=b_fit,log_lambda=c_fit),data = df)
     fit_parameters = model_fit$m$getAllPars()
     alpha = fit_parameters[1]
     beta = fit_parameters[2]
     log_lambda = fit_parameters[3]
-    model_fit_final <- SSasymp(d_space, alpha, beta, log_lambda)
+    model_fit_final <- SSasymp(df$x, alpha, beta, log_lambda)
     cat("\nSSasymp model fitted: alpha = ",alpha,"\tbeta = ",beta,"\tlog_lambda = ",log_lambda,"\n",sep="")
   }
   if (type == 3) {
-    model_fit <- nls(d_stat ~ a*(d_space^b),subset=subset_list,start=list(a=a_fit,b=b_fit),data=df)
+    model_fit <- nls(y ~ (a*(x^b))+c,subset=subset_list,start=list(a=a_fit,b=b_fit,c=c_fit),data=df)
     fit_parameters=model_fit$m$getAllPars()
     a=fit_parameters[1]
     b=fit_parameters[2]
-    model_fit_final = a*(d_space^b)
-    cat("\nPower model (y=ax^b) fitted: a = ",a,"\tb = ",b,"\n",sep="")
+    c=fit_parameters[3]
+    model_fit_final = (a*(df$x^b))+c
+    cat("\nPower model (y=(ax^b)+c) fitted: a = ",a,"\tb = ",b,"\tc = ",c,"\n",sep="")
   } 
   if (type == 4) {
-    model_fit <- nls(d_stat ~ a*exp(b*d_space),subset=subset_list,start=list(a=a_fit,b=b_fit),data=df)
+    model_fit <- nls(y ~ (a*exp(b*x))+c,subset=subset_list,start=list(a=a_fit,b=b_fit,c=c_fit),data=df)
     fit_parameters=model_fit$m$getAllPars()
     a=fit_parameters[1]
     b=fit_parameters[2]
-    model_fit_final = a*exp(b*d_space)
-    cat("\nExponential model (y=a.exp(bx) fitted: a = ",a,"\tb = ",b,"\n",sep="")
+    c=fit_parameters[3]
+    model_fit_final = a*exp(b*df$x)
+    cat("\nExponential model (y=(a.exp(bx))+c) fitted: a = ",a,"\tb = ",b,"\tc = ",c,"\n",sep="")
   } 
   
   # save model
