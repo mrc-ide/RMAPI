@@ -7,8 +7,8 @@
 is.rmapi_project(x)
 }
 \arguments{
-\item{x}{object to query class.}
+\item{x}{object to query.}
 }
 \description{
-Determine if object is of class rmapi_project.
+Determine if object is of class \code{rmapi_project}.
 }

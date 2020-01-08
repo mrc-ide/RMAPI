@@ -2,22 +2,22 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 calc_hex_values_cpp <- function(args, args_functions, args_progress) {
-    .Call('_RMAPI_calc_hex_values_cpp', PACKAGE = 'RMAPI', args, args_functions, args_progress)
+    .Call(`_RMAPI_calc_hex_values_cpp`, args, args_functions, args_progress)
 }
 
 calc_intersections_cpp <- function(args) {
-    .Call('_RMAPI_calc_intersections_cpp', PACKAGE = 'RMAPI', args)
+    .Call(`_RMAPI_calc_intersections_cpp`, args)
 }
 
 hexbarrier01 <- function(args_h) {
-    .Call('_RMAPI_hexbarrier01', PACKAGE = 'RMAPI', args_h)
+    .Call(`_RMAPI_hexbarrier01`, args_h)
 }
 
 rmapi_analysis_cpp <- function(args, args_functions, args_progress) {
-    .Call('_RMAPI_rmapi_analysis_cpp', PACKAGE = 'RMAPI', args, args_functions, args_progress)
+    .Call(`_RMAPI_rmapi_analysis_cpp`, args, args_functions, args_progress)
 }
 
 sim_falciparum_cpp <- function(args, args_functions, args_progress) {
-    .Call('_RMAPI_sim_falciparum_cpp', PACKAGE = 'RMAPI', args, args_functions, args_progress)
+    .Call(`_RMAPI_sim_falciparum_cpp`, args, args_functions, args_progress)
 }
 

@@ -15,6 +15,13 @@ col_hotcold <- function(n = 6) {
 }
 
 #------------------------------------------------
+# a series of internally-used colours
+#' @noRd
+daily_cols <- function() {
+  c("firebrick1", "chartreuse3", "dodgerblue", "dodgerblue4", "purple", "darkorange", "firebrick4")
+}
+
+#------------------------------------------------
 #' @title Plot pairwise spatial distance against loaded statistic
 #'
 #' @description Plot pairwise spatial distance against loaded statistic.
@@ -431,4 +438,45 @@ overlay_points <- function(myplot, lon, lat, col = "black", size = 2, opacity = 
   
   # return plot object
   return(myplot)
+}
+
+#------------------------------------------------
+#' @title Plot daily counts of each host state from simulation
+#'
+#' @description For a set of simulation output produced by the function
+#'   \code{sim_falciparum()}, plots daily simulated values in a given deme.
+#'
+#' @param x object of class \code{rmapi_sim}.
+#' @param deme which deme to plot.
+#' @param states which states to plot. Can be any subset of \code{c("S", "E",
+#'   "I", "Sv", "Ev", "Iv")}.
+#'
+#' @importFrom grDevices grey
+#' @import tidyr
+#' @export
+
+plot_daily_states <- function(x, deme = 1, states = c("S", "E", "I")) {
+  
+  # check inputs
+  assert_custom_class(x, "rmapi_sim")
+  assert_leq(deme, length(x$daily_values), message = "deme not found within simulation output")
+  assert_in(states, c("S", "E", "I", "Sv", "Ev", "Iv"))
+  
+  # subset to desired rows and columns
+  df_wide <- x$daily_values[[deme]][, c("time", states), drop = FALSE]
+  
+  # get to long format
+  df_long <- tidyr::gather(df_wide, state, count, states, factor_key = TRUE)
+  
+  # choose plotting colours
+  raw_cols <- daily_cols()
+  plot_cols <- c(S = grey(0.5), E = raw_cols[2], I = raw_cols[1],
+                 Sv = grey(0.8), Ev = raw_cols[6], Iv = raw_cols[7],
+                 EIR = grey(0.0))
+  
+  # produce plot
+  ggplot2::ggplot(df_long) + ggplot2::theme_bw() +
+    ggplot2::geom_line(ggplot2::aes_(x = ~time, y = ~count, color = ~state)) +
+    ggplot2::scale_color_manual(values = plot_cols) +
+    ggplot2::xlab("time (days)") + ggplot2::ggtitle(sprintf("Deme %s", deme))
 }

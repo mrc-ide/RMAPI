@@ -4,10 +4,18 @@
 \alias{sim_simple}
 \title{Simulate data from simple model}
 \usage{
-sim_simple(node_long, node_lat, barrier_list = list(),
-  barrier_penalty = numeric(), barrier_method = 1,
-  eccentricity = 0.9, n_ell = 20, dist_transform = 1, lambda = 0.1,
-  eps = 0.1)
+sim_simple(
+  node_long,
+  node_lat,
+  barrier_list = list(),
+  barrier_penalty = numeric(),
+  barrier_method = 1,
+  eccentricity = 0.9,
+  n_ell = 20,
+  dist_transform = 1,
+  lambda = 0.1,
+  eps = 0.1
+)
 }
 \arguments{
 \item{node_long}{longitudes of nodes.}
