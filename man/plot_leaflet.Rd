@@ -4,8 +4,14 @@
 \alias{plot_leaflet}
 \title{Interactive hex map of RMAPI output}
 \usage{
-plot_leaflet(proj, variable = NULL, fill_opacity = 0.8,
-  legend_opacity = 1, map_type = 97, col_scale = magma(100))
+plot_leaflet(
+  proj,
+  variable = NULL,
+  fill_opacity = 0.8,
+  legend_opacity = 1,
+  map_type = 97,
+  col_scale = magma(100)
+)
 }
 \arguments{
 \item{proj}{object of class \code{rmapi_project}.}

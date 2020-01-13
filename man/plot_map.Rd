@@ -4,8 +4,7 @@
 \alias{plot_map}
 \title{Plot hex map of RMAPI output}
 \usage{
-plot_map(proj, variable = NULL, col_scale = magma(100),
-  barrier_list = list())
+plot_map(proj, variable = NULL, col_scale = magma(100), barrier_list = list())
 }
 \arguments{
 \item{proj}{object of class \code{rmapi_project}.}

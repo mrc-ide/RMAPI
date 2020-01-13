@@ -31,14 +31,14 @@ RMAPI uses pairwise information (i.e. statistics) between a series of spatial no
 For the sake of this vignette we will use built-in functions to simulate data in the correct format with known spatial barriers. First, we will generate node coordinates uniformly at random over the sampling region. This is intended to represent a situation where we do not have control over sampling locations and therefore cannot create a perfect sampling grid - for example when sampling from major cities:
 
 ```{r}
-# define coordinates of nodes
+# Define coordinates of nodes
 node_df <- data.frame(long = runif(100, -1.548, -1.478), lat = runif(100, 53.347, 53.379))
 ```
 
 Next we create a list of polygons that represent barriers to gene flow. Each element of this list should be a dataframe specifying the coordinates of a polygon, which must make a complete ring (i.e. the final pair of longitude/latitude values must be identical to the first). We also need to define the penalty associated with each barrier, which acts as a multiplier to the intersection distance when calculating pairwise data (see below):
 
 ```{r}
-# define barriers
+# Define barriers
 barrier_list <- list()
 barrier_list[[1]] <- data.frame(long = c(-1.54, -1.51, -1.49, -1.5, -1.535, -1.54),
                                 lat = c(53.365, 53.37, 53.365, 53.36, 53.36, 53.365))
@@ -48,7 +48,7 @@ barrier_penalty <- 5
 We can now simulate statistical values between nodes. The `barrier_method = 2` method used here draws a straight line between nodes and calculates the intersection with barrier polygons before applying the barrier penalty per unit intersection, meaning that lines which go long-ways through a barrier experience a greater penalty. We also use `dist_transform = 2` here, which assumes that values fall off exponentially with distance with rate `lambda`. Finally, random error is applied to all pairwise statistics in the form of Gaussian noise with standard deviation `eps`. Further details of barrier penalty methods and transformations can be found in the help for the `sim_simple()` function.
 
 ```{r}
-# simulate pairwise statistics
+# Simulate pairwise statistics
 sim_stat <- sim_simple(node_long = node_df$long,
                        node_lat = node_df$lat,
                        barrier_list = barrier_list,
@@ -67,7 +67,7 @@ When loading data from a file, it should be in the same format as this simulated
 RMAPI works using projects, which are essentially just lists containing all data, input and outputs in one place. We can create a new project, and then bind our data to the project:
 
 ```{r, fig.width=7, fig.height=5}
-# create new RMAPI project
+# Create new RMAPI project
 p <- rmapi_project()
 
 # bind data
@@ -77,7 +77,7 @@ p <- bind_data(p, node_df$long, node_df$lat, sim_stat)
 Once we have data bound to a project we can use the `plot_dist()` function to explore the basic relationship between distance and pairwise statistical values:
 
 ```{r, fig.width=7, fig.height=5}
-# plot basic relationship between spatial distance and statistic
+# Plot basic relationship between spatial distance and statistic
 plot_dist(p)
 ```
 
@@ -89,14 +89,14 @@ We can see the general shape of exponential fall-off, which we should expect fro
 Next, we need to create a hex-map:
 
 ```{r}
-# set up map
+# Set up map
 p <- create_map(p, hex_size = 0.002)
 ```
 
 Once we have a hex map we can use it to explore different values of the ellipse eccentricity used in the RMAPI method. An eccentricity of 1 defines a straight line between points, and an eccentricity of 0 represents a perfect circle. Whatever our chosen value, we should ensure that the number of ellipses intersecting each hex (the "coverage") is sufficient to reduce noise, and increase reliability of the permutation testing procedure. We suggest that a minimum coverage of 100 is a good rule of thumb:
 
 ```{r, fig.width=10, fig.height=4}
-# check that sufficient coverage
+# Check that sufficient coverage
 plot_coverage(p, eccentricity = 0.9)
 ```
 
@@ -108,20 +108,20 @@ Here we can see that an eccentricity of 0.9 provides good coverage over most of 
 Now we are ready to run simulations. The following command computes hex values from pairwise statistics, and compares this map against a series of analogous maps produced after first permuting edge values. The output of this function includes the raw hex values, along with the rank of the raw hex values through the list of permutations (as a proportion). Note that for the sake of this vignette we use the `report_progress = FALSE` argument to avoid printing too much output, but you should run without this argument.
 
 ```{r}
-# run simulations
+# Generate hex values
 p <- rmapi_analysis(p, n_perms = 1e3, eccentricity = 0.9, n_breaks = 1, report_progress = FALSE)
 ```
 
 We can use the `plot_map()` function to produce simple plots of the raw hex values, and the hex ranks:
 
 ```{r, fig.width=10, fig.height=4}
-# plot hex values
+# Plot hex values
 plot1 <- plot_map(p, barrier_list = barrier_list)
 
-# plot hex ranks
+# Plot hex ranks
 plot2 <- plot_map(p, variable = "hex_ranks", barrier_list = barrier_list)
 
-# use gridExtra package to arrange ggplot objects
+# Use gridExtra package to arrange ggplot objects
 library(gridExtra)
 grid.arrange(plot1, plot2, ncol = 2)
 ```
@@ -134,16 +134,16 @@ Notice from the hex map that values tend to be higher when nodes are close toget
 First, we can re-run the simulations, this time using a value of `n_breaks = 20`. This divides all edges into bins based on their spatial separation, and permutation testing then only occurs within bins - for example, pairwise values between nodes with short distances between them are only compared against values between other nodes with small separation distances, not against values between nodes with large separation distances:
 
 ```{r, fig.width=10, fig.height=4}
-# run simulations
+# Generate hex values
 p <- rmapi_analysis(p, n_perms = 1e3, eccentricity = 0.9, n_breaks = 20, report_progress = FALSE)
 
-# plot hex values
+# Plot hex values
 plot1 <- plot_map(p, barrier_list = barrier_list)
 
-# plot hex ranks
+# Plot hex ranks
 plot2 <- plot_map(p, variable = "hex_ranks", barrier_list = barrier_list)
 
-# use gridExtra package to arrange ggplot objects
+# Use gridExtra package to arrange ggplot objects
 grid.arrange(plot1, plot2, ncol = 2)
 ```
 
@@ -152,7 +152,7 @@ Now, although the raw map is the same, the hex ranks give a far more accurate pa
 We can also produce an interactive map, making it easier to see how discontinuities may correspond to geographic features:
 
 ```{r, fig.width=7, fig.height=5}
-# produce interactive map
+# Produce interactive map
 plot3 <- plot_leaflet(p, variable = "hex_ranks")
 overlay_points(plot3, node_df$long, node_df$lat)
 ```
@@ -163,26 +163,26 @@ overlay_points(plot3, node_df$long, node_df$lat)
 The second method implemented in RMAPI is to fit a specific model to the relationship between pairwise values and spatial distance and using model-generated values as a null data set. We can use the `fit_model()` function to fit either a linear model (`type = 1`) or an exponential model (`type = 2`). Clearly based on the pattern in the data we would want the exponential model in this example:
 
 ```{r, fig.width=7, fig.height=5}
-# fit model to data
+# Fit model to data
 p <- fit_model(p, type = 2)
 
-# plot model fit over data
+# Plot model fit over data
 plot_dist(p)
 ```
 
 When running simulations with `null_method = 2`, the model fit is subtracted from the pairwise values, and the permutation testing procedure is then carried out on the residuals. This is slightly less flexible than the previous method, in that we must have an idea of the specific relationship between distance and statistical value, but can be more powerful as a result:
 
 ```{r, fig.width=12, fig.height=4}
-# run simulations
+# Generate hex values
 p <- rmapi_analysis(p, null_method = 2, n_perms = 1e3, eccentricity = 0.9, n_breaks = 1, report_progress = FALSE)
 
-# plot hex values
+# Plot hex values
 plot1 <- plot_map(p, barrier_list = barrier_list)
 
-# plot hex ranks
+# Plot hex ranks
 plot2 <- plot_map(p, variable = "hex_ranks", barrier_list = barrier_list)
 
-# use gridExtra package to arrange ggplot objects
+# Use gridExtra package to arrange ggplot objects
 grid.arrange(plot1, plot2, ncol = 2)
 ```
 

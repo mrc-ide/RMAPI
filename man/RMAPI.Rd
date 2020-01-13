@@ -3,7 +3,6 @@
 \docType{package}
 \name{RMAPI}
 \alias{RMAPI}
-\alias{RMAPI-package}
 \title{RMAPI}
 \description{
 RMAPI

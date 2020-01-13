@@ -4,10 +4,17 @@
 \alias{rmapi_analysis}
 \title{Perform RMAPI analysis}
 \usage{
-rmapi_analysis(proj, eccentricity = 0.5, null_method = 1,
-  n_perms = 100, n_breaks = 1, dist_breaks = NULL,
-  empirical_tail = "both", min_intersections = 5,
-  report_progress = TRUE)
+rmapi_analysis(
+  proj,
+  eccentricity = 0.5,
+  null_method = 1,
+  n_perms = 100,
+  n_breaks = 1,
+  dist_breaks = NULL,
+  empirical_tail = "both",
+  min_intersections = 5,
+  report_progress = TRUE
+)
 }
 \arguments{
 \item{proj}{object of class \code{rmapi_project}.}

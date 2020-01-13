@@ -4,12 +4,26 @@
 \alias{sim_falciparum}
 \title{Simulate genetic data from simple P.falciparum dynamic model}
 \usage{
-sim_falciparum(L = 24, prob_cotransmission = 0.5, a = 0.3, p = 0.9,
-  mu = -log(p), u = 12, v = 10, g = 10, prob_infection = seq(0.1,
-  0.01, -0.01), duration_infection = dgeom(1:300, 1/50),
-  infectivity = 1, max_innoculations = 5, H = 1000,
-  seed_infections = 100, M = 1000, mig_matrix = diag(length(M)),
-  time_out = 100, report_progress = TRUE)
+sim_falciparum(
+  L = 24,
+  prob_cotransmission = 0.5,
+  a = 0.3,
+  p = 0.9,
+  mu = -log(p),
+  u = 12,
+  v = 10,
+  g = 10,
+  prob_infection = seq(0.1, 0.01, -0.01),
+  duration_infection = dgeom(1:300, 1/50),
+  infectivity = 1,
+  max_innoculations = 5,
+  H = 1000,
+  seed_infections = 100,
+  M = 1000,
+  mig_matrix = diag(length(M)),
+  time_out = 100,
+  report_progress = TRUE
+)
 }
 \arguments{
 \item{L}{number of loci. The maximum number of loci is 1000, as at higher
