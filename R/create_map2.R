@@ -1,17 +1,18 @@
 #------------------------------------------------
-#' title Create mapping space
+#' @title Create mapping space
 #'
-#' description Create mapping space - alternate version where hex map is built around input region outline
+#' @description Create mapping space - alternate version where hex map is built around input region outline
 #'
-#' param proj object of class \code{rmapi_project}.
-#' param hex_size size of hexagons.
-#' param buffer size of buffer zone around the data. It is recommended to not
+#' @param proj object of class \code{rmapi_project}.
+#' @param hex_size size of hexagons.
+#' @param buffer size of buffer zone around the data. It is recommended to not
 #'   use a buffer to avoid edge-effects.
+#' @param outline List of coordinates defining outline
 #'
-#' import rgeos
-#' import sp
-#' export
-#' @noRd
+#' @import rgeos
+#' @import sp
+#' @importFrom grDevices chull
+#' @export
 
 create_map2 <- function(proj, hex_size = 1, buffer = 0,outline) {
    

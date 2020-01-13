@@ -22,7 +22,12 @@ Imports:
     leaflet,
     rgdal,
     gridExtra,
-    tidyr
+    tidyr,
+    grDevices,
+    methods,
+    stats,
+    utils,
+    assertthat
 LinkingTo:
     Rcpp
 RoxygenNote: 7.0.2

@@ -33,6 +33,7 @@
 #' @param eps the standard deviation of white noise applied to final statistics.
 #'
 #' @import sf
+#' @importFrom stats dist
 #' @export
 
 sim_simple <- function(node_long,
@@ -156,7 +157,7 @@ sim_simple <- function(node_long,
   }
   
   # add noise
-  d <- d + rnorm(length(d), sd = eps)
+  d <- d + stats::rnorm(length(d), sd = eps)
   
   # return matrix
   return(as.matrix(d))

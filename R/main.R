@@ -63,6 +63,7 @@ rmapi_project <- function() {
 #' @param check_delete_output if \code{TRUE} (the default) then check before
 #'   overwriting any existing data loaded into a project.
 #'
+#' @importFrom stats as.dist
 #' @export
 
 bind_data <- function(proj, long, lat, stat_dist, check_delete_output = TRUE) {
@@ -98,7 +99,7 @@ bind_data <- function(proj, long, lat, stat_dist, check_delete_output = TRUE) {
   
   # update project with new data
   proj$data$coords <- data.frame(long = long, lat = lat)
-  proj$data$stat_dist <- as.dist(stat_dist, upper = TRUE)
+  proj$data$stat_dist <- stats::as.dist(stat_dist, upper = TRUE)
   proj$data$spatial_dist <- get_spatial_distance(long, lat)
   
   # return invisibly
@@ -126,6 +127,7 @@ bind_data <- function(proj, long, lat, stat_dist, check_delete_output = TRUE) {
 #' @param a_init,b_init,c_init initial values used in model fitting for models 1
 #'   and 3.
 #'
+#' @importFrom stats nls
 #' @export
 
 fit_model <- function(proj, type = 1,
@@ -138,8 +140,8 @@ fit_model <- function(proj, type = 1,
   assert_in(type, 1:3)
   
   # create dataframe of pairwise statistical and spatial distances
-  df_pairwise <- data.frame(x = as.vector(proj$data$spatial_dist),
-                            y = as.vector(proj$data$stat_dist))
+  df_pairwise <- data.frame(x <- as.vector(proj$data$spatial_dist),
+                            y <- as.vector(proj$data$stat_dist))
   
   # mask out values outside specified range
   df_pairwise <- subset(df_pairwise, x >= x_min & x <= x_max & y >= y_min & y <= y_max)
@@ -360,7 +362,7 @@ rmapi_analysis <- function(proj, eccentricity = 0.5, null_method = 1,
   
   # subtract model fit under null_method = 2 (fit_model() used)
   if (null_method == 2) {
-    y_pred <- predict(proj$model$model_fit)
+    y_pred <- stats::predict(proj$model$model_fit)
     y <- y - y_pred
   }
   # subtract model fit under null_method = 3 (fit_model2() used)
@@ -382,7 +384,7 @@ rmapi_analysis <- function(proj, eccentricity = 0.5, null_method = 1,
   
   # create progress bars
   if(report_progress){
-    pb <- txtProgressBar(0, n_perms, initial = NA, style = 3)
+    pb <- utils::txtProgressBar(0, n_perms, initial = NA, style = 3)
     args_progress <- list(pb = pb)
   }
   else{
@@ -519,7 +521,7 @@ calc_hex_values <- function(proj, null_method = 1,
   
   # subtract model fit under null_method = 2 (fit_model() used)
   if (null_method == 2) {
-    y_pred <- predict(proj$model$model_fit)
+    y_pred <- stats::predict(proj$model$model_fit)
     y <- y - y_pred
   }
   # subtract model fit under null_method = 3 (fit_model2() used)
@@ -541,7 +543,7 @@ calc_hex_values <- function(proj, null_method = 1,
   
   # create progress bars
   if(report_progress){
-    pb <- txtProgressBar(0, n_perms, initial = NA, style = 3)
+    pb <- utils::txtProgressBar(0, n_perms, initial = NA, style = 3)
     args_progress <- list(pb = pb)
   }
   else{
