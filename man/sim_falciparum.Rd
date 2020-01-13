@@ -5,11 +5,6 @@
 \title{Simulate genetic data from simple P. falciparum dynamic model}
 \usage{
 sim_falciparum(
-<<<<<<< HEAD
-  L = 24,
-  prob_cotransmission = 0.5,
-=======
->>>>>>> b3306fe8a3af59f022f32a93132fa5e22330e68a
   a = 0.3,
   p = 0.9,
   mu = -log(p),
@@ -24,11 +19,8 @@ sim_falciparum(
   seed_infections = 100,
   M = 1000,
   mig_matrix = diag(length(M)),
-<<<<<<< HEAD
-=======
   L = 24,
   prob_cotransmission = 0.5,
->>>>>>> b3306fe8a3af59f022f32a93132fa5e22330e68a
   time_out = 100,
   report_progress = TRUE
 )

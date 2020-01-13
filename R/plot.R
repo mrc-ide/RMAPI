@@ -246,19 +246,21 @@ plot_map <- function(proj, variable = NULL, col_scale = magma(100), barrier_list
 
 
 #------------------------------------------------
-#' @title Plot hex map of RMAPI output with hexes considered statistically significant highlighted
+#' title Plot hex map of RMAPI output with hexes considered statistically significant highlighted
 #'
-#' @description Plot hex map of RMAPI output.
+#' description Plot hex map of RMAPI output.
 #'
-#' @param proj object of class \code{rmapi_project}.
-#' @param variable which element of the project output to use as map colours.
-#' @param col_scale the colour scale to use.
-#' @param barrier_list optional list of polygon coordinates that are added to
+#' param proj object of class \code{rmapi_project}.
+#' param variable which element of the project output to use as map colours.
+#' param col_scale the colour scale to use.
+#' param barrier_list optional list of polygon coordinates that are added to
 #'   plot.
+#' param tails boundaries of statistical significance
 #' 
-#' @import ggplot2
-#' @importFrom viridisLite magma
-#' @export
+#' import ggplot2
+#' importFrom viridisLite magma
+#' export
+#' @noRd
 
 plot_map2 <- function(proj, col_scale = magma(100), barrier_list = list(), tails=c(0,1)) {
 	

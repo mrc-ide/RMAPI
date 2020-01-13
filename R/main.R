@@ -1,10 +1,10 @@
 
 #------------------------------------------------
 #' @title Check that RMAPI package has loaded successfully
-#'
+#' 
 #' @description Simple function to check that RMAPI package has loaded
 #'   successfully. Prints "RMAPI loaded successfully!" if so.
-#'
+#' 
 #' @export
 
 check_RMAPI_loaded <- function() {
@@ -436,11 +436,12 @@ rmapi_analysis <- function(proj, eccentricity = 0.5, null_method = 1,
   invisible(proj)
 }
 #------------------------------------------------
-#' @title Partial version of rmapi_analysis - calculate intersection and
+#' title Partial version of rmapi_analysis - calculate intersection and
 #'   weighting data for making multiple maps
 #'
-#' @description Partial version of rmapi_analysis - calculate intersection and
+#' description Partial version of rmapi_analysis - calculate intersection and
 #'   weighting data for making multiple maps.
+#' @noRd
 
 calc_intersections <- function(proj, eccentricity = 0.5, min_intersections = 5) {
   
@@ -478,11 +479,12 @@ calc_intersections <- function(proj, eccentricity = 0.5, min_intersections = 5) 
 
 
 #------------------------------------------------
-#' @title Partial version of rmapi_analysis - calculate hex values 
+#' title Partial version of rmapi_analysis - calculate hex values 
 #'
-#' @description Partial version of rmapi_analysis - calculate hex values from
+#' description Partial version of rmapi_analysis - calculate hex values from
 #'   pairwise data and previously calculated intersection and weighting data
 #'
+#' @noRd
 
 calc_hex_values <- function(proj, null_method = 1,
                            n_perms = 1e2, n_breaks = 1, dist_breaks = NULL,
