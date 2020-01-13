@@ -15,10 +15,6 @@ navbar:
           href: articles/basic-tutorial.html
     - text: "Functions"
       href: reference/index.html
-    - text: "FAQ"
-      href: articles/faq.html
-    - text: "Known issues"
-      href: articles/known-issues.html
   right:
    - icon: fa-github
      href: https://github.com/mrc-ide/RMAPI

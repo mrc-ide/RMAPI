@@ -16,5 +16,10 @@ calc_hex_values(
 )
 }
 \description{
+<<<<<<< HEAD
 Partial version of rmapi_analysis - calculate hex values from pairwise data and previously calculated intersection and weighting data
+=======
+Partial version of rmapi_analysis - calculate hex values from
+  pairwise data and previously calculated intersection and weighting data
+>>>>>>> b3306fe8a3af59f022f32a93132fa5e22330e68a
 }

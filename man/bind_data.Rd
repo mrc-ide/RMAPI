@@ -9,9 +9,7 @@ bind_data(proj, long, lat, stat_dist, check_delete_output = TRUE)
 \arguments{
 \item{proj}{object of class \code{rmapi_project}.}
 
-\item{long}{vector of node longitudes.}
-
-\item{lat}{vector of node latitudes.}
+\item{long, lat}{vectors of node longitudes and latitudes.}
 
 \item{stat_dist}{matrix of pairwise statistics between nodes.}
 
@@ -19,5 +17,5 @@ bind_data(proj, long, lat, stat_dist, check_delete_output = TRUE)
 overwriting any existing data loaded into a project.}
 }
 \description{
-Load data into RMAPI project.
+Load data into an existing RMAPI project.
 }

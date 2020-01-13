@@ -1,28 +1,8 @@
 
-#' #------------------------------------------------
-#' @title Define empty RMAPI project
-#'
-#' @description Define empty RMAPI project.
-#'
-#' @export
-
-rmapi_project <- function() {
-  
-  # initialise project with default values
-  ret <- list(data = list(coords = NULL,
-                          stat_dist = NULL,
-                          spatial_dist = NULL),
-              model = NULL,
-              map = NULL,
-              output = NULL)
-  
-  # create class and return
-  class(ret) <- "rmapi_project"
-  return(ret)
-}
+#### Member functions for objects of class rmapi_project
 
 #------------------------------------------------
-# Overload print function for RMAPI project
+# Overload print()
 #' @method print rmapi_project
 #' @export
 print.rmapi_project <- function(x, ...) {
@@ -35,7 +15,7 @@ print.rmapi_project <- function(x, ...) {
 }
 
 #------------------------------------------------
-# Overload summary function for RMAPI project
+# Overload summary()
 #' @method summary rmapi_project
 #' @export
 summary.rmapi_project <- function(object, ...) {
@@ -68,25 +48,7 @@ summary.rmapi_project <- function(object, ...) {
 }
 
 #------------------------------------------------
-#' @title Print unclassed RMAPI project
-#'
-#' @description Print unclassed RMAPI project.
-#'
-#' @param proj object of class \code{rmapi_project}.
-#'
-#' @export
-
-print_full <- function(proj) {
-  
-  # check that viewing rmapi_project
-  assert_custom_class(proj, "rmapi_project")
-  
-  # print raw list
-  print(unclass(proj))
-}
-
-#------------------------------------------------
-# Overload plot function for RMAPI project
+# Overload plot()
 #' @method plot rmapi_project
 #' @export
 plot.rmapi_project <- function(x, y, ...) {
@@ -96,9 +58,9 @@ plot.rmapi_project <- function(x, y, ...) {
 #------------------------------------------------
 #' @title Determine if object is of class rmapi_project
 #'
-#' @description Determine if object is of class rmapi_project.
+#' @description Determine if object is of class \code{rmapi_project}.
 #'
-#' @param x object to query class.
+#' @param x object to query.
 #'
 #' @export
 

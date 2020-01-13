@@ -5,5 +5,6 @@
 \alias{RMAPI}
 \title{RMAPI}
 \description{
-RMAPI
+An Rcpp implementation of the MAPI software, which can be used
+  to infer barriers/corridors of gene flow (as one example application).
 }
