@@ -39,6 +39,8 @@
 #' @param report_progress if \code{TRUE} then a progress bar is printed to the
 #'   console during simuation.
 #'
+#' @importFrom utils txtProgressBar
+#' @importFrom stats dgeom
 #' @export
 
 sim_falciparum <- function(a = 0.3,

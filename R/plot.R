@@ -6,6 +6,7 @@
 #'
 #' @param n the number of colours.
 #'
+#' @importFrom grDevices colorRampPalette
 #' @export
 
 col_hotcold <- function(n = 6) {
@@ -42,16 +43,16 @@ plot_dist <- function(proj, col = "#00000050", overlay_model = TRUE) {
   assert_single_logical(overlay_model)
   
   # create basic plot
-  df_plot <- data.frame(spatial = as.vector(proj$data$spatial_dist), stat = as.vector(proj$data$stat_dist))
+  df_plot <- data.frame(spatial <- as.vector(proj$data$spatial_dist), stat <- as.vector(proj$data$stat_dist))
   plot1 <- ggplot(df_plot) + theme_bw()
   
   # add points
-  plot1 <- plot1 + geom_point(aes(x = spatial, y = stat), col = col)
+  plot1 <- plot1 + geom_point(aes(x = spatial, y = stat), data=df_plot, col = col)
   
   # add model fit
   if (overlay_model & !is.null(proj$model)) {
-    if(is.null(proj$model$model_fit_pred)) { df_predict <- data.frame(spatial = df_plot$spatial, stat = predict(proj$model$model_fit)) }
-    else { df_predict <- data.frame(spatial = df_plot$spatial, stat = proj$model$model_fit_pred) }
+    if(is.null(proj$model$model_fit_pred)) { df_predict <- data.frame(spatial <- df_plot$spatial, stat <- stats::predict(proj$model$model_fit)) }
+    else { df_predict <- data.frame(spatial <- df_plot$spatial, stat <- proj$model$model_fit_pred) }
     plot1 <- plot1 + geom_line(aes(x = spatial, y = stat), col = "red", data = df_predict)
   }
   
@@ -127,7 +128,8 @@ plot_coverage <- function(proj, eccentricity = 0.9, n_ell = 20, return_type = 1)
   plot1 <- plot1 + geom_sf(aes(fill = intersect_bin), data = proj$map$hex)
   
   # add points
-  plot1 <- plot1 + geom_point(aes(x = long, y = lat), size = 0.5, data = proj$data$coords)
+  coords <- data.frame(long <- proj$data$coords$long, lat <- proj$data$coords$lat)
+  plot1 <- plot1 + geom_point(aes(x = long, y = lat), data = coords, size = 0.5)
   
   # titles and legends
   plot1 <- plot1 + scale_fill_manual(values = col_hotcold(10), name = "no.intersections")
@@ -140,8 +142,9 @@ plot_coverage <- function(proj, eccentricity = 0.9, n_ell = 20, return_type = 1)
   plot2 <- ggplot() + theme_bw()
   
   # add histogram
+  data_intersect <- data.frame(x <- intersect_vec)
   plot2 <- plot2 + geom_histogram(aes(x = x), color = "black", fill = grey(0.2),
-                                  bins = 50, data = data.frame(x = intersect_vec))
+                                  bins = 50, data = data_intersect)
   
   # titles, legends, limits
   plot2 <- plot2 + xlab("no.intersections")
@@ -216,11 +219,11 @@ plot_map <- function(proj, variable = NULL, col_scale = viridisLite::magma(100),
                                          panel.grid.minor = element_blank())
   
   # add hexs
-  #plot1 <- plot1 + geom_polygon(aes(x = long, y = lat, group = group, fill = col), data = hex_df)
   plot1 <- plot1 + geom_sf(aes(fill = col_vec), data = proj$map$hex)
   
   # add points
-  plot1 <- plot1 + geom_point(aes(x = long, y = lat), shape = 21, color = "white", fill = "black", size = 1, data = proj$data$coords)
+  coords <- data.frame(long <- proj$data$coords$long, lat <- proj$data$coords$lat)
+  plot1 <- plot1 + geom_point(aes(x = long, y = lat), shape = 21, color = "white", fill = "black", size = 1, data = coords)
   
   # titles and legends
   if (add_legend) {
@@ -243,26 +246,28 @@ plot_map <- function(proj, variable = NULL, col_scale = viridisLite::magma(100),
 
 
 #------------------------------------------------
-#' @title Plot hex map of RMAPI output with hexes considered statistically significant highlighted
+#' title Plot hex map of RMAPI output with hexes considered statistically significant highlighted
 #'
-#' @description Plot hex map of RMAPI output.
+#' description Plot hex map of RMAPI output.
 #'
-#' @param proj object of class \code{rmapi_project}.
-#' @param variable which element of the project output to use as map colours.
-#' @param col_scale the colour scale to use.
-#' @param barrier_list optional list of polygon coordinates that are added to
+#' param proj object of class \code{rmapi_project}.
+#' param variable which element of the project output to use as map colours.
+#' param col_scale the colour scale to use.
+#' param barrier_list optional list of polygon coordinates that are added to
 #'   plot.
+#' param tails boundaries of statistical significance
 #' 
-#' @import ggplot2
-#' @importFrom viridisLite magma
-#' @export
+#' import ggplot2
+#' importFrom viridisLite magma
+#' export
+#' @noRd
 
 plot_map2 <- function(proj, col_scale = magma(100), barrier_list = list(), tails=c(0,1)) {
 	
   # check inputs
   assert_custom_class(proj, "rmapi_project")
   assert_list(barrier_list)
-  assert_that(length(tails)==2)
+  assertthat::assert_that(length(tails)==2)
   #assert_that(proj$output$hex_ranks!=NULL)
   nb <- length(barrier_list)
   if (nb > 0) {
@@ -301,10 +306,10 @@ plot_map2 <- function(proj, col_scale = magma(100), barrier_list = list(), tails
                                          panel.grid.minor = element_blank())
   
   # add hexes
-  plot1 <- plot1 + geom_polygon(aes(x = long, y = lat, group = group, fill = col), data = hex_df)
+  plot1 <- plot1 + geom_polygon(aes(x = long, y = lat, fill = col), data = hex_df)
   
   # overlay statistically significant hexes, outlines
-  plot1 <- plot1 + geom_polygon(aes(x = long, y = lat, group = group, fill = col), data = hex_df2, colour = "white", size = 0.5)
+  plot1 <- plot1 + geom_polygon(aes(x = long, y = lat, fill = col), data = hex_df2, colour = "white", size = 0.5)
   
   # add points
   plot1 <- plot1 + geom_point(aes(x = long, y = lat), shape = 21, color = "white", fill = "black", size = 1, data = proj$data$coords)
@@ -347,6 +352,8 @@ plot_map2 <- function(proj, col_scale = magma(100), barrier_list = list(), tails
 #' 
 #' @import leaflet
 #' @importFrom viridisLite magma
+#' @importFrom grDevices colorRamp
+#' @importFrom methods slot
 #' @export
 
 plot_leaflet <- function(proj, variable = NULL, fill_opacity = 0.8, legend_opacity = 1,
@@ -374,7 +381,7 @@ plot_leaflet <- function(proj, variable = NULL, fill_opacity = 0.8, legend_opaci
   # combine chosen variable with hex map to produce SpatialPolygonsDataFrame object 
   poly_df <- data.frame(col = x)
   rownames(poly_df) <- sapply(slot(proj$map$hex, "polygons"), function(x) slot(x, "ID"))
-  hex_spdf <- SpatialPolygonsDataFrame(p$map$hex, poly_df)
+  hex_spdf <- SpatialPolygonsDataFrame(proj$map$hex, poly_df)
   
   # define colour ramp and palette
   col_ramp <- colorRamp(col_scale)
@@ -463,7 +470,7 @@ plot_daily_states <- function(x, deme = 1, states = c("S", "E", "I")) {
   df_wide <- x$daily_values[[deme]][, c("time", states), drop = FALSE]
   
   # get to long format
-  df_long <- tidyr::gather(df_wide, state, count, states, factor_key = TRUE)
+  df_long <- tidyr::gather(df_wide, states, factor_key = TRUE)
   
   # choose plotting colours
   raw_cols <- daily_cols()

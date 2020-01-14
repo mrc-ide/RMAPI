@@ -13,6 +13,8 @@ create_map2(proj, hex_size = 1, buffer = 0, outline)
 
 \item{buffer}{size of buffer zone around the data. It is recommended to not
 use a buffer to avoid edge-effects.}
+
+\item{outline}{List of coordinates defining outline}
 }
 \description{
 Create mapping space - alternate version where hex map is built around input region outline

@@ -7,9 +7,11 @@
 #' @param hex_size size of hexagons.
 #' @param buffer size of buffer zone around the data. It is recommended to not
 #'   use a buffer to avoid edge-effects.
+#' @param outline List of coordinates defining outline
 #'
 #' @import rgeos
 #' @import sp
+#' @importFrom grDevices chull
 #' @export
 
 create_map2 <- function(proj, hex_size = 1, buffer = 0,outline) {
