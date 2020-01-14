@@ -203,19 +203,15 @@ fit_model <- function(proj, type = 1,
 #'
 #' @param proj object of class \code{rmapi_project}.
 #' @param hex_size size of hexagons.
-#' @param buffer size of buffer zone around the data. It is recommended to not
-#'   use a buffer to avoid edge-effects.
 #'
-#' @import rgeos
-#' @import sp
+#' @import sf
 #' @export
 
-create_map <- function(proj, hex_size = 1, buffer = 0) {
+create_map <- function(proj, hex_size = 1) {
   
   # check inputs
   assert_custom_class(proj, "rmapi_project")
   assert_single_pos(hex_size)
-  assert_single_pos(buffer)
   
   # check hex size
   min_range <- min(apply(proj$data$coords, 2, function(x) diff(range(x))))
@@ -225,54 +221,21 @@ create_map <- function(proj, hex_size = 1, buffer = 0) {
   
   message("Creating hex map")
   
-  # unfortunately we have to go through a long process to get hexs that cover
-  # all the nodes, the reason being that a raw call to sp::spsample() only
-  # creates hexs whose centroid is fully within the bounding poly, which can
-  # leave some nodes outside. The solution implemented here is to 1) create a
-  # bounding poly from the convex hull of the data, 2) apply a large buffer to
-  # the bounding poly, 3) generate hexs from the buffered poly, 4) subset to
-  # hexs that intersect the original poly, 5) create a new bounding poly from
-  # the convex hull of the centroids of the remaining hexs, 5) this new bounding
-  # poly is used to create the hex map, with optional buffer applied by the
-  # user.
-  
   # get convex hull of data
   ch_data <- chull(proj$data$coords[,c("long", "lat")])
-  ch_data_coords <- proj$data$coords[c(ch_data, ch_data[1]), c("long", "lat")]
+  ch_data_coords <- as.matrix(proj$data$coords[c(ch_data, ch_data[1]), c("long", "lat")])
   
-  # get convex hull in SpatialPolygons format and expand by fixed buffer of two hexs
-  bounding_poly_original_raw <- sp::SpatialPolygons(list(sp::Polygons(list(sp::Polygon(ch_data_coords)), ID = 1)))
-  bounding_poly_original <- rgeos::gBuffer(bounding_poly_original_raw, width = 2*hex_size)
+  # get convex hull into sf polygon format
+  bounding_poly <- sf::st_sfc(st_polygon(list(ch_data_coords)))
   
-  # get hex centroids and polygons
-  hex_pts_original <- sp::spsample(bounding_poly_original, type = "hexagonal", cellsize = hex_size, offset = c(0,0))
-  hex_pts_original_df <- as.data.frame(hex_pts_original)
-  names(hex_pts_original_df) <- c("long", "lat")
-  hex_polys_original <- sp::HexPoints2SpatialPolygons(hex_pts_original)
-  
-  # convert original bounding poly and hexs to sf format
-  bounding_poly_original_raw_sfc <- sf::st_as_sfc(bounding_poly_original_raw)
-  hex_polys_original_sfc <- sf::st_as_sfc(hex_polys_original)
-  
-  # subset hex centroids and polys to those that intersect original bounding poly
-  intersect_vec <- as.matrix(sf::st_intersects(hex_polys_original_sfc, bounding_poly_original_raw_sfc))[,1]
-  hex_pts_original_df <- hex_pts_original_df[which(intersect_vec),]
-  hex_polys_original <- hex_polys_original[which(intersect_vec)]
-  
-  # get convex hull of hex centroids
-  ch_hex <- chull(hex_pts_original_df)
-  ch_hex_coords <- hex_pts_original_df[c(ch_hex, ch_hex[1]),]
-  
-  # get convex hull in SpatialPolygons format and expand by user-defined buffer
-  bounding_poly_raw <- sp::SpatialPolygons(list(sp::Polygons(list(sp::Polygon(ch_hex_coords)), ID = 1)))
-  bounding_poly <- rgeos::gBuffer(bounding_poly_raw, width = buffer)
-  
-  # get hex centroids and polygons
-  hex_pts <- sp::spsample(bounding_poly, type = "hexagonal", cellsize = hex_size, offset = c(0,0))
-  hex_pts_df <- as.data.frame(hex_pts)
-  names(hex_pts_df) <- c("long", "lat")
-  hex_polys <- sp::HexPoints2SpatialPolygons(hex_pts)
+  # make sf hex grid from poly
+  hex_polys <- sf::st_make_grid(bounding_poly, cellsize = hex_size, square = FALSE)
   nhex <- length(hex_polys)
+  
+  # get hex centroid points
+  hex_pts <- sf::st_centroid(hex_polys)
+  hex_pts_df <- as.data.frame(t(mapply(as.vector, hex_pts)))
+  names(hex_pts_df) <- c("long", "lat")
   
   message(sprintf("%s hexagons created", nhex))
   
@@ -302,7 +265,7 @@ create_map <- function(proj, hex_size = 1, buffer = 0) {
 #'     is identical to the original MAPI method, if \code{n_breaks > 1} then a
 #'     spatial permutation test is implemented in which edges are binned based
 #'     on spatial distance and permutation only occurs within a bin.
-#'     \item permutation test on residuals. The fitted model from a previously
+#'     \item permutation test on residuals. The fitted model from a previous
 #'     call of \code{fit_model()} is used to compute residuals, and the
 #'     permutation test method is carried out on residual values. As with method
 #'     1, this permutation test can be spatially binned.
@@ -334,12 +297,14 @@ rmapi_analysis <- function(proj, eccentricity = 0.5, null_method = 1,
   assert_single_pos(eccentricity, zero_allowed = TRUE)
   assert_bounded(eccentricity, left = 0, right = 1, inclusive_left = TRUE, inclusive_right = FALSE)
   assert_single_pos_int(null_method)
-  assert_in(null_method, 1:3)
+  assert_in(null_method, 1:2)
   assert_single_pos_int(n_perms, zero_allowed = TRUE)
   assert_single_pos_int(min_intersections, zero_allowed = FALSE)
   assert_single_pos_int(n_breaks, zero_allowed = FALSE)
   if (is.null(dist_breaks)) {
-    dist_breaks <- seq(min(proj$data$spatial_dist, na.rm = TRUE), max(proj$data$spatial_dist, na.rm = TRUE), l = n_breaks + 1)
+    dist_breaks <- seq(min(proj$data$spatial_dist, na.rm = TRUE),
+                       max(proj$data$spatial_dist, na.rm = TRUE),
+                       l = n_breaks + 1)
   }
   assert_vector(dist_breaks)
   assert_numeric(dist_breaks)
@@ -353,7 +318,7 @@ rmapi_analysis <- function(proj, eccentricity = 0.5, null_method = 1,
   # ---------------------------------------------
   # Process data differently depending on null method
   
-  # get x-values, y-values predicted values
+  # get x-values, y-values, and predicted y-values
   x <- proj$data$spatial_dist
   y <- proj$data$stat_dist
   y_pred <- NA
@@ -362,12 +327,6 @@ rmapi_analysis <- function(proj, eccentricity = 0.5, null_method = 1,
   if (null_method == 2) {
     y_pred <- predict(proj$model$model_fit)
     y <- y - y_pred
-  }
-  # subtract model fit under null_method = 3 (fit_model2() used)
-  if (null_method == 3) {
-    y_pred <- proj$model$model_fit_pred
-    y <- y - y_pred
-    y <- y - min(y)
   }
   
   # break spatial distances into groups
@@ -381,12 +340,12 @@ rmapi_analysis <- function(proj, eccentricity = 0.5, null_method = 1,
   args_functions <- list(update_progress = update_progress)
   
   # create progress bars
-  if(report_progress){
+  if (report_progress & n_perms > 0) {
     pb <- txtProgressBar(0, n_perms, initial = NA, style = 3)
     args_progress <- list(pb = pb)
   }
   else{
-  args_progress <- list()
+    args_progress <- list()
   }
   
   # create argument list
@@ -430,7 +389,14 @@ rmapi_analysis <- function(proj, eccentricity = 0.5, null_method = 1,
   proj$output <- list(hex_values = hex_values,
                       hex_weights = hex_weights,
                       hex_ranks = hex_ranks,
-                      n_intersections = output_raw$Nintersections)
+                      n_intersections = output_raw$Nintersections,
+                      tmp_v = output_raw$tmp_v,
+                      tmp_x1 = output_raw$tmp_x1,
+                      tmp_y1 = output_raw$tmp_y1,
+                      tmp_x2 = output_raw$tmp_x2,
+                      tmp_y2 = output_raw$tmp_y2,
+                      tmp_dist = output_raw$tmp_dist,
+                      tmp_area_inv = output_raw$tmp_area_inv)
   
   # return invisibly
   invisible(proj)

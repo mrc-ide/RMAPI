@@ -13,7 +13,9 @@ using namespace std;
 // check if value is within ellipse
 // x and y are the coordinates of the query point. f1 and f2 are the two foci of
 // the ellipse. a is the linear eccentricity of the ellipse.
-bool ellipse_check(const double x, const double y, const double xf1, const double yf1, const double xf2, const double yf2, const double a) {
+bool ellipse_check(const double x, const double y,
+                   const double xf1, const double yf1, const double xf2, const double yf2,
+                   const double a) {
   return dist_euclid_2d(x, y, xf1, yf1) + dist_euclid_2d(x, y, xf2, yf2) <= 2*a;
 }
 
@@ -35,14 +37,13 @@ Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
 	vector<double> node_long = rcpp_to_vector_double(args["node_long"]);                  //Longitude of data nodes
 	vector<double> node_lat = rcpp_to_vector_double(args["node_lat"]);                    //Latitude of data nodes
 	vector<double> edge_value = rcpp_to_vector_double(args["edge_value"]);                //Values of edges
-	//vector<double> edge_value_pred = rcpp_to_vector_double(args["edge_value_pred"]);      //Values of edges predicted from model fit
 	vector<vector<int>> edge_group_list = rcpp_to_matrix_int(args["edge_group_list"]);    //List of which edges belong to each group
 	vector<double> hex_long = rcpp_to_vector_double(args["hex_long"]);                    //Longitude of hex cells
 	vector<double> hex_lat = rcpp_to_vector_double(args["hex_lat"]);                      //Latitude of hex cells
 	int Nperms = rcpp_to_int(args["n_perms"]);                                            //Number of permutations to run (if 0, no permutation)
 	int min_intersections = rcpp_to_int(args["min_intersections"]);                       //Minimum number of ellipses required to insect a hex
 	double eccentricity = rcpp_to_double(args["eccentricity"]);                           //Eccentricity of ellipses (see help for details)
-	double inv_eccentricity = 1.0 / eccentricity;
+	double inv_eccentricity = 1.0 / eccentricity;                                         //Define inverse of eccentricity
 	bool report_progress = rcpp_to_bool(args["report_progress"]);                         //Whether to update progress bar
 	Rcpp::Function update_progress = args_functions["update_progress"];                   //R function for updating progress bar
   
@@ -52,6 +53,7 @@ Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
 	int Nnodes = node_long.size();                  //Number of nodes
 	int Nells = edge_value.size();                  //Number of ellipses (edges)
 	int Nhex = hex_long.size();                     //Number of hex cells
+	
   
 	//Create ellipses ------------------------------------------------------------------------------------------------
   
@@ -105,9 +107,19 @@ Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
 	vector<int> Nintersections(Nhex, 0);		//Number of ellipses intersecting hex
 	vector<vector<int>> intersections(Nhex);	//List of ellipses intersecting each hex
 	
+	// DEBUG - DELETE THE FOLLOWING LINES ONCE COMPLETE
+	vector<vector<double>> tmp_v(Nhex);
+	vector<vector<double>> tmp_x1(Nhex);
+	vector<vector<double>> tmp_y1(Nhex);
+	vector<vector<double>> tmp_x2(Nhex);
+	vector<vector<double>> tmp_y2(Nhex);
+	vector<vector<double>> tmp_dist(Nhex);
+	vector<vector<double>> tmp_area_inv(Nhex);
+	
 	// loop through hexes
 	for (hex = 0; hex < Nhex; hex++)
 	{
+	  
 		Nint = 0;
 		// test every ellipse for intersection with this hex
 		for (ell = 0; ell < Nells; ell++)
@@ -122,6 +134,16 @@ Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
 				// store this intersection
 				intersections[hex].push_back(ell);
 				Nint++;
+				
+				// DEBUG - DELETE THE FOLLOWING LINES ONCE COMPLETE
+				tmp_v[hex].push_back(edge_value[ell]);
+				tmp_x1[hex].push_back(xfocus1[ell]);
+				tmp_y1[hex].push_back(yfocus1[ell]);
+				tmp_x2[hex].push_back(xfocus2[ell]);
+				tmp_y2[hex].push_back(yfocus2[ell]);
+				tmp_dist[hex].push_back(2*semi_major[ell]/inv_eccentricity);
+				tmp_area_inv[hex].push_back(area_inv[ell]);
+				
 			}
 		}
 		// divide hex value by weight
@@ -159,7 +181,9 @@ Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
 		for (perm = 0; perm < Nperms; perm++)
 		{
 			// report progress
-			if (report_progress) { update_progress(args_progress, "pb", perm, Nperms-1); }
+			if (report_progress) {
+			  update_progress(args_progress, "pb", perm+1, Nperms);
+			}
 			
 			// new permutation
 			reshuffle_group(perm_vec, edge_group_list);
@@ -193,7 +217,14 @@ Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
 	return Rcpp::List::create(Rcpp::Named("hex_values") = hex_values,
                            Rcpp::Named("hex_weights") = hex_weights,
                            Rcpp::Named("hex_ranks") = hex_ranks,
-                           Rcpp::Named("Nintersections") = Nintersections);
+                           Rcpp::Named("Nintersections") = Nintersections,
+                           Rcpp::Named("tmp_v") = tmp_v,
+                           Rcpp::Named("tmp_x1") = tmp_x1,
+                           Rcpp::Named("tmp_y1") = tmp_y1,
+                           Rcpp::Named("tmp_x2") = tmp_x2,
+                           Rcpp::Named("tmp_y2") = tmp_y2,
+                           Rcpp::Named("tmp_dist") = tmp_dist,
+                           Rcpp::Named("tmp_area_inv") = tmp_area_inv);
 }
 
 //------------------------------------------------

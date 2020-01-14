@@ -79,6 +79,7 @@ plot_dist <- function(proj, col = "#00000050", overlay_model = TRUE) {
 #' @param return_type format of return object: 1 = a \code{gridExtra} object, 2
 #'   = a list of \code{ggplot2} objects.
 #' 
+#' @import sf
 #' @import ggplot2
 #' @import gridExtra
 #' @export
@@ -107,7 +108,7 @@ plot_coverage <- function(proj, eccentricity = 0.9, n_ell = 20, return_type = 1)
   
   # convert ellipses and polys to st_sfc
   ell_sfc <- sf::st_sfc(ell_list)
-  hex_sfc <- sf::st_as_sfc(proj$map$hex)
+  hex_sfc <- proj$map$hex
   
   # get number of intersections per hex
   intersect_vec <- colSums(as.matrix(sf::st_intersects(ell_sfc, hex_sfc)))
@@ -116,10 +117,6 @@ plot_coverage <- function(proj, eccentricity = 0.9, n_ell = 20, return_type = 1)
   cut_breaks <- c(0,50,100,200,300,400,600,800,1000,2000,Inf)
   intersect_bin <- cut(intersect_vec, breaks = cut_breaks)
   
-  # get hex data into dataframe
-  hex_df <- ggplot2::fortify(proj$map$hex)
-  hex_df$col <- intersect_bin[as.numeric(hex_df$group)]
-  
   # -------- Map --------
   
   # basic plot
@@ -127,7 +124,7 @@ plot_coverage <- function(proj, eccentricity = 0.9, n_ell = 20, return_type = 1)
                                          panel.grid.minor = element_blank())
   
   # add hexs
-  plot1 <- plot1 + geom_polygon(aes(x = long, y = lat, group = group, fill = col), data = hex_df)
+  plot1 <- plot1 + geom_sf(aes(fill = intersect_bin), data = proj$map$hex)
   
   # add points
   plot1 <- plot1 + geom_point(aes(x = long, y = lat), size = 0.5, data = proj$data$coords)
@@ -135,7 +132,7 @@ plot_coverage <- function(proj, eccentricity = 0.9, n_ell = 20, return_type = 1)
   # titles and legends
   plot1 <- plot1 + scale_fill_manual(values = col_hotcold(10), name = "no.intersections")
   plot1 <- plot1 + xlab("longitude") + ylab("latitude")
-  plot1 <- plot1 + guides(fill = guide_legend(reverse=T))
+  plot1 <- plot1 + guides(fill = guide_legend(reverse = T))
   
   # -------- Histogram --------
   
@@ -178,7 +175,7 @@ plot_coverage <- function(proj, eccentricity = 0.9, n_ell = 20, return_type = 1)
 #' @importFrom viridisLite magma
 #' @export
 
-plot_map <- function(proj, variable = NULL, col_scale = magma(100), barrier_list = list()) {
+plot_map <- function(proj, variable = NULL, col_scale = viridisLite::magma(100), barrier_list = list()) {
 	
   # check inputs
   assert_custom_class(proj, "rmapi_project")
@@ -211,15 +208,16 @@ plot_map <- function(proj, variable = NULL, col_scale = magma(100), barrier_list
   }
   
   # get hex data into dataframe
-  hex_df <- ggplot2::fortify(proj$map$hex)
-  hex_df$col <- col_vec[as.numeric(hex_df$group)]
+  #hex_df <- ggplot2::fortify(proj$map$hex)
+  #hex_df$col <- col_vec[as.numeric(hex_df$group)]
   
   # produce plot
   plot1 <- ggplot() + theme_bw() + theme(panel.grid.major = element_blank(),
                                          panel.grid.minor = element_blank())
   
   # add hexs
-  plot1 <- plot1 + geom_polygon(aes(x = long, y = lat, group = group, fill = col), data = hex_df)
+  #plot1 <- plot1 + geom_polygon(aes(x = long, y = lat, group = group, fill = col), data = hex_df)
+  plot1 <- plot1 + geom_sf(aes(fill = col_vec), data = proj$map$hex)
   
   # add points
   plot1 <- plot1 + geom_point(aes(x = long, y = lat), shape = 21, color = "white", fill = "black", size = 1, data = proj$data$coords)
@@ -235,7 +233,6 @@ plot_map <- function(proj, variable = NULL, col_scale = magma(100), barrier_list
   # add barrier polygons
   if (nb > 0) {
     for (i in 1:nb) {
-      #plot1 <- plot1 + geom_polygon(aes(x = long, y = lat), col = "black", fill = "#00000050", data = as.data.frame(barrier_list[[i]]))
       plot1 <- plot1 + geom_polygon(aes(x = long, y = lat), col = "white", fill = NA, data = as.data.frame(barrier_list[[i]]))
     }
   }

@@ -186,10 +186,9 @@ sim_falciparum <- function(a = 0.3,
           return(ret)
         }, output_raw$genotypes[[i]][[j]], SIMPLIFY = FALSE)
         
-        # get number of haplotypes
-        indlevel[[i]][[j]]$n_haplotypes <- mapply(length, haplotype_ID)
-        
+        # store haplotypes and number of haplotypes
         indlevel[[i]][[j]]$haplotype_ID <- haplotype_ID
+        indlevel[[i]][[j]]$n_haplotypes <- mapply(length, haplotype_ID)
       }
     }
   }

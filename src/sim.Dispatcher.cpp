@@ -59,14 +59,14 @@ Dispatcher::Dispatcher(Parameters &parameters, Rcpp::Function &update_progress, 
   // integer index of infective hosts only
   host_index = array_2d_int(n_demes);
   host_infective_index = vector<vector<int>>(n_demes);
-  for (int k=0; k<n_demes; ++k) {
+  for (int k = 0; k < n_demes; ++k) {
     host_index[k] = seq_int(k*H, (k+1)*H-1);
     reshuffle(host_index[k]);
   }
   
   // initialise hosts
-  for (int k=0; k<n_demes; ++k) {
-    for (int i=0; i<H; ++i) {
+  for (int k = 0; k < n_demes; ++k) {
+    for (int i = 0; i < H; ++i) {
       int this_host = host_index[k][i];
       host_pop[this_host].init(this_host, next_host_ID, k, Sh, Eh, Ih, host_infective_index,
                                schedule_death, schedule_Eh_to_Ih, schedule_Ih_to_Sh,
@@ -77,8 +77,8 @@ Dispatcher::Dispatcher(Parameters &parameters, Rcpp::Function &update_progress, 
   }
   
   // seed initial infections
-  for (int k=0; k<n_demes; ++k) {
-    for (int i=0; i<param_ptr->seed_infections[k]; i++) {
+  for (int k = 0; k < n_demes; ++k) {
+    for (int i = 0; i < param_ptr->seed_infections[k]; i++) {
       host_pop[host_index[k][i]].denovo_infection();
     }
   }
@@ -98,14 +98,14 @@ Dispatcher::Dispatcher(Parameters &parameters, Rcpp::Function &update_progress, 
   mosq_pop = vector<Mosquito>(M_total);
   
   // initialise mosquitoes
-  for (int i=0; i<M_total; ++i) {
+  for (int i = 0; i < M_total; ++i) {
     mosq_pop[i].init(param_ptr);
   }
   
   // store integer index of mosquitoes at various stages
   Sv_index = array_2d_int(n_demes);
   int M_cum = 0;
-  for (int k=0; k<n_demes; ++k) {
+  for (int k = 0; k < n_demes; ++k) {
     Sv_index[k] = seq_int(M_cum, M_cum+param_ptr->M_vec[k]-1);
     M_cum += param_ptr->M_vec[k];
   }
@@ -137,10 +137,10 @@ void Dispatcher::simulate() {
   int index_time_out = 0;
   
   // vector for randomly changing the order in which migration is applied
-  vector<int> mig_order = seq_int(0,param_ptr->n_mig_list-1);
+  vector<int> mig_order = seq_int(0, param_ptr->n_mig_list-1);
   
   // loop through daily time steps
-  for (int t=1; t<=max_time; t++) {
+  for (int t = 1; t <= max_time; t++) {
     
     // report progress
     if (param_ptr->report_progress) {
