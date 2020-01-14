@@ -10,7 +10,7 @@ plot_leaflet(
   fill_opacity = 0.8,
   legend_opacity = 1,
   map_type = 97,
-  col_scale = magma(100)
+  col_scale = viridisLite::magma(100)
 )
 }
 \arguments{

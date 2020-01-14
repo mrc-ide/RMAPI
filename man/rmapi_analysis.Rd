@@ -32,7 +32,7 @@ foci).}
   is identical to the original MAPI method, if \code{n_breaks > 1} then a
   spatial permutation test is implemented in which edges are binned based
   on spatial distance and permutation only occurs within a bin.
-  \item permutation test on residuals. The fitted model from a previously
+  \item permutation test on residuals. The fitted model from a previous
   call of \code{fit_model()} is used to compute residuals, and the
   permutation test method is carried out on residual values. As with method
   1, this permutation test can be spatially binned.

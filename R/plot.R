@@ -357,7 +357,7 @@ plot_map2 <- function(proj, col_scale = magma(100), barrier_list = list(), tails
 #' @export
 
 plot_leaflet <- function(proj, variable = NULL, fill_opacity = 0.8, legend_opacity = 1,
-                         map_type = 97, col_scale = magma(100)) {
+                         map_type = 97, col_scale = viridisLite::magma(100)) {
   
   # check inputs
   assert_custom_class(proj, "rmapi_project")
@@ -378,10 +378,8 @@ plot_leaflet <- function(proj, variable = NULL, fill_opacity = 0.8, legend_opaci
     x <- proj$output[[variable]]
   }
   
-  # combine chosen variable with hex map to produce SpatialPolygonsDataFrame object 
-  poly_df <- data.frame(col = x)
-  rownames(poly_df) <- sapply(slot(proj$map$hex, "polygons"), function(x) slot(x, "ID"))
-  hex_spdf <- SpatialPolygonsDataFrame(proj$map$hex, poly_df)
+  # add colour variable to hex map
+  hex_sf <- st_sf(geom = proj$map$hex, col = x)
   
   # define colour ramp and palette
   col_ramp <- colorRamp(col_scale)
@@ -391,8 +389,8 @@ plot_leaflet <- function(proj, variable = NULL, fill_opacity = 0.8, legend_opaci
   pal <- colorNumeric(col_ramp, domain = x)
   
   # produce basic leaflet plot
-  plot1 <- leaflet(hex_spdf)
-  plot1 <-  addProviderTiles(plot1, leaflet::providers[[map_type]])
+  plot1 <- leaflet(hex_sf)
+  plot1 <- addProviderTiles(plot1, leaflet::providers[[map_type]])
   
   # add hex polygons
   plot1 <- addPolygons(plot1, color = NA, fillColor = ~pal(col), fillOpacity = fill_opacity)
