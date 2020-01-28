@@ -211,6 +211,7 @@ plot_map <- function(proj, variable = NULL, col_scale = viridisLite::magma(100),
   }
   
   # get hex data into dataframe
+  
   #hex_df <- ggplot2::fortify(proj$map$hex)
   #hex_df$col <- col_vec[as.numeric(hex_df$group)]
   
@@ -261,14 +262,15 @@ plot_map <- function(proj, variable = NULL, col_scale = viridisLite::magma(100),
 #' importFrom viridisLite magma
 #' export
 #' @noRd
-
-plot_map2 <- function(proj, col_scale = magma(100), barrier_list = list(), tails=c(0,1)) {
-	
+plot_map2 <- function(proj, variable = NULL, col_scale = viridisLite::magma(100), barrier_list = list(), tails=c(0,1)) {
+  
   # check inputs
   assert_custom_class(proj, "rmapi_project")
+  if (!is.null(variable)) {
+    assert_in(variable, names(proj$output))
+  }
   assert_list(barrier_list)
   assertthat::assert_that(length(tails)==2)
-  #assert_that(proj$output$hex_ranks!=NULL)
   nb <- length(barrier_list)
   if (nb > 0) {
     for (i in 1:nb) {
@@ -281,23 +283,31 @@ plot_map2 <- function(proj, col_scale = magma(100), barrier_list = list(), tails
   
   # produce default colours
   add_legend <- TRUE
-  col_vec <- proj$output$hex_values
-  
-  # get hex data into dataframe
-  hex_df <- ggplot2::fortify(proj$map$hex)
-  hex_df$col <- col_vec[as.numeric(hex_df$group)]
+  if (is.null(variable)) {
+    if ("hex_values" %in% names(proj$output)) {
+      variable <- "hex_values"
+      col_vec <- proj$output$hex_values
+    } else {
+      add_legend <- FALSE
+      col_vec <- rep(0, length(proj$map$hex))
+    }
+  } else {
+    col_vec <- proj$output[[variable]]
+  }
   
   # create frame of statistically significant data values
-  hex_df2 <- hex_df
-  nhexpts=length(hex_df$long)
-  for(i in 1:nhexpts)
+  nhexes=length(proj$output$hex_values)
+  sig_hexes <- data.frame(long=rep(NA,nhexes*7),lat=rep(NA,nhexes*7))
+  for(i in 1:nhexes)
   {
-    hex_num = (((i-1) - ((i-1)%%7))/7)+1
-    long=hex_df$long[i]
-    lat=hex_df$lat[i]
-    if(proj$output$hex_ranks[hex_num] < tails[1] || proj$output$hex_ranks[hex_num] > tails[2]){} else{
-      hex_df2$long[i]=NA
-      hex_df2$lat[i]=NA
+    if(is.null(proj$output$hex_ranks[i])==FALSE){
+      if(proj$output$hex_ranks[i] > tails[1] || proj$output$hex_ranks[i] < tails[2]){
+        for(j in 1:7){
+          k=((i-1)*7)+j
+          sig_hexes$long[k]=proj$map$hex[[i]][[1]][j,1]
+          sig_hexes$lat[k]=proj$map$hex[[i]][[1]][j,2]
+        }
+      }
     }
   }
   
@@ -306,13 +316,14 @@ plot_map2 <- function(proj, col_scale = magma(100), barrier_list = list(), tails
                                          panel.grid.minor = element_blank())
   
   # add hexes
-  plot1 <- plot1 + geom_polygon(aes(x = long, y = lat, fill = col), data = hex_df)
+  plot1 <- plot1 + geom_sf(aes(fill = col_vec), data = proj$map$hex)
   
   # overlay statistically significant hexes, outlines
-  plot1 <- plot1 + geom_polygon(aes(x = long, y = lat, fill = col), data = hex_df2, colour = "white", size = 0.5)
+  plot1 <- plot1 + geom_polygon(aes(x=long,y=lat), data = sig_hexes, colour = "black", fill=NA, size = 0.5)
   
   # add points
-  plot1 <- plot1 + geom_point(aes(x = long, y = lat), shape = 21, color = "white", fill = "black", size = 1, data = proj$data$coords)
+  coords <- data.frame(long <- proj$data$coords$long, lat <- proj$data$coords$lat)
+  plot1 <- plot1 + geom_point(aes(x = long, y = lat), shape = 21, color = "white", fill = "black", size = 1, data = coords)
   
   # titles and legends
   if (add_legend) {
@@ -330,7 +341,7 @@ plot_map2 <- function(proj, col_scale = magma(100), barrier_list = list(), tails
     }
   }
   
-	# return plot object
+  # return plot object
   return(plot1)
 }
 
