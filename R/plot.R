@@ -179,7 +179,7 @@ plot_coverage <- function(proj, eccentricity = 0.9, n_ell = 20, return_type = 1)
 #' @export
 
 plot_map <- function(proj, variable = NULL, col_scale = viridisLite::magma(100), barrier_list = list()) {
-	
+  
   # check inputs
   assert_custom_class(proj, "rmapi_project")
   if (!is.null(variable)) {
@@ -209,11 +209,6 @@ plot_map <- function(proj, variable = NULL, col_scale = viridisLite::magma(100),
   } else {
     col_vec <- proj$output[[variable]]
   }
-  
-  # get hex data into dataframe
-  
-  #hex_df <- ggplot2::fortify(proj$map$hex)
-  #hex_df$col <- col_vec[as.numeric(hex_df$group)]
   
   # produce plot
   plot1 <- ggplot() + theme_bw() + theme(panel.grid.major = element_blank(),
@@ -241,7 +236,7 @@ plot_map <- function(proj, variable = NULL, col_scale = viridisLite::magma(100),
     }
   }
   
-	# return plot object
+  # return plot object
   return(plot1)
 }
 
@@ -262,13 +257,14 @@ plot_map <- function(proj, variable = NULL, col_scale = viridisLite::magma(100),
 #' importFrom viridisLite magma
 #' export
 #' @noRd
-plot_map2 <- function(proj, variable = NULL, col_scale = viridisLite::magma(100), barrier_list = list(), tails=c(0,1)) {
+
+plot_map2 <- function(proj, variable = NULL, col_scale = magma(100), barrier_list = list(), tails=c(0,1)) {
   
   # check inputs
   assert_custom_class(proj, "rmapi_project")
-  if (!is.null(variable)) {
-    assert_in(variable, names(proj$output))
-  }
+  type=typeof(proj$map$hex)
+  assertthat::assert_that(type=="list" || type=="S4")
+  if(type=="list") {map_type=1 } else { map_type=2 }
   assert_list(barrier_list)
   assertthat::assert_that(length(tails)==2)
   nb <- length(barrier_list)
@@ -295,37 +291,32 @@ plot_map2 <- function(proj, variable = NULL, col_scale = viridisLite::magma(100)
     col_vec <- proj$output[[variable]]
   }
   
-  # create frame of statistically significant data values
-  nhexes=length(proj$output$hex_values)
-  sig_hexes <- data.frame(long=rep(NA,nhexes*7),lat=rep(NA,nhexes*7))
-  for(i in 1:nhexes)
-  {
-    if(is.null(proj$output$hex_ranks[i])==FALSE){
-      if(proj$output$hex_ranks[i] > tails[1] || proj$output$hex_ranks[i] < tails[2]){
-        for(j in 1:7){
-          k=((i-1)*7)+j
-          sig_hexes$long[k]=proj$map$hex[[i]][[1]][j,1]
-          sig_hexes$lat[k]=proj$map$hex[[i]][[1]][j,2]
-        }
-      }
-    }
-  }
-  
-  # produce plot
+  # Create plot
   plot1 <- ggplot() + theme_bw() + theme(panel.grid.major = element_blank(),
                                          panel.grid.minor = element_blank())
   
-  # add hexes
-  plot1 <- plot1 + geom_sf(aes(fill = col_vec), data = proj$map$hex)
+  # Hexes without borders with fill colour corresponding to value
+  nhexes=length(col_vec)
+  hex_df <- list()
+  for(i in 1:nhexes){
+    if(map_type==1){hex_coords=proj$map$hex[[i]][1][[1]]} else { hex_coords=proj$map$hex[i][1]@polygons[[1]]@Polygons[[1]]@coords }
+    hex_df[[i]]=data.frame(long=hex_coords[,1],lat=hex_coords[,2],value=rep(col_vec[i],7))
+    plot1 <- plot1 + geom_polygon(aes(x = long, y = lat, fill=value), data = hex_df[[i]], colour = NA, size = 0)
+  }
   
-  # overlay statistically significant hexes, outlines
-  plot1 <- plot1 + geom_polygon(aes(x=long,y=lat), data = sig_hexes, colour = "black", fill=NA, size = 0.5)
+  # Unfilled hexes with white borders showing which hexes are statistically significant
+  for(i in 1:nhexes){
+    if(is.na(proj$output$hex_ranks[i])==FALSE && proj$output$hex_ranks[i]>=0.1 && proj$output$hex_ranks[i]<=1){ 
+      plot1 <- plot1 + geom_polygon(aes(x = long, y = lat), data = hex_df[[i]], colour = "white", fill = NA, size = 0.5)
+    }
+  }
   
-  # add points
+  # Add points
   coords <- data.frame(long <- proj$data$coords$long, lat <- proj$data$coords$lat)
   plot1 <- plot1 + geom_point(aes(x = long, y = lat), shape = 21, color = "white", fill = "black", size = 1, data = coords)
+  plot1
   
-  # titles and legends
+  # Titles and legends
   if (add_legend) {
     plot1 <- plot1 + scale_fill_gradientn(colours = col_scale, name = "hex_values")
   } else {
