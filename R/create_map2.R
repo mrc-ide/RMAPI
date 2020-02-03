@@ -42,8 +42,8 @@ create_map2 <- function(proj, hex_size = 1, buffer = 0,outline) {
   # user.
   
   # get convex hull of data
-  ch_data <- chull(x=outline$Long,y=outline$Lat)
-  ch_data_coords <- outline[c(ch_data, ch_data[1]), c("Long", "Lat")]
+  # ch_data <- chull(x=outline$Long,y=outline$Lat)
+  # ch_data_coords <- outline[c(ch_data, ch_data[1]), c("Long", "Lat")]
 
   # get convex hull in SpatialPolygons format and expand by fixed buffer of two hexs
   bounding_poly_original_raw <- sp::SpatialPolygons(list(sp::Polygons(list(sp::Polygon(outline)), ID = 1)))

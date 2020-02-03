@@ -84,8 +84,17 @@ Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
 			dist = dist_euclid_2d(node_long[node1], node_lat[node1], node_long[node2], node_lat[node2]);
 			linear_eccentricity = 0.5 * dist;
 			semi_major[ell] = linear_eccentricity*inv_eccentricity;
-			semi_minor = sqrt(sq(semi_major[ell]) - sq(linear_eccentricity));
-			area_inv[ell] = 1.0 / (M_PI * semi_major[ell] * semi_minor);
+			if (dist > 0.0) 
+			{
+				semi_minor = sqrt(sq(semi_major[ell]) - sq(linear_eccentricity));
+				area_inv[ell] = 1.0 / (M_PI * semi_major[ell] * semi_minor); 
+			}
+			else 
+			{
+				area_inv[ell] = 0.0;
+				edge_value[ell] = 0.0;
+			}
+			
       
 			// store weighted value of ellipse
 			//edge_weighted[ell] = edge_value[ell] * area_inv[ell];
@@ -143,7 +152,7 @@ Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
 				tmp_y1[hex].push_back(yfocus1[ell]);
 				tmp_x2[hex].push_back(xfocus2[ell]);
 				tmp_y2[hex].push_back(yfocus2[ell]);
-				tmp_dist[hex].push_back(2*semi_major[ell]/inv_eccentricity);
+				tmp_dist[hex].push_back(2 * semi_major[ell] / inv_eccentricity);
 				tmp_area_inv[hex].push_back(area_inv[ell]);
 				
 			}
