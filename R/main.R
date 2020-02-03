@@ -398,7 +398,8 @@ rmapi_analysis <- function(proj, eccentricity = 0.5, null_method = 1,
                       tmp_x2 = output_raw$tmp_x2,
                       tmp_y2 = output_raw$tmp_y2,
                       tmp_dist = output_raw$tmp_dist,
-                      tmp_area_inv = output_raw$tmp_area_inv)
+                      tmp_area_inv = output_raw$tmp_area_inv,
+                      tmp_edge_index = output_raw$tmp_edge_index)
   
   # return invisibly
   invisible(proj)

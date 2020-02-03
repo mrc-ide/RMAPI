@@ -108,6 +108,7 @@ Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
 	vector<vector<int>> intersections(Nhex);	//List of ellipses intersecting each hex
 	
 	// DEBUG - DELETE THE FOLLOWING LINES ONCE COMPLETE
+	vector<vector<double>> tmp_edge_index(Nhex);
 	vector<vector<double>> tmp_v(Nhex);
 	vector<vector<double>> tmp_x1(Nhex);
 	vector<vector<double>> tmp_y1(Nhex);
@@ -136,6 +137,7 @@ Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
 				Nint++;
 				
 				// DEBUG - DELETE THE FOLLOWING LINES ONCE COMPLETE
+				tmp_edge_index[hex].push_back(ell+1);
 				tmp_v[hex].push_back(edge_value[ell]);
 				tmp_x1[hex].push_back(xfocus1[ell]);
 				tmp_y1[hex].push_back(yfocus1[ell]);
@@ -224,7 +226,8 @@ Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
                            Rcpp::Named("tmp_x2") = tmp_x2,
                            Rcpp::Named("tmp_y2") = tmp_y2,
                            Rcpp::Named("tmp_dist") = tmp_dist,
-                           Rcpp::Named("tmp_area_inv") = tmp_area_inv);
+                           Rcpp::Named("tmp_area_inv") = tmp_area_inv,
+                           Rcpp::Named("tmp_edge_index") = tmp_edge_index);
 }
 
 //------------------------------------------------

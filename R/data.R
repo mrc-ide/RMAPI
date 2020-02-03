@@ -149,7 +149,8 @@ sim_simple <- function(node_long,
   }  # end apply barrier penalties
   
   # get pairwise distance plus penalty
-  d <- dist(cbind(node_long, node_lat)) + intersect_penalty
+  d <- get_spatial_distance(node_long, node_lat) + intersect_penalty
+  #d <- dist(cbind(node_long, node_lat)) + intersect_penalty
   
   # apply transformation
   if (dist_transform == 2) {
