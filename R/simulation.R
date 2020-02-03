@@ -1,5 +1,153 @@
 
 #------------------------------------------------
+#' @title Get distance between points taking into account barriers
+#'
+#' @description Given a set of lat/lon coordinates and a list of barriers in the
+#'   form of polygons, returns the "distance" between points where distance is
+#'   equal to the great-circle distance with a penalty applied if the line
+#'   intersects a barrier. The exact way in which barriers modify distances can
+#'   be varied (see \code{barrier_method} argument).
+#'
+#' @param node_long longitudes of nodes.
+#' @param node_lat latitudes of nodes.
+#' @param barrier_list list of polygons representing barriers. Each element of
+#'   the list must be a dataframe with columns \code{long} and \code{lat}
+#'   specifying the coordinates of points that make up the polygon. Polygons
+#'   must be complete rings, meaning the final row of the dataframe must equal
+#'   the first row.
+#' @param barrier_penalty penalty values of each barrier. If a single value is
+#'   provided then this value will be used for all barriers.
+#' @param barrier_method the method by which penalties are applied:
+#'   \itemize{
+#'     \item{bullet 1 compare line, apply penalty on intersection}
+#'     \item{bullet 2 compare line, apply penalty per unit intersection}
+#'     \item{bullet 3 compare ellipse, apply penalty per unit area intersection}
+#'   }
+#' @param eccentricity eccentricity of ellipses (only used under
+#'   \code{barrier_method = 3}).
+#' @param n_ell number of points that make up an ellipse (only used under
+#'   \code{barrier_method = 3}).
+#'
+#' @import sf
+#' @importFrom stats dist
+#' @export
+
+get_barrier_intersect <- function(node_long,
+                                  node_lat,
+                                  barrier_list = list(),
+                                  barrier_penalty = numeric(),
+                                  barrier_method = 1,
+                                  eccentricity = 0.9,
+                                  n_ell = 20) {
+  
+  # check inputs
+  assert_vector_numeric(node_long)
+  assert_vector_numeric(node_lat)
+  assert_same_length(node_long, node_lat)
+  assert_list(barrier_list)
+  nb <- length(barrier_list)
+  if (nb > 0) {
+    for (i in 1:nb) {
+      assert_dataframe(barrier_list[[i]])
+      assert_in(c("long", "lat"), names(barrier_list[[i]]))
+      assert_eq(barrier_list[[i]][1,], barrier_list[[i]][nrow(barrier_list[[i]]),], 
+                message = "barrier polygons must be rungs, such that the last node coordinate equals the first")
+    }
+  }
+  assert_vector_numeric(barrier_penalty)
+  assert_single_pos_int(barrier_method)
+  assert_in(barrier_method, 1:3)
+  assert_single_bounded(eccentricity, inclusive_left = FALSE)
+  assert_single_pos_int(n_ell, zero_allowed = FALSE)
+  
+  # force barrier_penalty to vector
+  barrier_penalty <- force_vector(barrier_penalty, length(barrier_list))
+  assert_same_length(barrier_penalty, barrier_list)
+  
+  # apply barrier penalties
+  intersect_penalty <- 0
+  if (nb > 0) {
+    
+    # convert barrier list to st_polygon
+    poly_list <- list()
+    for (i in 1:length(barrier_list)) {
+      poly_list[[i]] <- sf::st_polygon(list(as.matrix(barrier_list[[i]])))
+    }
+    
+    # get node coordinates in matrix
+    node_mat <- cbind(node_long, node_lat)
+    
+    # if comparing lines
+    if (barrier_method %in% c(1,2)) {
+      
+      # create all pairwise sf_linestring between nodes
+      line_list <- list()
+      n_node <- length(node_long)
+      i2 <- 0
+      for (i in 1:(n_node-1)) {
+        for (j in (i+1):n_node) {
+          i2 <- i2 + 1
+          line_list[[i2]] <- sf::st_linestring(node_mat[c(i,j),])
+        }
+      }
+      
+      # convert lines and polys to st_sfc
+      line_sfc <- sf::st_sfc(line_list)
+      poly_sfc <- sf::st_sfc(poly_list)
+      
+      # get boolean intersection matrix
+      intersect_mat <- as.matrix(sf::st_intersects(line_sfc, poly_sfc))
+      
+      # convert to length of intersection if using method 2
+      if (barrier_method == 2) {
+        intersect_mat[intersect_mat == TRUE] <- mapply(function(x) {
+          sf::st_length(x)
+        }, sf::st_intersection(line_sfc, poly_sfc))
+      }
+    }
+    
+    # if comparing ellipse
+    if (barrier_method == 3) {
+      
+      # create all pairwise ellipses between nodes
+      ell_list <- list()
+      n_node <- length(node_long)
+      i2 <- 0
+      for (i in 1:(n_node-1)) {
+        for (j in (i+1):n_node) {
+          i2 <- i2 + 1
+          ell_df <- get_ellipse(f1 = node_mat[i,], f2 = node_mat[j,], ecc = eccentricity, n = n_ell)
+          ell_list[[i2]] <- sf::st_polygon(list(as.matrix(ell_df)))
+        }
+      }
+      
+      # convert ellipses and polys to st_sfc
+      ell_sfc <- sf::st_sfc(ell_list)
+      poly_sfc <- sf::st_sfc(poly_list)
+      
+      # get boolean intersection matrix
+      intersect_mat <- as.matrix(sf::st_intersects(ell_sfc, poly_sfc))
+      
+      # convert to area of intersection
+      intersect_mat[intersect_mat == TRUE] <- mapply(function(x) {
+        sf::st_area(x)
+      }, sf::st_intersection(ell_sfc, poly_sfc))
+      
+    }
+    
+    # apply penalty
+    intersect_penalty <- rowSums(sweep(intersect_mat, 2, barrier_penalty, '*'))
+    
+  }  # end apply barrier penalties
+  
+  # get pairwise distance plus penalty
+  d <- get_spatial_distance(node_long, node_lat) + intersect_penalty
+  
+  # return matrix
+  return(as.matrix(d))
+}
+
+#------------------------------------------------
 #' @title Simulate genetic data from simple P. falciparum dynamic model
 #'
 #' @description Simulate genetic data from simple P. falciparum dynamic model.

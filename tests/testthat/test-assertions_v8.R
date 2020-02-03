@@ -1,11 +1,11 @@
-context("assertions_v5")
+context("assertions_v6")
 
 #------------------------------------------------
 test_that("nice_format working correctly", {
   expect_true(nice_format(NULL) == "")
   expect_true(nice_format(5) == "5")
   expect_true(nice_format(1:5) == "{1, 2, 3, 4, 5}")
-  nice_format(c("foo", "bar") == "{foo, bar}")
+  expect_equal(nice_format(c("foo", "bar")), "{foo, bar}")
 })
 
 #------------------------------------------------
@@ -218,6 +218,71 @@ test_that("assert_vector working correctly", {
   expect_error(assert_vector(matrix(5,3,3)))
   expect_error(assert_vector(list(1:5, 1:10)))
   expect_error(assert_vector(data.frame(1:5, 2:6)))
+})
+
+#------------------------------------------------
+test_that("assert_vector_numeric working correctly", {
+  expect_true(assert_vector_numeric(1))
+  expect_true(assert_vector_numeric(1:5))
+  
+  expect_error(assert_vector_numeric(NULL))
+  expect_error(assert_vector_numeric(c("a", "b")))
+  expect_error(assert_vector_numeric(matrix(5,3,3)))
+  expect_error(assert_vector_numeric(list(1:5, 1:10)))
+  expect_error(assert_vector_numeric(data.frame(1:5, 2:6)))
+})
+
+#------------------------------------------------
+test_that("assert_vector_int working correctly", {
+  expect_true(assert_vector_int(1))
+  expect_true(assert_vector_int(1:5))
+  
+  expect_error(assert_vector_int(NULL))
+  expect_error(assert_vector_int(c("a", "b")))
+  expect_error(assert_vector_int(c(0.5, 1.5)))
+  expect_error(assert_vector_int(matrix(5,3,3)))
+  expect_error(assert_vector_int(list(1:5, 1:10)))
+  expect_error(assert_vector_int(data.frame(1:5, 2:6)))
+})
+
+#------------------------------------------------
+test_that("assert_vector_pos_int working correctly", {
+  expect_true(assert_vector_pos_int(1))
+  expect_true(assert_vector_pos_int(1:5))
+  
+  expect_error(assert_vector_pos_int(NULL))
+  expect_error(assert_vector_pos_int(c("a", "b")))
+  expect_error(assert_vector_pos_int(c(0.5, 1.5)))
+  expect_error(assert_vector_pos_int(-2:2))
+  expect_error(assert_vector_pos_int(matrix(5,3,3)))
+  expect_error(assert_vector_pos_int(list(1:5, 1:10)))
+  expect_error(assert_vector_pos_int(data.frame(1:5, 2:6)))
+})
+
+#------------------------------------------------
+test_that("assert_vector_pos working correctly", {
+  expect_true(assert_vector_pos(1))
+  expect_true(assert_vector_pos(1:5))
+  
+  expect_error(assert_vector_pos(NULL))
+  expect_error(assert_vector_pos(c("a", "b")))
+  expect_error(assert_vector_pos(-1))
+  expect_error(assert_vector_pos(matrix(5,3,3)))
+  expect_error(assert_vector_pos(list(1:5, 1:10)))
+  expect_error(assert_vector_pos(data.frame(1:5, 2:6)))
+})
+
+#------------------------------------------------
+test_that("assert_vector_bounded working correctly", {
+  expect_true(assert_vector_bounded(1))
+  expect_true(assert_vector_bounded(seq(0,1,0.1)))
+  
+  expect_error(assert_vector_bounded(NULL))
+  expect_error(assert_vector_bounded(c("a", "b")))
+  expect_error(assert_vector_bounded(-1))
+  expect_error(assert_vector_bounded(matrix(5,3,3)))
+  expect_error(assert_vector_bounded(list(1:5, 1:10)))
+  expect_error(assert_vector_bounded(data.frame(1:5, 2:6)))
 })
 
 #------------------------------------------------
