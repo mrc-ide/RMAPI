@@ -290,31 +290,50 @@ plot_map2 <- function(proj, variable = NULL, col_scale = magma(100), barrier_lis
   } else {
     col_vec <- proj$output[[variable]]
   }
+  nhexes=length(col_vec)
   
   # Create plot
   plot1 <- ggplot() + theme_bw() + theme(panel.grid.major = element_blank(),
                                          panel.grid.minor = element_blank())
   
   # Hexes without borders with fill colour corresponding to value
-  nhexes=length(col_vec)
-  hex_df <- list()
-  for(i in 1:nhexes){
-    if(map_type==1){hex_coords=proj$map$hex[[i]][1][[1]]} else { hex_coords=proj$map$hex[i][1]@polygons[[1]]@Polygons[[1]]@coords }
-    hex_df[[i]]=data.frame(long=hex_coords[,1],lat=hex_coords[,2],value=rep(col_vec[i],7))
-    plot1 <- plot1 + geom_polygon(aes(x = long, y = lat, fill=value), data = hex_df[[i]], colour = NA, size = 0)
+  if(map_type==1){
+    plot1 <- plot1 + geom_sf(aes(fill = col_vec), data = proj$map$hex)
+  } else {
+    ch_data <- chull(proj$data$coords[,c("long", "lat")])
+    ch_data_coords <- as.matrix(proj$data$coords[c(ch_data, ch_data[1]), c("long", "lat")])
+    bounding_poly <- sf::st_sfc(st_polygon(list(ch_data_coords)))
+    polygons<-sf::st_make_grid(bounding_poly, cellsize = 1.0, square = FALSE)
+    for(i in 1:nhexes){
+      polygons[[i]]=bounding_poly[[1]]
+      polygons[[i]][1][[1]]=proj$map$hex[i][1]@polygons[[1]]@Polygons[[1]]@coords
+    }
+    plot1 <- plot1 + geom_sf(aes(fill = col_vec), data = polygons,colour=NA)
+      
   }
   
+  # Old slow method - do each hex as an individual polygon
+  # nhexes=length(col_vec)
+  # hex_df <- list()
+  # for(i in 1:nhexes){
+  #   if(map_type==1){hex_coords=proj$map$hex[[i]][1][[1]]} else { hex_coords=proj$map$hex[i][1]@polygons[[1]]@Polygons[[1]]@coords }
+  #   hex_df[[i]]=data.frame(long=hex_coords[,1],lat=hex_coords[,2],value=rep(col_vec[i],7))
+  #   plot1 <- plot1 + geom_polygon(aes(x = long, y = lat, fill=value), data = hex_df[[i]], colour = NA, size = 0)
+  # }
+  
   # Unfilled hexes with white borders showing which hexes are statistically significant
-  for(i in 1:nhexes){
-    if(is.na(proj$output$hex_ranks[i])==FALSE && proj$output$hex_ranks[i]>=0.1 && proj$output$hex_ranks[i]<=1){ 
-      plot1 <- plot1 + geom_polygon(aes(x = long, y = lat), data = hex_df[[i]], colour = "white", fill = NA, size = 0.5)
+  if(proj$output$n_perms>0){
+    for(i in 1:nhexes){
+      if(is.na(proj$output$hex_ranks[i])==FALSE){ 
+        if(proj$output$hex_ranks[i]<tails[1] || proj$output$hex_ranks[i]>tails[2])
+          plot1 <- plot1 + geom_polygon(aes(x = long, y = lat), data = hex_df[[i]], colour = "white", fill = NA, size = 0.5)
+      }
     }
   }
   
   # Add points
   coords <- data.frame(long <- proj$data$coords$long, lat <- proj$data$coords$lat)
   plot1 <- plot1 + geom_point(aes(x = long, y = lat), shape = 21, color = "white", fill = "black", size = 1, data = coords)
-  plot1
   
   # Titles and legends
   if (add_legend) {
