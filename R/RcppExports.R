@@ -13,6 +13,10 @@ hexbarrier01 <- function(args_h) {
     .Call(`_RMAPI_hexbarrier01`, args_h)
 }
 
+assign_map_cpp <- function(args, args_functions, args_progress) {
+    .Call(`_RMAPI_assign_map_cpp`, args, args_functions, args_progress)
+}
+
 rmapi_analysis_cpp <- function(args, args_functions, args_progress) {
     .Call(`_RMAPI_rmapi_analysis_cpp`, args, args_functions, args_progress)
 }

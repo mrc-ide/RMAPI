@@ -292,6 +292,16 @@ assert_matrix <- function(x, message = "%s must be a matrix",
 }
 
 #------------------------------------------------
+# x is a matrix of numeric values
+#' @noRd
+assert_matrix_numeric <- function(x, message = "%s must be a numeric matrix",
+                                  name = paste(deparse(substitute(x)), collapse = "")) {
+  assert_matrix(x, message = message, name = name)
+  assert_numeric(x, message = message, name = name)
+  return(TRUE)
+}
+
+#------------------------------------------------
 # x is a list
 assert_list <- function(x, message = "%s must be a list",
                         name = paste(deparse(substitute(x)), collapse = "")) {
@@ -579,9 +589,6 @@ assert_square_matrix <- function(x, message = "%s must be a square matrix",
   return(TRUE)
 }
 
-
-#### MISC ####################################################################
-
 #------------------------------------------------
 # is symmetric matrix
 #' @noRd
@@ -593,6 +600,8 @@ assert_symmetric_matrix <- function(x, message = "%s must be a symmetric matrix"
   }
   return(TRUE)
 }
+
+#### MISC ####################################################################
 
 #------------------------------------------------
 # x contains no duplicates

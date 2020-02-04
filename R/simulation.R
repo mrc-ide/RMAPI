@@ -51,7 +51,7 @@ get_barrier_intersect <- function(node_long,
       assert_dataframe(barrier_list[[i]])
       assert_in(c("long", "lat"), names(barrier_list[[i]]))
       assert_eq(barrier_list[[i]][1,], barrier_list[[i]][nrow(barrier_list[[i]]),], 
-                message = "barrier polygons must be rungs, such that the last node coordinate equals the first")
+                message = "barrier polygons must be closed, i.e. the last node coordinate equals the first")
     }
   }
   assert_vector_numeric(barrier_penalty)

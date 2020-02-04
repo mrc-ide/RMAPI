@@ -6,55 +6,46 @@
 \usage{
 rmapi_analysis(
   proj,
-  eccentricity = 0.5,
-  null_method = 1,
-  n_perms = 100,
-  n_breaks = 1,
-  dist_breaks = NULL,
+  n_perms = 1000,
+  n_breaks = 50,
+  min_dist = 0,
+  max_dist = Inf,
   empirical_tail = "both",
-  min_intersections = 5,
+  alpha_raw = 0.05,
+  min_hex_intersections = 5,
+  min_group_size = 5,
   report_progress = TRUE
 )
 }
 \arguments{
 \item{proj}{object of class \code{rmapi_project}.}
 
-\item{eccentricity}{eccentricity of ellipses, defined as half the distance
-between foci divided by the semi-major axis. We can say \eqn{e = sqrt{1 -
-b^2/a^2}}, where \eqn{e} is the eccentricity, \eqn{a} is the length of the
-semi-major axis, and \eqn{b} is the length of the semi-minor axis.
-Eccentricity ranges between 0 (perfect circle) and 1 (straight line between
-foci).}
+\item{n_perms}{number of permutations in test.}
 
-\item{null_method}{what method to use for the null model:
-\enumerate{
-  \item permutation test on raw statistic. If \code{n_breaks = 1} then this
-  is identical to the original MAPI method, if \code{n_breaks > 1} then a
-  spatial permutation test is implemented in which edges are binned based
-  on spatial distance and permutation only occurs within a bin.
-  \item permutation test on residuals. The fitted model from a previous
-  call of \code{fit_model()} is used to compute residuals, and the
-  permutation test method is carried out on residual values. As with method
-  1, this permutation test can be spatially binned.
-}}
+\item{n_breaks}{values are broken into this many groups based on spatial
+distances. Permutation testing then occurs within groups. Hence, a larger
+value of \code{n_breaks} does a better job of conditioning on spatial
+distance, but comes at the cost of statistical power in permutation
+testing. A warning is printed if any group ends up containing fewer than 10
+edges.}
 
-\item{n_perms}{number of permutations to run when checking statistical
-significance. Set to 0 to skip this step.}
-
-\item{n_breaks}{alternative to defining sequence of \code{dist_breaks}. If
-\code{dist_breaks == NULL} then the full spatial range of the data is split
-into \code{n_breaks} equal groups.}
-
-\item{dist_breaks}{vector of breaks that divide spatial distances into
-permutation groups. Defaults to the full spatial range of the data, i.e.
-all edges are included in permutation testing.}
+\item{min_dist, max_dist}{TODO}
 
 \item{empirical_tail}{whether to do calculate empirical p-values using a
 one-sided test (\code{empirical_tail = "left"} or \code{empirical_tail =
 "right"}) or a two-sided test (\code{empirical_tail = "both"}).}
 
-\item{min_intersections}{minimum number of ellipses that must intersect a hex
-for it to be included in the final map, otherwise \code{NA}.}
+\item{alpha_raw}{the significance threshold used to determine significantly
+high/low values. This raw value is Bonferroni corrected based on the
+effective number of independent samples, and hence applies to the whole map
+and not just a single hex.}
+
+\item{min_hex_intersections}{minimum number of edges that must be assigned to
+a hex for it to be included in the analysis, otherwise these hexes are
+given the value \code{NA}.}
+
+\item{min_group_size}{minimum number of edges within a spatial permutation
+group, otherwise edges within this group are replaced with \code{NA}.}
 
 \item{report_progress}{if \code{TRUE} then a progress bar is printed to the
 console during the permutation testing procedure.}

@@ -2,26 +2,32 @@
 % Please edit documentation in R/plot.R
 \name{plot_coverage}
 \alias{plot_coverage}
-\title{Plot hex coverage for a given eccentricity}
+\title{Plot hex coverage}
 \usage{
-plot_coverage(proj, eccentricity = 0.9, n_ell = 20, return_type = 1)
+plot_coverage(proj, return_type = 1)
 }
 \arguments{
 \item{proj}{object of class \code{rmapi_project}.}
-
-\item{eccentricity}{eccentricity of ellipses, defined as half the distance
-between foci divided by the semi-major axis. We can say \eqn{e = sqrt{1 -
-b^2/a^2}}, where \eqn{e} is the eccentricity, \eqn{a} is the length of the
-semi-major axis, and \eqn{b} is the length of the semi-minor axis.
-Eccentricity ranges between 0 (perfect circle) and 1 (straight line between
-foci).}
-
-\item{n_ell}{number of points that make up an ellipse.}
 
 \item{return_type}{format of return object: 1 = a \code{gridExtra} object, 2
 = a list of \code{ggplot2} objects.}
 }
 \description{
-Plot hex coverage (number of intersecting ellipses) for a given
-  eccentricity.
+Given an RMAPI project with a hap already assigned, plot the
+  coverage (number of intersecting ellipses) of each hex. Useful as a
+  diagnostic plot, as hexes with low coverage will conform less well to the
+  assumptions of the permutation test (see \emph{detials}).
+}
+\details{
+Good coverage is needed to ensure the validity of the statistical
+  procedure. For each hex, the observed value is the mean of the (normalised)
+  values of the edges that intersect it. Under the null model that these
+  normalised values have no systematic bias, the distribution of this test
+  statistic is approximately normal as a consequence of the central limit
+  theorem. Hence, we can use a permutation test to characterise the mean and
+  standard deviation of this null distribution, then we can quantify how
+  extreme the observed value is in terms of its z-score. If coverage is too
+  low then the null distribution will not be normally distributed, and hence
+  the z-score will not be an accurate description of how extreme the observed
+  data really is.
 }

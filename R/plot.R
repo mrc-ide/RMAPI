@@ -64,19 +64,26 @@ plot_dist <- function(proj, col = "#00000050", overlay_model = TRUE) {
 }
 
 #------------------------------------------------
-#' @title Plot hex coverage for a given eccentricity
+#' @title Plot hex coverage
 #'
-#' @description Plot hex coverage (number of intersecting ellipses) for a given
-#'   eccentricity.
+#' @description Given an RMAPI project with a hap already assigned, plot the
+#'   coverage (number of intersecting ellipses) of each hex. Useful as a
+#'   diagnostic plot, as hexes with low coverage will conform less well to the
+#'   assumptions of the permutation test (see \emph{detials}).
+#'
+#' @details Good coverage is needed to ensure the validity of the statistical
+#'   procedure. For each hex, the observed value is the mean of the (normalised)
+#'   values of the edges that intersect it. Under the null model that these
+#'   normalised values have no systematic bias, the distribution of this test
+#'   statistic is approximately normal as a consequence of the central limit
+#'   theorem. Hence, we can use a permutation test to characterise the mean and
+#'   standard deviation of this null distribution, then we can quantify how
+#'   extreme the observed value is in terms of its z-score. If coverage is too
+#'   low then the null distribution will not be normally distributed, and hence
+#'   the z-score will not be an accurate description of how extreme the observed
+#'   data really is.
 #'
 #' @param proj object of class \code{rmapi_project}.
-#' @param eccentricity eccentricity of ellipses, defined as half the distance
-#'   between foci divided by the semi-major axis. We can say \eqn{e = sqrt{1 -
-#'   b^2/a^2}}, where \eqn{e} is the eccentricity, \eqn{a} is the length of the
-#'   semi-major axis, and \eqn{b} is the length of the semi-minor axis.
-#'   Eccentricity ranges between 0 (perfect circle) and 1 (straight line between
-#'   foci).
-#' @param n_ell number of points that make up an ellipse.
 #' @param return_type format of return object: 1 = a \code{gridExtra} object, 2
 #'   = a list of \code{ggplot2} objects.
 #' 
@@ -85,34 +92,16 @@ plot_dist <- function(proj, col = "#00000050", overlay_model = TRUE) {
 #' @import gridExtra
 #' @export
 
-plot_coverage <- function(proj, eccentricity = 0.9, n_ell = 20, return_type = 1) {
+plot_coverage <- function(proj, return_type = 1) {
   
   # check inputs
   assert_custom_class(proj, "rmapi_project")
-  assert_single_pos(eccentricity)
-  assert_bounded(eccentricity)
-  assert_single_pos_int(n_ell, zero_allowed = FALSE)
+  rmapi_proj.check_coords_loaded(proj)
+  rmapi_proj.check_map_assigned(proj)
   assert_in(return_type, 1:2)
   
-  # create all pairwise ellipses between nodes
-  node_mat <- as.matrix(proj$data$coords)
-  ell_list <- list()
-  n_node <- nrow(node_mat)
-  i2 <- 1
-  for (i in 1:(n_node-1)) {
-    for (j in (i+1):n_node) {
-      ell_df <- get_ellipse(f1 = node_mat[i,], f2 = node_mat[j,], ecc = eccentricity, n = n_ell)
-      ell_list[[i2]] <- sf::st_polygon(list(as.matrix(ell_df)))
-      i2 <- i2+1
-    }
-  }
-  
-  # convert ellipses and polys to st_sfc
-  ell_sfc <- sf::st_sfc(ell_list)
-  hex_sfc <- proj$map$hex
-  
   # get number of intersections per hex
-  intersect_vec <- colSums(as.matrix(sf::st_intersects(ell_sfc, hex_sfc)))
+  intersect_vec <- mapply(length, p$map$hex_edges)
   
   # bin intersection counts
   cut_breaks <- c(0,50,100,200,300,400,600,800,1000,2000,Inf)
@@ -128,7 +117,7 @@ plot_coverage <- function(proj, eccentricity = 0.9, n_ell = 20, return_type = 1)
   plot1 <- plot1 + geom_sf(aes(fill = intersect_bin), data = proj$map$hex)
   
   # add points
-  coords <- data.frame(long <- proj$data$coords$long, lat <- proj$data$coords$lat)
+  coords <- data.frame(long <- proj$coords$long, lat <- proj$coords$lat)
   plot1 <- plot1 + geom_point(aes(x = long, y = lat), data = coords, size = 0.5)
   
   # titles and legends
@@ -169,8 +158,13 @@ plot_coverage <- function(proj, eccentricity = 0.9, n_ell = 20, return_type = 1)
 #' @description Plot hex map of RMAPI output.
 #'
 #' @param proj object of class \code{rmapi_project}.
-#' @param variable which element of the project output to use as map colours.
 #' @param col_scale the colour scale to use.
+#' @param plot_sampling_points whether to overlay sampling locations.
+#' @param plot_hex_grid whether to plot the hex map. If the project contains
+#'   output then hexes will be coloured based on z-scores, otherwise a flat
+#'   colour scheme will be used.
+#' @param plot_significance whether to outline areas that were identified as
+#'   significant outliers.
 #' @param barrier_list optional list of polygon coordinates that are added to
 #'   plot.
 #' 
@@ -178,13 +172,18 @@ plot_coverage <- function(proj, eccentricity = 0.9, n_ell = 20, return_type = 1)
 #' @importFrom viridisLite magma
 #' @export
 
-plot_map <- function(proj, variable = NULL, col_scale = viridisLite::magma(100), barrier_list = list()) {
+plot_map <- function(proj,
+                     col_scale = viridisLite::magma(100),
+                     plot_sampling_points = TRUE,
+                     plot_hex_grid = TRUE,
+                     plot_significance = TRUE,
+                     barrier_list = list()) {
   
   # check inputs
   assert_custom_class(proj, "rmapi_project")
-  if (!is.null(variable)) {
-    assert_in(variable, names(proj$output))
-  }
+  assert_single_logical(plot_sampling_points)
+  assert_single_logical(plot_hex_grid)
+  assert_single_logical(plot_significance)
   assert_list(barrier_list)
   nb <- length(barrier_list)
   if (nb > 0) {
@@ -192,38 +191,84 @@ plot_map <- function(proj, variable = NULL, col_scale = viridisLite::magma(100),
       assert_dataframe(barrier_list[[i]])
       assert_in("long", names(barrier_list[[i]]))
       assert_in("lat", names(barrier_list[[i]]))
-      assert_eq(barrier_list[[i]][1,], barrier_list[[i]][nrow(barrier_list[[i]]),])
+      assert_eq(barrier_list[[i]][1,], barrier_list[[i]][nrow(barrier_list[[i]]),], 
+                message = "barrier polygons must be closed, i.e. the last node coordinate equals the first")
     }
   }
   
-  # produce default colours
-  add_legend <- TRUE
-  if (is.null(variable)) {
-    if ("hex_values" %in% names(proj$output)) {
-      variable <- "hex_values"
-      col_vec <- proj$output$hex_values
-    } else {
-      add_legend <- FALSE
-      col_vec <- rep(0, length(proj$map$hex))
-    }
+  # determine which aspects can/should be plotted
+  if (plot_sampling_points) {
+    plot_sampling_points <- !is.null(proj$data$coords)
+  }
+  if (plot_hex_grid) {
+    plot_hex_grid <- !is.null(proj$map$hex)
+  }
+  plot_hex_values <- !is.null(proj$output$hex_values)
+  
+  # determine hex colours
+  if (plot_hex_values) {
+    add_legend <- TRUE
+    col_vec <- proj$output$hex_values
   } else {
-    col_vec <- proj$output[[variable]]
+    add_legend <- FALSE
+    col_vec <- rep(0, length(proj$map$hex))
+    plot_significance <- FALSE
   }
   
-  # produce plot
+  # produce basic plot
   plot1 <- ggplot() + theme_bw() + theme(panel.grid.major = element_blank(),
                                          panel.grid.minor = element_blank())
   
   # add hexs
-  plot1 <- plot1 + geom_sf(aes(fill = col_vec), data = proj$map$hex)
+  if (plot_hex_grid) {
+    plot1 <- plot1 + geom_sf(aes(fill = col_vec),
+                             color = NA,
+                             data = proj$map$hex)
+  }
+  
+  # outline significance
+  if (plot_significance) {
+    
+    # outline low values
+    w_signif_low <- which(proj$output$hex_values < proj$output$z_thresh[1])
+    if (length(w_signif_low) != 0) {
+      
+      # get polygons around significantly low hexes
+      low_coords <- get_hex_hulls(proj$map$hex_centroid[w_signif_low,],
+                                  proj$map$hex[w_signif_low],
+                                  proj$map$hex_size)
+      low_polys <- st_polygon(mapply(as.matrix, low_coords, SIMPLIFY = FALSE))
+      
+      # add to plot
+      plot1 <- plot1 + geom_sf(color = "white", fill = NA, data = low_polys)
+    }
+    
+    # outline high values
+    w_signif_high <- which(proj$output$hex_values > proj$output$z_thresh[2])
+    if (length(w_signif_high) != 0) {
+      
+      # get polygons around significantly high hexes
+      high_coords <- get_hex_hulls(proj$map$hex_centroid[w_signif_high,],
+                                   proj$map$hex[w_signif_high],
+                                   proj$map$hex_size)
+      high_polys <- st_polygon(mapply(as.matrix, high_coords, SIMPLIFY = FALSE))
+      
+      # add to plot
+      plot1 <- plot1 + geom_sf(color = "black", fill = NA, data = high_polys)
+    }
+    
+  }
   
   # add points
-  coords <- data.frame(long <- proj$data$coords$long, lat <- proj$data$coords$lat)
-  plot1 <- plot1 + geom_point(aes(x = long, y = lat), shape = 21, color = "white", fill = "black", size = 1, data = coords)
+  if (plot_sampling_points) {
+    plot1 <- plot1 + geom_point(aes(x = long, y = lat),
+                                shape = 21, color = "white", fill = "black", size = 1,
+                                data = proj$data$coords)
+  }
   
   # titles and legends
   if (add_legend) {
-    plot1 <- plot1 + scale_fill_gradientn(colours = col_scale, name = variable)
+    plot1 <- plot1 + scale_fill_gradientn(colours = col_scale, name = "z-score")
   } else {
     plot1 <- plot1 + guides(fill = FALSE)
   }
@@ -232,7 +277,9 @@ plot_map <- function(proj, variable = NULL, col_scale = viridisLite::magma(100),
   # add barrier polygons
   if (nb > 0) {
     for (i in 1:nb) {
-      plot1 <- plot1 + geom_polygon(aes(x = long, y = lat), col = "white", fill = NA, data = as.data.frame(barrier_list[[i]]))
+      plot1 <- plot1 + geom_polygon(aes(x = long, y = lat),
+                                    col = grey(0.5), fill = NA,
+                                    data = as.data.frame(barrier_list[[i]]))
     }
   }
   

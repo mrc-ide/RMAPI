@@ -6,17 +6,26 @@
 \usage{
 plot_map(
   proj,
-  variable = NULL,
   col_scale = viridisLite::magma(100),
+  plot_sampling_points = TRUE,
+  plot_hex_grid = TRUE,
+  plot_significance = TRUE,
   barrier_list = list()
 )
 }
 \arguments{
 \item{proj}{object of class \code{rmapi_project}.}
 
-\item{variable}{which element of the project output to use as map colours.}
-
 \item{col_scale}{the colour scale to use.}
+
+\item{plot_sampling_points}{whether to overlay sampling locations.}
+
+\item{plot_hex_grid}{whether to plot the hex map. If the project contains
+output then hexes will be coloured based on z-scores, otherwise a flat
+colour scheme will be used.}
+
+\item{plot_significance}{whether to outline areas that were identified as
+significant outliers.}
 
 \item{barrier_list}{optional list of polygon coordinates that are added to
 plot.}

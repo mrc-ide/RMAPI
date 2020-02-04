@@ -2,9 +2,9 @@
 % Please edit documentation in R/main.R
 \name{create_map}
 \alias{create_map}
-\title{Create mapping space}
+\title{Create map composed of hex tiles}
 \usage{
-create_map(proj, hex_size = 1)
+create_map(proj, hex_size = NULL)
 }
 \arguments{
 \item{proj}{object of class \code{rmapi_project}.}
@@ -12,5 +12,6 @@ create_map(proj, hex_size = 1)
 \item{hex_size}{size of hexagons.}
 }
 \description{
-Create mapping space.
+Given an RMAPI project with sampling coordinates already loaded,
+  create a hex grid around these points.
 }

@@ -298,6 +298,19 @@ test_that("assert_matrix working correctly", {
 })
 
 #------------------------------------------------
+test_that("assert_matrix_numeric working correctly", {
+  expect_true(assert_matrix_numeric(matrix(5,3,3)))
+  
+  expect_error(assert_matrix_numeric(NULL))
+  expect_error(assert_matrix_numeric(5))
+  expect_error(assert_matrix_numeric(1:5))
+  expect_error(assert_matrix_numeric(list(1:5, 1:10)))
+  expect_error(assert_matrix_numeric(data.frame(1:5, 2:6)))
+  expect_error(assert_matrix_numeric(matrix("4", 1, 1)))
+  expect_error(assert_matrix_numeric(matrix(NA,1,1)))
+})
+
+#------------------------------------------------
 test_that("assert_list working correctly", {
   expect_true(assert_list(list(1:5)))
   expect_true(assert_list(data.frame(x = 1:5)))
