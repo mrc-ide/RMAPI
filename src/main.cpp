@@ -145,6 +145,11 @@ Rcpp::List rmapi_analysis_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::
     fill(hex_values.begin(), hex_values.end(), 0.0);
     for (unsigned int h = 0; h < n_hex; ++h) {
       
+      // skip hexes with no edges
+      if (hex_edges_size[h] == 0) {
+        continue;
+      }
+      
       // recalculate hex value
       for (unsigned int i = 0; i < hex_edges_size[h]; ++i) {
         hex_values[h] += edge_values[hex_edges[h][i] - 1];

@@ -317,13 +317,6 @@ rmapi_proj.check_data_loaded <- function(proj) {
 #'   testing. A warning is printed if any group ends up containing fewer than 10
 #'   edges.
 #' @param min_dist,max_dist TODO
-#' @param empirical_tail whether to do calculate empirical p-values using a
-#'   one-sided test (\code{empirical_tail = "left"} or \code{empirical_tail =
-#'   "right"}) or a two-sided test (\code{empirical_tail = "both"}).
-#' @param alpha_raw the significance threshold used to determine significantly
-#'   high/low values. This raw value is Bonferroni corrected based on the
-#'   effective number of independent samples, and hence applies to the whole map
-#'   and not just a single hex.
 #' @param min_hex_intersections minimum number of edges that must be assigned to
 #'   a hex for it to be included in the analysis, otherwise these hexes are
 #'   given the value \code{NA}.
@@ -337,7 +330,6 @@ rmapi_proj.check_data_loaded <- function(proj) {
 
 rmapi_analysis <- function(proj,
                            n_perms = 1e3, n_breaks = 50, min_dist = 0, max_dist = Inf,
-                           empirical_tail = "both", alpha_raw = 0.05,
                            min_hex_intersections = 5, min_group_size = 5,
                            report_progress = TRUE) {
   
@@ -354,9 +346,6 @@ rmapi_analysis <- function(proj,
   assert_single_pos(min_dist, zero_allowed = TRUE)
   assert_single_pos(max_dist, zero_allowed = FALSE)
   assert_gr(max_dist, min_dist)
-  assert_single_string(empirical_tail)
-  assert_in(empirical_tail, c("left", "right", "both"))
-  assert_single_bounded(alpha_raw)
   assert_single_pos_int(min_hex_intersections)
   assert_single_pos_int(min_group_size)
   assert_greq(min_group_size, 2)
@@ -372,8 +361,7 @@ rmapi_analysis <- function(proj,
   x <- as.vector(proj$data$spatial_dist)
   y <- as.vector(proj$data$stat_dist)
   
-  # keep track of original index of these values. Will be used in subsetting
-  # later
+  # keep track of original index of these values to be used later in subsetting
   index <- 1:length(x)
   
   # subset to values that are within specified distance range, and are not NA
@@ -394,7 +382,8 @@ rmapi_analysis <- function(proj,
   }, 1:n_breaks, SIMPLIFY = FALSE)
   
   # store number of values in each bin
-  df_group_num <- data.frame(dist_range = levels(x_cut),
+  df_group_num <- data.frame(dist_min = cut_breaks[-(n_breaks+1)],
+                             dist_max = cut_breaks[-1],
                              n_edges = mapply(length, y_perm))
   
   # for each group, calculate the mean and sd
@@ -410,16 +399,9 @@ rmapi_analysis <- function(proj,
   
   # use mean and sd to normalise y values
   y_norm <- (y - y_perm_mean[perm_group])/y_perm_sd[perm_group]
-  y_perm_norm <- mapply(function(i) (y_perm[[i]] - y_perm_mean[i])/y_perm_sd[i],
-                        1:n_breaks, SIMPLIFY = FALSE)
-  
-  # calculate final "observed" y values
-  y_obs <- mapply(function(x) mean(y_norm[x], na.rm = TRUE), proj$map$hex_edges)
-  
-  # check that no NAs in final y_norm vector
-  if (any(is.na(y_norm))) {
-    stop("bug: y_norm still contains NA values")
-  }
+  y_perm_norm <- mapply(function(i) {
+    (y_perm[[i]] - y_perm_mean[i])/y_perm_sd[i]
+    }, 1:n_breaks, SIMPLIFY = FALSE)
   
   # indices of edges may have changed. Update hex_edges to account for this
   hex_edges <- mapply(function(z) {
@@ -430,6 +412,23 @@ rmapi_analysis <- function(proj,
   
   # calculate hex coverage
   hex_coverage <- mapply(length, hex_edges)
+  
+  # calculate final "observed" y values
+  y_obs <- mapply(function(x) mean(y_norm[x]), hex_edges)
+  
+  # check that no NAs in final y_norm vector
+  if (any(is.na(y_norm))) {
+    stop("bug: y_norm still contains NA values")
+  }
+  
+  # empty hexes below required coverage
+  hex_edges <- mapply(function(x) {
+    if (length(x) >= min_hex_intersections) {
+      x
+    } else {
+      integer()
+    }
+  }, hex_edges)
   
   
   # ---------------------------------------------
@@ -470,23 +469,17 @@ rmapi_analysis <- function(proj,
   # use null distribution to convert y_obs into a z-score
   z_score <- (y_obs - null_mean)/sqrt(diag(cov_mat))
   
+  # insert NA for hexes with low coverage
+  z_score[hex_coverage < min_hex_intersections] <- NA
+  
   # get correlation matrix
   v <- diag(cov_mat)
   cor_mat <- cov_mat/outer(sqrt(v), sqrt(v))
   
   # get effective number of independent samples from leading Eigenvalue of
   # correlation matrix
-  n_eff <- Re(rARPACK::eigs(cor_mat, 1)$values)
-  
-  # get Bonferroni-corrected upper and lower thresholds on significant z-score
-  #alpha_new <- 1 - (1 - alpha_raw)^(1/n_eff)  # (exact Bonferroni correction)
-  alpha_new <- alpha_raw/n_eff  # (approximate Bonferroni correction)
-  p_bounds <- switch (empirical_tail,
-                      "lower" = c(alpha_new, 1.0),
-                      "upper" = c(0, 1.0 - alpha_new),
-                      "both" = c(alpha_new/2, 1.0 - alpha_new/2)
-                      )
-  z_thresh <- qnorm(p_bounds)
+  w <- which(hex_coverage >= min_hex_intersections)
+  n_eff <- Re(rARPACK::eigs(cor_mat[w,w], 1)$values)
   
   
   # ---------------------------------------------
@@ -495,8 +488,7 @@ rmapi_analysis <- function(proj,
   proj$output <- list(hex_values = z_score,
                       hex_coverage = hex_coverage,
                       spatial_group_num = df_group_num,
-                      n_eff = n_eff,
-                      z_thresh = z_thresh)
+                      n_eff = n_eff)
   
   # return invisibly
   invisible(proj)
@@ -508,6 +500,58 @@ rmapi_analysis <- function(proj,
 rmapi_proj.check_output_exists <- function(proj) {
   assert_custom_class(proj, "rmapi_project")
   assert_non_null(proj$output)
+}
+
+#------------------------------------------------
+#' @title Get significant hexes
+#'
+#' @description Given a completed RMAPI analysis, return the number of hexes
+#'   that pass a stated significance threshold. Calculation takes account of the
+#'   inherent correlation between hexes through the effective sample size
+#'   calculation.
+#'
+#' @param proj object of class \code{rmapi_project}.
+#' @param empirical_tail whether to do calculate empirical p-values using a
+#'   one-sided test (\code{empirical_tail = "left"} or \code{empirical_tail =
+#'   "right"}) or a two-sided test (\code{empirical_tail = "both"}).
+#' @param alpha_raw the significance threshold used to determine significantly
+#'   high/low values. This raw value is Bonferroni corrected based on the
+#'   effective number of independent samples, and hence applies to the whole map
+#'   and not just a single hex.
+#'
+#' @export
+
+get_significant_hexes <- function(proj,
+                                  empirical_tail = "both",
+                                  alpha_raw = 0.05) {
+  
+  # check project
+  assert_custom_class(proj, "rmapi_project")
+  rmapi_proj.check_output_exists(proj)
+  
+  assert_single_string(empirical_tail)
+  assert_in(empirical_tail, c("left", "right", "both"))
+  assert_single_bounded(alpha_raw)
+  
+  # get Bonferroni-corrected upper and lower thresholds on significant z-score
+  #alpha_new <- 1 - (1 - alpha_raw)^(1/proj$output$n_eff)  # (exact Bonferroni correction)
+  alpha_new <- alpha_raw/proj$output$n_eff  # (approximate Bonferroni correction)
+  p_bounds <- switch (empirical_tail,
+                      "lower" = c(alpha_new, 1.0),
+                      "upper" = c(0, 1.0 - alpha_new),
+                      "both" = c(alpha_new/2, 1.0 - alpha_new/2)
+  )
+  z_thresh <- qnorm(p_bounds)
+  
+  # get which hexes (if any) are significant
+  which_lower <- which(proj$output$hex_values < z_thresh[1])
+  which_upper <- which(proj$output$hex_values > z_thresh[2])
+  
+  # return list
+  ret <- list(which_lower = which_lower,
+              which_upper = which_upper,
+              z_thresh = z_thresh)
+  return(ret)
 }
 
 #------------------------------------------------

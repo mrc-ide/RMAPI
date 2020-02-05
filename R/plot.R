@@ -177,6 +177,8 @@ plot_map <- function(proj,
                      plot_sampling_points = TRUE,
                      plot_hex_grid = TRUE,
                      plot_significance = TRUE,
+                     empirical_tail = "both",
+                     alpha_raw = 0.05,
                      barrier_list = list()) {
   
   # check inputs
@@ -184,6 +186,9 @@ plot_map <- function(proj,
   assert_single_logical(plot_sampling_points)
   assert_single_logical(plot_hex_grid)
   assert_single_logical(plot_significance)
+  assert_single_string(empirical_tail)
+  assert_in(empirical_tail, c("left", "right", "both"))
+  assert_single_bounded(alpha_raw)
   assert_list(barrier_list)
   nb <- length(barrier_list)
   if (nb > 0) {
@@ -229,32 +234,22 @@ plot_map <- function(proj,
   # outline significance
   if (plot_significance) {
     
+    # get significant hexes
+    hex_signif <- get_significant_hexes(proj,
+                                        empirical_tail = empirical_tail,
+                                        alpha_raw = alpha_raw)
+    
     # outline low values
-    w_signif_low <- which(proj$output$hex_values < proj$output$z_thresh[1])
-    if (length(w_signif_low) != 0) {
-      
-      # get polygons around significantly low hexes
-      low_coords <- get_hex_hulls(proj$map$hex_centroid[w_signif_low,],
-                                  proj$map$hex[w_signif_low],
-                                  proj$map$hex_size)
-      low_polys <- st_polygon(mapply(as.matrix, low_coords, SIMPLIFY = FALSE))
-      
-      # add to plot
-      plot1 <- plot1 + geom_sf(color = "white", fill = NA, data = low_polys)
+    w <- hex_signif$which_lower
+    if (length(w) != 0) {
+      merged_poly_lower <- get_merged_poly(proj$map$hex[w], d = proj$map$hex_size/10)
+      plot1 <- plot1 + geom_sf(color = "white", fill = NA, data = merged_poly_lower)
     }
     
-    # outline high values
-    w_signif_high <- which(proj$output$hex_values > proj$output$z_thresh[2])
-    if (length(w_signif_high) != 0) {
-      
-      # get polygons around significantly high hexes
-      high_coords <- get_hex_hulls(proj$map$hex_centroid[w_signif_high,],
-                                   proj$map$hex[w_signif_high],
-                                   proj$map$hex_size)
-      high_polys <- st_polygon(mapply(as.matrix, high_coords, SIMPLIFY = FALSE))
-      
-      # add to plot
-      plot1 <- plot1 + geom_sf(color = "black", fill = NA, data = high_polys)
+    w <- hex_signif$which_upper
+    if (length(w) != 0) {
+      merged_poly_upper <- get_merged_poly(proj$map$hex[w], d = proj$map$hex_size/10)
+      plot1 <- plot1 + geom_sf(color = "black", fill = NA, data = merged_poly_upper)
     }
     
   }
@@ -278,7 +273,7 @@ plot_map <- function(proj,
   if (nb > 0) {
     for (i in 1:nb) {
       plot1 <- plot1 + geom_polygon(aes(x = long, y = lat),
-                                    col = grey(0.5), fill = NA,
+                                    col = "white", fill = NA, linetype = "dotted",
                                     data = as.data.frame(barrier_list[[i]]))
     }
   }
