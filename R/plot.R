@@ -323,10 +323,14 @@ plot_map2 <- function(proj, variable = NULL, col_scale = magma(100), barrier_lis
   
   # Unfilled hexes with white borders showing which hexes are statistically significant
   if(proj$output$n_perms>0){
+    hex_df <- list()
     for(i in 1:nhexes){
       if(is.na(proj$output$hex_ranks[i])==FALSE){ 
-        if(proj$output$hex_ranks[i]<tails[1] || proj$output$hex_ranks[i]>tails[2])
-          plot1 <- plot1 + geom_polygon(aes(x = long, y = lat), data = hex_df[[i]], colour = "white", fill = NA, size = 0.5)
+        if(proj$output$hex_ranks[i]<tails[1] || proj$output$hex_ranks[i]>tails[2]){
+          if(map_type==1){hex_coords=proj$map$hex[[i]][1][[1]]} else { hex_coords=polygons[[i]][1][[1]] }
+          hex_df=data.frame(long=hex_coords[,1],lat=hex_coords[,2])
+          plot1 <- plot1 + geom_polygon(aes(x = long, y = lat), data = hex_df, colour = "white", fill = NA, size = 0.5)
+        }
       }
     }
   }
@@ -337,7 +341,7 @@ plot_map2 <- function(proj, variable = NULL, col_scale = magma(100), barrier_lis
   
   # Titles and legends
   if (add_legend) {
-    plot1 <- plot1 + scale_fill_gradientn(colours = col_scale, name = "hex_values")
+    plot1 <- plot1 + scale_fill_gradientn(colours = col_scale, name = variable)
   } else {
     plot1 <- plot1 + guides(fill = FALSE)
   }
