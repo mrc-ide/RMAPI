@@ -9,7 +9,10 @@ plot_map(
   col_scale = viridisLite::magma(100),
   plot_sampling_points = TRUE,
   plot_hex_grid = TRUE,
+  min_hex_coverage = 10,
   plot_significance = TRUE,
+  empirical_tail = "both",
+  alpha_raw = 0.05,
   barrier_list = list()
 )
 }
@@ -23,6 +26,10 @@ plot_map(
 \item{plot_hex_grid}{whether to plot the hex map. If the project contains
 output then hexes will be coloured based on z-scores, otherwise a flat
 colour scheme will be used.}
+
+\item{min_hex_coverage}{minimum coverage (number of edges assigned to a hex)
+for it to be included in the final result, otherwise these hexes are given
+the value \code{NA}.}
 
 \item{plot_significance}{whether to outline areas that were identified as
 significant outliers.}

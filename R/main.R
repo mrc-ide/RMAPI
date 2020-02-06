@@ -220,6 +220,7 @@ assign_map <- function(proj, eccentricity = 0.9, report_progress = TRUE) {
                node_lat = proj$data$coords$lat,
                hex_long = proj$map$hex_centroid$long,
                hex_lat = proj$map$hex_centroid$lat,
+               hex_size = proj$map$hex_size,
                eccentricity = eccentricity,
                report_progress = report_progress)
   
@@ -306,7 +307,7 @@ rmapi_proj.check_data_loaded <- function(proj) {
 #------------------------------------------------
 #' @title Perform RMAPI analysis
 #'
-#' @description Perform RMAPI analysis.
+#' @description TODO.
 #'
 #' @param proj object of class \code{rmapi_project}.
 #' @param n_perms number of permutations in test.
@@ -316,10 +317,8 @@ rmapi_proj.check_data_loaded <- function(proj) {
 #'   distance, but comes at the cost of statistical power in permutation
 #'   testing. A warning is printed if any group ends up containing fewer than 10
 #'   edges.
-#' @param min_dist,max_dist TODO
-#' @param min_hex_intersections minimum number of edges that must be assigned to
-#'   a hex for it to be included in the analysis, otherwise these hexes are
-#'   given the value \code{NA}.
+#' @param min_dist,max_dist minimum and maximum edge lengths to be included in
+#'   the analysis. Anything outside this range is ignored.
 #' @param min_group_size minimum number of edges within a spatial permutation
 #'   group, otherwise edges within this group are replaced with \code{NA}.
 #' @param report_progress if \code{TRUE} then a progress bar is printed to the
@@ -329,8 +328,9 @@ rmapi_proj.check_data_loaded <- function(proj) {
 #' @export
 
 rmapi_analysis <- function(proj,
-                           n_perms = 1e3, n_breaks = 50, min_dist = 0, max_dist = Inf,
-                           min_hex_intersections = 5, min_group_size = 5,
+                           n_perms = 1e3,
+                           n_breaks = 50, min_dist = 0, max_dist = Inf,
+                           min_group_size = 5,
                            report_progress = TRUE) {
   
   # check project
@@ -346,7 +346,6 @@ rmapi_analysis <- function(proj,
   assert_single_pos(min_dist, zero_allowed = TRUE)
   assert_single_pos(max_dist, zero_allowed = FALSE)
   assert_gr(max_dist, min_dist)
-  assert_single_pos_int(min_hex_intersections)
   assert_single_pos_int(min_group_size)
   assert_greq(min_group_size, 2)
   assert_single_logical(report_progress)
@@ -421,15 +420,6 @@ rmapi_analysis <- function(proj,
     stop("bug: y_norm still contains NA values")
   }
   
-  # empty hexes below required coverage
-  hex_edges <- mapply(function(x) {
-    if (length(x) >= min_hex_intersections) {
-      x
-    } else {
-      integer()
-    }
-  }, hex_edges)
-  
   
   # ---------------------------------------------
   # Set up arguments for input into C++
@@ -468,9 +458,6 @@ rmapi_analysis <- function(proj,
   
   # use null distribution to convert y_obs into a z-score
   z_score <- (y_obs - null_mean)/sqrt(diag(cov_mat))
-  
-  # insert NA for hexes with low coverage
-  z_score[hex_coverage < min_hex_intersections] <- NA
   
   # get correlation matrix
   v <- diag(cov_mat)
@@ -518,12 +505,15 @@ rmapi_proj.check_output_exists <- function(proj) {
 #'   high/low values. This raw value is Bonferroni corrected based on the
 #'   effective number of independent samples, and hence applies to the whole map
 #'   and not just a single hex.
+#' @param min_hex_coverage minimum coverage (number of edges assigned to a hex)
+#'   for it to be included in the final result.
 #'
 #' @export
 
 get_significant_hexes <- function(proj,
                                   empirical_tail = "both",
-                                  alpha_raw = 0.05) {
+                                  alpha_raw = 0.05,
+                                  min_hex_coverage = 10) {
   
   # check project
   assert_custom_class(proj, "rmapi_project")
@@ -543,9 +533,9 @@ get_significant_hexes <- function(proj,
   )
   z_thresh <- qnorm(p_bounds)
   
-  # get which hexes (if any) are significant
-  which_lower <- which(proj$output$hex_values < z_thresh[1])
-  which_upper <- which(proj$output$hex_values > z_thresh[2])
+  # get which hexes (if any) are significant, and satisfy minimum hex coverage
+  which_lower <- which(proj$output$hex_values < z_thresh[1] & proj$output$hex_coverage >= min_hex_coverage)
+  which_upper <- which(proj$output$hex_values > z_thresh[2] & proj$output$hex_coverage >= min_hex_coverage)
   
   # return list
   ret <- list(which_lower = which_lower,

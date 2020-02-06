@@ -10,9 +10,6 @@ rmapi_analysis(
   n_breaks = 50,
   min_dist = 0,
   max_dist = Inf,
-  empirical_tail = "both",
-  alpha_raw = 0.05,
-  min_hex_intersections = 5,
   min_group_size = 5,
   report_progress = TRUE
 )
@@ -29,20 +26,8 @@ distance, but comes at the cost of statistical power in permutation
 testing. A warning is printed if any group ends up containing fewer than 10
 edges.}
 
-\item{min_dist, max_dist}{TODO}
-
-\item{empirical_tail}{whether to do calculate empirical p-values using a
-one-sided test (\code{empirical_tail = "left"} or \code{empirical_tail =
-"right"}) or a two-sided test (\code{empirical_tail = "both"}).}
-
-\item{alpha_raw}{the significance threshold used to determine significantly
-high/low values. This raw value is Bonferroni corrected based on the
-effective number of independent samples, and hence applies to the whole map
-and not just a single hex.}
-
-\item{min_hex_intersections}{minimum number of edges that must be assigned to
-a hex for it to be included in the analysis, otherwise these hexes are
-given the value \code{NA}.}
+\item{min_dist, max_dist}{minimum and maximum edge lengths to be included in
+the analysis. Anything outside this range is ignored.}
 
 \item{min_group_size}{minimum number of edges within a spatial permutation
 group, otherwise edges within this group are replaced with \code{NA}.}
@@ -51,5 +36,5 @@ group, otherwise edges within this group are replaced with \code{NA}.}
 console during the permutation testing procedure.}
 }
 \description{
-Perform RMAPI analysis.
+TODO.
 }

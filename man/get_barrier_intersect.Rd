@@ -10,6 +10,7 @@ get_barrier_intersect(
   barrier_list = list(),
   barrier_penalty = numeric(),
   barrier_method = 1,
+  max_barrier_range = Inf,
   eccentricity = 0.9,
   n_ell = 20
 )
@@ -34,6 +35,10 @@ provided then this value will be used for all barriers.}
   \item{bullet 2 compare line, apply penalty per unit intersection}
   \item{bullet 3 compare ellipse, apply penalty per unit area intersection}
 }}
+
+\item{max_barrier_range}{edges that are longer than this distance are
+unaffected by any barriers. Makes it possible to model barriers that only
+apply locally.}
 
 \item{eccentricity}{eccentricity of ellipses (only used under
 \code{barrier_method = 3}).}

@@ -1,5 +1,6 @@
 
 #include "main.h"
+#include "utils.h"
 #include "probability.h"
 #include "sim.Parameters.h"
 #include "sim.Dispatcher.h"
@@ -9,16 +10,6 @@
 
 using namespace std;
 
-//------------------------------------------------
-// check if value is within ellipse
-// x and y are the coordinates of the query point. f1 and f2 are the two foci of
-// the ellipse. a is the semi-major axis of the ellipse.
-bool ellipse_check(double x, double y,
-                   double xf1, double yf1, double xf2, double yf2,
-                   double a) {
-  bool ret = (dist_euclid_2d(x, y, xf1, yf1) + dist_euclid_2d(x, y, xf2, yf2) <= 2*a);
-  return ret;
-}
 
 //------------------------------------------------
 // assign edges to hexes based on intersection
@@ -29,8 +20,9 @@ Rcpp::List assign_map_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::List
   // load data and parameters
   vector<double> node_long = rcpp_to_vector_double(args["node_long"]);                  //Longitude of data nodes
   vector<double> node_lat = rcpp_to_vector_double(args["node_lat"]);                    //Latitude of data nodes
-  vector<double> hex_long = rcpp_to_vector_double(args["hex_long"]);                    //Longitude of hex cells
-  vector<double> hex_lat = rcpp_to_vector_double(args["hex_lat"]);                      //Latitude of hex cells
+  vector<double> hex_long = rcpp_to_vector_double(args["hex_long"]);                    //Longitude of hexes
+  vector<double> hex_lat = rcpp_to_vector_double(args["hex_lat"]);                      //Latitude of hexes
+  double hex_size = rcpp_to_double(args["hex_size"]);                                   //Size (width) of hexes
   double eccentricity = rcpp_to_double(args["eccentricity"]);                           //Eccentricity of ellipses (see help for details)
   bool report_progress = rcpp_to_bool(args["report_progress"]);                         //Whether to update progress bar
   Rcpp::Function update_progress = args_functions["update_progress"];                   //R function for updating progress bar
@@ -38,7 +30,6 @@ Rcpp::List assign_map_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::List
   // get basic properties
   int n_node = node_long.size();
   int n_hex = hex_long.size();
-  double inv_eccentricity = 1.0 / eccentricity;
   
   // store list of which edges intersect each hex
   vector<vector<int>> hex_edges(n_hex);
@@ -57,14 +48,11 @@ Rcpp::List assign_map_cpp(Rcpp::List args, Rcpp::List args_functions, Rcpp::List
       for (int node2 = (node1+1); node2 < n_node; ++node2) {
         i++;
         
-        // determine whether ellipse intersects centroid of this hex
-        double dist = dist_euclid_2d(node_long[node1], node_lat[node1], node_long[node2], node_lat[node2]);
-        double linear_eccentricity = 0.5 * dist;
-        double semi_major = linear_eccentricity*inv_eccentricity;
-        bool intersects = ellipse_check(hex_long[hex], hex_lat[hex],
-                                        node_long[node1], node_lat[node1],
-                                        node_long[node2], node_lat[node2],
-                                        semi_major);
+        // determine whether ellipse intersects this hex
+        bool intersects = hex_intersects_ellipse(hex_long[hex], hex_lat[hex], hex_size,
+                                                 node_long[node1], node_lat[node1],
+                                                 node_long[node2], node_lat[node2],
+                                                 eccentricity);
         
         // push back edge index if intersects
         if (intersects) {

@@ -23,6 +23,9 @@
 #'     \item{bullet 2 compare line, apply penalty per unit intersection}
 #'     \item{bullet 3 compare ellipse, apply penalty per unit area intersection}
 #'   }
+#' @param max_barrier_range edges that are longer than this distance are
+#'   unaffected by any barriers. Makes it possible to model barriers that only
+#'   apply locally.
 #' @param eccentricity eccentricity of ellipses (only used under
 #'   \code{barrier_method = 3}).
 #' @param n_ell number of points that make up an ellipse (only used under
@@ -37,6 +40,7 @@ get_barrier_intersect <- function(node_long,
                                   barrier_list = list(),
                                   barrier_penalty = numeric(),
                                   barrier_method = 1,
+                                  max_barrier_range = Inf,
                                   eccentricity = 0.9,
                                   n_ell = 20) {
   
@@ -57,6 +61,7 @@ get_barrier_intersect <- function(node_long,
   assert_vector_numeric(barrier_penalty)
   assert_single_pos_int(barrier_method)
   assert_in(barrier_method, 1:3)
+  assert_single_pos(max_barrier_range, zero_allowed = TRUE)
   assert_single_bounded(eccentricity, inclusive_left = FALSE)
   assert_single_pos_int(n_ell, zero_allowed = FALSE)
   
@@ -64,9 +69,16 @@ get_barrier_intersect <- function(node_long,
   barrier_penalty <- force_vector(barrier_penalty, length(barrier_list))
   assert_same_length(barrier_penalty, barrier_list)
   
+  # create mask for ignoring edges greater then
+  distance_mask <- 1
+  if (is.finite(max_barrier_range)) {
+    d <- as.vector(get_spatial_distance(node_long, node_lat))
+    distance_mask <- (d < max_barrier_range)
+  }
+  
   # apply barrier penalties
   intersect_penalty <- 0
-  if (nb > 0) {
+  if (nb > 0 & any(barrier_penalty != 0)) {
     
     # convert barrier list to st_polygon
     poly_list <- list()
@@ -98,6 +110,9 @@ get_barrier_intersect <- function(node_long,
       # get boolean intersection matrix
       intersect_mat <- as.matrix(sf::st_intersects(line_sfc, poly_sfc))
       
+      # mask out edges that are beyond limit distance
+      intersect_mat <- sweep(intersect_mat, 1, distance_mask, "*")
+      
       # convert to length of intersection if using method 2
       if (barrier_method == 2) {
         intersect_mat[intersect_mat == TRUE] <- mapply(function(x) {
@@ -127,6 +142,9 @@ get_barrier_intersect <- function(node_long,
       
       # get boolean intersection matrix
       intersect_mat <- as.matrix(sf::st_intersects(ell_sfc, poly_sfc))
+      
+      # mask out ellipses that are beyond limit distance
+      intersect_mat <- sweep(intersect_mat, 1, distance_mask, "*")
       
       # convert to area of intersection
       intersect_mat[intersect_mat == TRUE] <- mapply(function(x) {

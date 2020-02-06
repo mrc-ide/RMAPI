@@ -163,6 +163,9 @@ plot_coverage <- function(proj, return_type = 1) {
 #' @param plot_hex_grid whether to plot the hex map. If the project contains
 #'   output then hexes will be coloured based on z-scores, otherwise a flat
 #'   colour scheme will be used.
+#' @param min_hex_coverage minimum coverage (number of edges assigned to a hex)
+#'   for it to be included in the final result, otherwise these hexes are given
+#'   the value \code{NA}.
 #' @param plot_significance whether to outline areas that were identified as
 #'   significant outliers.
 #' @param barrier_list optional list of polygon coordinates that are added to
@@ -176,6 +179,7 @@ plot_map <- function(proj,
                      col_scale = viridisLite::magma(100),
                      plot_sampling_points = TRUE,
                      plot_hex_grid = TRUE,
+                     min_hex_coverage = 10,
                      plot_significance = TRUE,
                      empirical_tail = "both",
                      alpha_raw = 0.05,
@@ -185,6 +189,7 @@ plot_map <- function(proj,
   assert_custom_class(proj, "rmapi_project")
   assert_single_logical(plot_sampling_points)
   assert_single_logical(plot_hex_grid)
+  assert_single_pos_int(min_hex_coverage, zero_allowed = TRUE)
   assert_single_logical(plot_significance)
   assert_single_string(empirical_tail)
   assert_in(empirical_tail, c("left", "right", "both"))
@@ -210,15 +215,18 @@ plot_map <- function(proj,
   }
   plot_hex_values <- !is.null(proj$output$hex_values)
   
-  # determine hex colours
+  # determine plotting values
   if (plot_hex_values) {
     add_legend <- TRUE
-    col_vec <- proj$output$hex_values
+    y <- proj$output$hex_values
   } else {
     add_legend <- FALSE
-    col_vec <- rep(0, length(proj$map$hex))
+    y <- rep(0, length(proj$map$hex))
     plot_significance <- FALSE
   }
+  
+  # replace plotting values with NA if below minimum hex coverage
+  y[proj$output$hex_coverage < min_hex_coverage] <- NA
   
   # produce basic plot
   plot1 <- ggplot() + theme_bw() + theme(panel.grid.major = element_blank(),
@@ -226,7 +234,7 @@ plot_map <- function(proj,
   
   # add hexs
   if (plot_hex_grid) {
-    plot1 <- plot1 + geom_sf(aes(fill = col_vec),
+    plot1 <- plot1 + geom_sf(aes(fill = y),
                              color = NA,
                              data = proj$map$hex)
   }
@@ -237,7 +245,8 @@ plot_map <- function(proj,
     # get significant hexes
     hex_signif <- get_significant_hexes(proj,
                                         empirical_tail = empirical_tail,
-                                        alpha_raw = alpha_raw)
+                                        alpha_raw = alpha_raw,
+                                        min_hex_coverage = min_hex_coverage)
     
     # outline low values
     w <- hex_signif$which_lower

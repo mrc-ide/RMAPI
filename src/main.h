@@ -7,9 +7,6 @@
 #include <Rcpp.h>
 #endif
 
-//------------------------------------------------
-// check if value is within ellipse
-bool ellipse_check(double x, double y, double xf1, double yf1, double xf2, double yf2, double a);
 
 //------------------------------------------------
 // assign edges to hexes based on intersection
